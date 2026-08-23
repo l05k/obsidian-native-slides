@@ -10,6 +10,11 @@ export const SLIDES_PANEL_VIEW = "native-slides-panel";
  * used to play before v1.0.0. Clicking an entry opens that slide.
  */
 export class SlidesPanelView extends ItemView {
+  /** Chain signature of the currently rendered list */
+  private lastChain: string[] = [];
+  /** Rendered item elements, index-aligned with lastChain */
+  private items: { path: string; el: HTMLElement }[] = [];
+
   constructor(
     private plugin: NativeSlidesPlugin,
     leaf: WorkspaceLeaf,
@@ -42,17 +47,40 @@ export class SlidesPanelView extends ItemView {
 
   async onClose(): Promise<void> {
     this.containerEl.empty();
+    this.lastChain = [];
+    this.items = [];
   }
 
-  /** Rebuild the slide list for the active note's deck */
+  /**
+   * Sync the list with the active note's deck. Incremental on purpose: the
+   * refresh events also fire while a click on an entry is in flight (the
+   * mousedown activates this leaf), and rebuilding the DOM mid-gesture
+   * destroys the click target — which made opening a slide take two clicks
+   * whenever the panel was not the active leaf. Unchanged chains only get
+   * their highlight updated, so item elements always survive.
+   */
   private render(): void {
-    const root = this.containerEl;
-    root.empty();
-
     const file = this.app.workspace.getActiveFile();
     const deck = file ? this.plugin.deckService.compute(file) : null;
+    const chain = deck
+      ? deck.chain.filter((p) => this.app.vault.getAbstractFileByPath(p) instanceof TFile)
+      : [];
 
-    if (!deck) {
+    if (!chainEquals(this.lastChain, chain)) {
+      this.rebuild(chain);
+    } else {
+      for (const it of this.items) it.el.classList.toggle("is-active", it.path === file?.path);
+    }
+  }
+
+  /** Full rebuild (chain shape changed) */
+  private rebuild(chain: string[]): void {
+    const root = this.containerEl;
+    root.empty();
+    this.items = [];
+    this.lastChain = chain;
+
+    if (chain.length === 0) {
       const empty = root.createDiv({ cls: "native-slides-panel-empty" });
       empty.setText(
         "No slides deck — open a deck note, or run Create next slide on any note to start one.",
@@ -60,17 +88,29 @@ export class SlidesPanelView extends ItemView {
       return;
     }
 
-    deck.chain.forEach((path, i) => {
+    const activePath = this.app.workspace.getActiveFile()?.path;
+    chain.forEach((path, i) => {
       const f = this.app.vault.getAbstractFileByPath(path);
       if (!(f instanceof TFile)) return;
       const item = root.createDiv({ cls: "native-slides-panel-item" });
-      if (path === file?.path) item.addClass("is-active");
-      const num = item.createSpan({ cls: "native-slides-panel-num" });
-      num.setText(String(i + 1));
+      if (path === activePath) item.addClass("is-active");
+      item.createSpan({ cls: "native-slides-panel-num" }).setText(String(i + 1));
       item.createSpan({ cls: "native-slides-panel-title" }).setText(f.basename);
-      item.addEventListener("click", () => {
-        void this.app.workspace.getLeaf(false).openFile(f);
-      });
+      item.addEventListener("click", () => this.openSlide(f));
+      this.items.push({ path, el: item });
     });
   }
+
+  /** Open a slide in a markdown leaf (never in this panel's own leaf) */
+  private async openSlide(f: TFile): Promise<void> {
+    const leaf =
+      this.app.workspace.getLeavesOfType("markdown")[0] ?? this.app.workspace.getLeaf(true);
+    await leaf.openFile(f);
+    this.app.workspace.setActiveLeaf(leaf, { focus: true });
+  }
+}
+
+/** Order-sensitive chain comparison */
+function chainEquals(a: string[], b: string[]): boolean {
+  return a.length === b.length && a.every((p, i) => p === b[i]);
 }
