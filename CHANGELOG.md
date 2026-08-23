@@ -25,6 +25,7 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 ### Fixed
 
 - **Slides card line overflow**: with Obsidian's _readable line width_ enabled, every editor line was sized for the full-width editor and spilled past the slide card's right border; lines now keep their natural width inside the card.
+- **Slides panel sometimes needed a double click**: clicking a slide entry could be swallowed when the click also activated the panel leaf (the list rebuilt mid-gesture, destroying the click target). The list now updates incrementally — unchanged decks only refresh the highlight — and entries always open in a markdown leaf, never replacing the panel itself.
 
 ## [0.1.1] - 2026-08-19
 
