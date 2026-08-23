@@ -2,16 +2,11 @@
 deck: ["[[slide-3]]"]
 ---
 
-# Slide 2 · One property drives the deck
+# Slide 2 · Next-only deck
 
-Each page's frontmatter drives the deck — just one reserved key, **next-only**:
+- `deck: ["[[slide-3]]"]` — one link, the **next slide**
+- last slide: `deck: []`
 
-- `deck: ["[[next-slide]]"]` → the single link **is the next slide** (this page links to `slide-3`)
-- the **last slide** has no link: `deck: []`
-- any other frontmatter key can be shown in the slides bar via _Bar properties_
+**bold**, _italic_, `code`, an [external link](https://obsidian.md), an [[welcome|internal link]]
 
-Some typography on the side: **bold**, _italic_, `inline code`, an [external link](https://obsidian.md) and an [[welcome|internal link]].
-
-> Blockquotes render with a thin left rule, like the lecture notes this template is modeled after.
-
-Press `Cmd/Ctrl + Shift + ←` to go back to slide 1.
+> Blockquotes get a thin left rule.
