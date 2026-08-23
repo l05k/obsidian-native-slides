@@ -39,7 +39,7 @@ v1.0.0 起不再有概览页——**slides 面板**接管"纵览整套 deck"的�
 
 ## 示例库
 
-演示笔记位于 [`example-vault/`](example-vault/)，这就是要打开的 Obsidian 示例库。它包含一套三页演示套件——`welcome.md`（frontmatter 含 `university` / `course` / `date`，用于 _Bar properties_ 设置）、`slide-2.md`（next-only `deck` 约定 + 排版样例）、`slide-3.md`（最后一页，`deck: []`）——以及 `jyy-why-os.md`（摘自 [jyywiki.cn](https://jyywiki.cn) 讲义的单页幻灯片，展示 _Lecture (jyy)_ 模板与 _Slides title_ 设置）。`example-vault/tests/` 下有 `typography-demo.md`（Markdown 全家桶——标题/列表/任务/引用/代码块/表格/图片，用于测试 Slides 排版），库根还有五个 `typography-sample-*.md` 笔记（**仅开发版** `Debug: Dump Typography Styles` 命令专用的固定一页采样笔记——请勿改名或删除）。示例库还带一份最小化的 `.obsidian/` 配置，以及一个插件目录 `example-vault/.obsidian/plugins/native-slides/`，其中的文件（`manifest.json`、`main.js`、`styles.css`）都是**指向仓库根目录的符号链接**——示例库始终运行当前构建。
+演示笔记位于 [`example-vault/`](example-vault/)，这就是要打开的 Obsidian 示例库。它包含一套三页演示套件——`welcome.md`（frontmatter 含 `university` / `course` / `date`，用于 _Bar properties_ 设置）、`slide-2.md`（next-only `deck` 约定 + 排版样例）、`slide-3.md`（最后一页，`deck: []`）——以及测试笔记用到的 `demo-image.png`。`example-vault/tests/` 下有 `typography-demo.md`（Markdown 全家桶——标题/列表/任务/引用/代码块/表格/图片，用于测试 Slides 排版）和五个 `typography-sample-*.md` 笔记（**仅开发版** `Debug: Dump Typography Styles` 命令专用的固定一页采样笔记——请勿改名或删除）。示例库还带一份最小化的 `.obsidian/` 配置，以及一个插件目录 `example-vault/.obsidian/plugins/native-slides/`，其中的文件（`manifest.json`、`main.js`、`styles.css`）都是**指向仓库根目录的符号链接**——示例库始终运行当前构建。
 
 > 符号链接需要文件系统支持（macOS/Linux 开箱即用；Windows 需开启开发者模式）。若无法使用符号链接，把 `main.js`、`manifest.json`、`styles.css` 复制到 `example-vault/.obsidian/plugins/native-slides/` 即可。
 
