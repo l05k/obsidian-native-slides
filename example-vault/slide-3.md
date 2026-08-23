@@ -1,5 +1,5 @@
 ---
-deck: ["[[overview]]"]
+deck: []
 ---
 
 # Slide 3 · The end

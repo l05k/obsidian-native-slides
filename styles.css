@@ -175,6 +175,50 @@ body.native-slides-pointer-hidden * {
   font-variant-numeric: tabular-nums;
 }
 
+/* ── 7. Slides sidebar panel (deck slide list, v1.0.0) ────────────── */
+.native-slides-panel {
+  padding: var(--size-4-2) var(--size-4-2);
+}
+.native-slides-panel-empty {
+  padding: var(--size-4-3);
+  color: var(--text-faint);
+  font-size: var(--font-ui-small);
+  line-height: 1.5;
+}
+.native-slides-panel-item {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  padding: var(--size-4-1) var(--size-4-2);
+  border-radius: var(--radius-s);
+  cursor: pointer;
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+}
+.native-slides-panel-item:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+.native-slides-panel-item.is-active {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+.native-slides-panel-item.is-active .native-slides-panel-num {
+  color: var(--text-accent);
+}
+.native-slides-panel-num {
+  flex-shrink: 0;
+  min-width: 1.5em;
+  text-align: right;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+.native-slides-panel-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ── 6b. Progress indicator (discrete clickable segments at bar top) ──
    One segment per slide in the deck chain. Past = semi-transparent accent,
    current = full accent, future = track colour. Each segment is an

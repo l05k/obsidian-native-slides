@@ -11,47 +11,31 @@
 
 - **Slides 模式**（仅 deck 笔记）：沉浸式、可编辑的卡片视图——"一屏一卡"。用 **Toggle Slides Mode** 命令（默认快捷键 `Mod+Shift+E`）进入；丝带、左右侧边栏与 tab 栏隐藏，幻灯片内容位于**居中卡片**（宽 80vw，主题自适应）内，外观可从 **六套内置样式模板**中选择——_Lecture (jyy)_（默认，参照 [jyywiki.cn](https://jyywiki.cn) 讲义的幻灯片卡片制作）、_虚线边框_、_纸片卡片_、_极简_、_强调边_、_磨砂玻璃_——每套模板同时重绘卡片与 slides 栏；默认隐藏文件名，可通过 **Slides title** 设置选择显示任意 frontmatter 属性（或 `filename` 显示文件名）作为卡片标题，编辑器**裁切到单屏**（不滚动——超出折叠的内容被裁掉），slides 栏显示已配置的 bar properties、◀ ▶ 翻页与自动页号。退出时还原进入前的视图（Source / Live Preview / Reading）。
 - **原生模式保持不动**：Source 模式、默认 Live Preview 与阅读视图都保持 Obsidian 默认行为——不隐藏状态栏、不加 slides 栏、不全屏、不改样式。Slides 模式是插件的唯一界面，因此可与其它也会修改阅读视图的插件和平共处。
-- **PPT 式翻页**，只用一个保留属性 **`deck`**（最多两个 markdown 链接）：
+- **PPT 式翻页**，只用一个保留属性 **`deck`**（next-only：至多一个 markdown 链接——下一张；没有概览页）：
 
   ```yaml
-  # 概览页 —— 一个链接 = 本套 PPT 的第一页
-  deck: ["[[welcome]]"]
-
-  # 放映页 —— 第一个链接 = 概览页，第二个链接 = 下一页
-  deck: ["[[overview]]", "[[slide-2]]"]
-  # 最后一页 —— 只保留概览页链接
-  deck: ["[[overview]]"]
+  # 放映页 —— 一个链接 = 下一张
+  deck: ["[[slide-2]]"]
+  # 最后一页 —— 没有链接（空列表）
+  deck: []
   ```
 
-  - **页号自动计算**：沿链接链（概览 → 第 1 页 → 第 2 页 → …）编号，无需再写 `page-number` 属性。概览页显示 "Overview"，放映页显示 "Page N"。
+  - **页号自动计算**：沿链接链（链头 → 第 2 页 → …）编号，从 1 开始（链头 = 第 1 页），无需再写 `page-number` 属性。
   - 点 slides 栏 ◀ ▶ 按钮翻页，或用 **上一页 / 下一页** 命令（默认快捷键 `Cmd/Ctrl+Shift+←/→`，可在 **设置 → 快捷键** 重新绑定）。在原生模式按下也会自动进入 Slides 并翻页。两个箭头始终显示；无法移动的那一个（第一页的 ◀、最后一页的 ▶）为浅灰色禁用态。
-  - **Create Next Slide 命令**：在当前笔记之后创建一张新幻灯片——新文件命名为 `<当前名>-next`（重名自动追加 `-2`、`-3`），两张笔记的 `deck` 属性自动改写，新笔记以编辑模式打开，可直接输入内容。若当前笔记的第二个 `deck` 链接指向不存在的笔记，则直接创建那个声明的笔记（顺带消除 ⚠ 警告）；在概览页上执行则插入一张新的**第一页**。不适用时命令在面板中置灰。
+  - **Create Next Slide 命令**：在当前笔记之后创建一张新幻灯片——新文件命名为 `<当前名>-next`（重名自动追加 `-2`、`-3`），`deck` 链接自动改写，新笔记以编辑模式打开，可直接输入内容。若当前笔记的 `deck` 链接指向不存在的笔记，则直接创建那个声明的笔记（顺带消除 ⚠ 警告）。在**不属于任何 deck 的笔记**上执行则**开启一套新 deck**。
+
+- **Slides 面板**：侧边栏视图，按链序列出当前笔记所属 deck 的全部幻灯片——点击即跳转。用 **Show Slides Panel** 命令或丝带的演示图标打开。
 
 - **演示时没有闪烁光标**：点一下 slides 栏即可让编辑器失焦——讲解时不再有闪烁的输入光标；点回任意幻灯片内容即可继续编辑。**Toggle Mouse Pointer** 命令（`Mod+Shift+M`）更进一步：全窗口隐藏鼠标指针并顺带失焦；再执行一次恢复，退出 Slides 模式也会自动恢复。
 - **可配置 slides 栏属性**：选择哪些 frontmatter 属性显示在 slides 栏中以及显示顺序。设置 → Bar properties 接受逗号分隔的列表（如 `university, short-title, date`）；每个值占据等宽列，列之间的分隔条可拖拽调整宽度（宽度跨会话持久化）。留空 = 不显示属性列。缺失的属性会被静默跳过。属性列排版与页号一致（均随 bar 高度缩放）：属性列为灰色弱化显示，页号保持醒目。
 - **自动进入 Slides 模式**（设置项，默认关）：打开 deck 笔记直接进入 Slides；关闭则手动进入。
 - **设置页**：可选择样式模板、配置 bar properties，可开关 ◀ ▶ 按钮、页号显示与自动进入。
 - **断链警告**：`deck` 链接指向不存在的笔记时，slides 栏显示 ⚠ 警告标签，方便作者发现笔误（该链只会终止或排除，不会报错）。
-- **命令**：_Toggle Slides Mode_（`Mod+Shift+E`）、_Previous Page / Next Page_、_Create Next Slide_、_Toggle Mouse Pointer_（`Mod+Shift+M`）、_Toggle Slides Bar_——都可在 _设置 → 快捷键_ 重新绑定。
+- **命令**：_Toggle Slides Mode_（`Mod+Shift+E`）、_Previous Page / Next Page_、_Create Next Slide_、_Show Slides Panel_、_Toggle Mouse Pointer_（`Mod+Shift+M`）、_Toggle Slides Bar_——都可在 _设置 → 快捷键_ 重新绑定。
 
-## 概览页与内置 Base 视图
+## Slides 面板（侧边栏）
 
-示例库自带 `overview.md`，其中嵌入了 Obsidian **Base**（核心插件 **Bases**，Obsidian 1.10 引入）视图，筛选所有**指向本概览页**的笔记——即全部放映页：
-
-````markdown
-```base
-filters:
-  and:
-    - file.hasLink("overview")
-views:
-  - type: table
-    name: Deck
-```
-````
-
-如果 Base 视图没有渲染：启用核心插件 _设置 → 核心插件 → Bases_，然后重载该笔记。
-
-> Base 视图需要 Obsidian **1.10+**（Bases 核心插件）；插件本身支持 **1.7.0+**（其 `minAppVersion`）——旧版本上概览表格只是不渲染而已。
+v1.0.0 起不再有概览页——**slides 面板**接管"纵览整套 deck"的角色。运行 **Show Slides Panel** 命令（或点丝带的演示图标），侧边栏即按链序列出当前笔记所属 deck 的全部幻灯片（带编号）；点击任一条目即打开对应幻灯片。列表跟随当前活动笔记，并随 deck 编辑实时刷新。
 
 ## 示例库
 
@@ -63,10 +47,9 @@ views:
 
 1. 打开示例库：Obsidian → 打开其他仓库 → 选择本仓库内的 `example-vault/` 目录；
 2. 允许第三方插件：设置 → 第三方插件 → 关闭"安全模式"（一次性手动操作）；
-3. 在第三方插件列表启用 **Native Slides**；
-4. （使用概览页时）启用核心插件 _设置 → 核心插件 → Bases_。
+3. 在第三方插件列表启用 **Native Slides**。
 
-打开 `welcome.md`，按 `Cmd/Ctrl+Shift+E` 进入 Slides 模式——底部即显示属性、◀ ▶ 按钮和 "Page 1"；按 `Cmd/Ctrl+Shift+→` 进入第 2 页。
+打开 `welcome.md`，按 `Cmd/Ctrl+Shift+E` 进入 Slides 模式——底部即显示已配置属性、◀ ▶ 按钮与页号；按 `Cmd/Ctrl+Shift+→` 翻到下一张；运行 **Show Slides Panel** 可纵览整套 deck。
 
 演示套件：`overview.md` → `welcome.md` → `slide-2.md` → `slide-3.md`。
 
@@ -77,8 +60,8 @@ views:
 | 隐藏状态栏（Slides 模式） | `body.native-slides-mode .status-bar { display: none }`——原生模式保留 Obsidian 默认状态栏                                                                           |
 | 沉浸布局（Slides 模式）   | `body.native-slides-mode` 隐藏丝带/侧边栏/tab 栏；slides 栏高度对齐 tab bar 实测高度（`--native-slides-tabbar-height`）                                             |
 | 隐藏笔记内属性面板        | `.markdown-source-view.mod-cm6.is-live-preview .metadata-container { display: none }`——属性改由 slides 栏展示                                                       |
-| 套件解析                  | `computeDeck()` 读取 `deck`（≤ 2 个链接）→ 解析概览页与第一页 → 沿每页第二个链接走链（有防环保护）→ 返回完整链 + 当前索引                                           |
-| 页号                      | 链中的位置：索引 0 = "Overview"，放映页 = "Page N"；不需要存储 `page-number`                                                                                        |
+| 套件解析                  | `computeDeck()` 读取每页唯一的 next 链接 → 经 `deck` 反向索引回溯到链头 → 向前遍历整条链（有防环保护）→ 返回完整链 + 当前索引                                       |
+| 页号                      | 链中的位置，从 1 开始（链头 = 第 1 页）；不需要存储 `page-number`                                                                                                   |
 | PPT 翻页                  | `navigate()` 沿链步进，用 `workspace.openLinkText` 打开；从原生模式触发时会先进入 Slides 模式                                                                       |
 | Slides 进入/退出          | `enterSlides()` 记录当前视图状态并强制切到 Live Preview；`exitSlides()` 精确还原该视图状态（Source / Live Preview / Reading）                                       |
 | Create Next Slide         | `planCreateNext()`（纯逻辑核心）算出新文件名、新笔记的 `deck` 链接与改写方案；命令用 `vault.create` + `fileManager.processFrontMatter` 执行，并在编辑模式打开新笔记 |

@@ -1,5 +1,5 @@
 ---
-deck: ["[[bar-properties-overview]]"]
+deck: []
 university: xxx university
 course: Operating Systems
 date: 2026-08-19

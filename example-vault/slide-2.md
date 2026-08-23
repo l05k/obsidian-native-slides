@@ -1,5 +1,5 @@
 ---
-deck: ["[[overview]]", "[[slide-3]]"]
+deck: ["[[slide-3]]"]
 ---
 
 # Slide 2 · Properties are data

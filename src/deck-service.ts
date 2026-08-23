@@ -8,12 +8,23 @@ import { DECK_KEY } from "./types";
 export class DeckService {
   constructor(private app: App) {}
 
-  /** Resolve the current note's position inside its deck (path-based wrapper) */
+  /**
+   * Resolve the current note's position inside its deck. A note qualifies
+   * when it holds a `deck` property (even empty — a fresh single slide) or
+   * when some other slide declares it as its next slide.
+   */
   compute(file: TFile): DeckInfo | null {
-    return computeDeck(file.path, (path) => this.linkPaths(path));
+    const fm = frontmatterOf(this.app, file);
+    const member = (fm !== null && DECK_KEY in fm) || this.prevOf(file.path) !== undefined;
+    if (!member) return null;
+    return computeDeck(
+      file.path,
+      (path) => this.linkPaths(path),
+      (path) => this.prevOf(path),
+    );
   }
 
-  /** Resolve the `deck` property of a note into real note paths (max two) */
+  /** Resolve the `deck` property of a note into real note paths (max one) */
   private linkPaths(path: string): string[] {
     const f = this.app.vault.getAbstractFileByPath(path);
     if (!(f instanceof TFile)) return [];
@@ -25,6 +36,19 @@ export class DeckService {
       .map((x) => x.path);
   }
 
+  /**
+   * The note whose `deck` property points at `path` (the previous slide in
+   * the chain). With next-only semantics this backward lookup is the only
+   * way to reach the chain head from a middle/last slide.
+   */
+  private prevOf(path: string): string | undefined {
+    for (const f of this.app.vault.getMarkdownFiles()) {
+      if (f.path === path) continue;
+      if (this.linkPaths(f.path)[0] === path) return f.path;
+    }
+    return undefined;
+  }
+
   /** Names in the `deck` property that resolve to no note (broken links) */
   broken(file: TFile): string[] {
     const fm = frontmatterOf(this.app, file);
@@ -33,72 +57,15 @@ export class DeckService {
   }
 
   /**
-   * Plan a "Create Next Slide" run for the active note, or null when the
-   * note cannot take a next slide (no usable `deck` property).
-   *
-   * Slides on the chain insert/append after the current note; the overview
-   * page inserts a new first page; an off-chain note with a resolvable
-   * overview link still gets its declared missing next note created.
+   * Plan a "Create Next Slide" run for the active note. Deck slides
+   * insert/append after the current note; a note without a `deck` link
+   * starts a brand-new deck (it becomes the head slide).
    */
   planCreateNext(file: TFile): CreateNextResult | null {
     const fm = frontmatterOf(this.app, file);
     const raw = fm ? extractRawLinks(fm[DECK_KEY]) : [];
-    if (raw.length === 0) return null;
-
-    const deck = this.compute(file);
     const existingNames = new Set(this.app.vault.getMarkdownFiles().map((f) => f.basename));
-
-    if (deck) {
-      // Overview insertion needs the old first page's back link to the
-      // overview (its own frontmatter only links forward).
-      let overviewBackLink: string | undefined;
-      if (deck.index === 0) {
-        const oldFirst = deck.chain[1] ? this.app.vault.getAbstractFileByPath(deck.chain[1]) : null;
-        if (oldFirst instanceof TFile) {
-          const f2 = frontmatterOf(this.app, oldFirst);
-          overviewBackLink = f2 ? extractRawLinks(f2[DECK_KEY])[0] : undefined;
-        }
-      }
-      return plan({
-        currentName: file.basename,
-        currentLinks: raw,
-        isOverview: deck.index === 0,
-        overviewBackLink,
-        existingNames,
-      });
-    }
-
-    // Off-chain note: check if this could be an overview with a broken link
-    // to the first slide (e.g., from "New Slides Deck" command).
-    if (raw.length === 1) {
-      const firstSlideName = extractLinks(raw[0])[0];
-      if (
-        firstSlideName &&
-        !this.app.metadataCache.getFirstLinkpathDest(firstSlideName, file.path)
-      ) {
-        // This is an overview with a broken link to the first slide — create it
-        return plan({
-          currentName: file.basename,
-          currentLinks: raw,
-          isOverview: true,
-          overviewBackLink: `[[${file.basename}]]`,
-          existingNames,
-        });
-      }
-    }
-
-    // Off-chain slide: still create its declared missing next note when the
-    // overview link resolves (the  broken-link warning disappears).
-    const overviewName = raw.length >= 2 ? extractLinks(raw[0])[0] : null;
-    if (overviewName && this.app.metadataCache.getFirstLinkpathDest(overviewName, file.path)) {
-      return plan({
-        currentName: file.basename,
-        currentLinks: raw,
-        isOverview: false,
-        existingNames,
-      });
-    }
-    return null;
+    return plan({ currentName: file.basename, currentLinks: raw, existingNames });
   }
 
   /** Apply a plan: create the note, rewire `deck` properties, open it */

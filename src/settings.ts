@@ -54,7 +54,7 @@ export class NativeSlidesSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Page number style")
       .setDesc(
-        'Shown at the bottom-right. "N / Total": overview = page 0, content from 1, total excludes overview. "N": just the current page number. "None": hidden.',
+        'Shown at the bottom-right. "N / Total": 1-based over the whole deck chain (head slide = 1). "N": just the current page number. "None": hidden.',
       )
       .addDropdown((dropdown) =>
         dropdown

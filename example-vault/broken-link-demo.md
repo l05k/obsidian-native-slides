@@ -1,5 +1,5 @@
 ---
-deck: ["[[overview]]", "[[missing-slide]]"]
+deck: ["[[missing-slide]]"]
 ---
 
 # Broken-link demo

@@ -26,9 +26,10 @@ has them. Demo notes keep this footprint to the bare minimum (no decorative
 - The only persisted data is **configuration** (show ◀ ▶ buttons, show page
   number, hide the bar, auto-enter Slides mode), via `loadData/saveData`.
 - Required data belongs to the **note structure itself** — the deck _is_ the
-  overview note plus each slide's `deck` links. There is no separate "deck
+  chain of each slide's single next link. Backward resolution (finding the
+  chain head) scans frontmatter on demand; there is no separate "deck
   index" file or database to create, keep in sync, or corrupt.
-- No background scans, no indexes, no writes to the vault.
+- No background scans, no persisted indexes, no writes to the vault.
 
 ## 4. Efficient implementation, no premature optimization
 

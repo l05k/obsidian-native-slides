@@ -1,5 +1,4 @@
 import type NativeSlidesPlugin from "../main";
-import { Notice } from "obsidian";
 import { registerDebugCommand } from "./debug";
 import { frontmatterOf } from "./mode";
 import { DECK_KEY } from "./types";
@@ -16,66 +15,11 @@ export function registerCommands(plugin: NativeSlidesPlugin): void {
       plugin.refresh();
     },
   });
-  // New Slides Deck — create an overview note with Base filter and instructions
+  // Show the slides sidebar panel (deck slide list)
   plugin.addCommand({
-    id: "ns-new-deck",
-    name: "New slides deck",
-    callback: async () => {
-      // Find a unique name for the overview note
-      let baseName = "untitled-overview";
-      let counter = 1;
-      while (plugin.app.vault.getAbstractFileByPath(`${baseName}.md`)) {
-        baseName = `untitled-overview-${counter}`;
-        counter++;
-      }
-
-      // Create overview note with template
-      const template = `---
-deck: ["[[run-create-next-slide-command-to-create-first-slide]]"]
----
-
-# Overview
-
-This is the **overview page** of your deck. The \`deck\` property has a placeholder link — run the **Create Next Slide** command to create your first slide automatically.
-
-## Base view: all slides
-
-\`\`\`base
-filters:
-  and:
-    - file.hasLink("${baseName}")
-    - "!deck.isEmpty()"
-views:
-  - type: table
-    name: Slides
-\`\`\`
-
-> If the Base view does not render: enable the core **Bases** plugin
-> (_Settings → Core plugins → Bases_), then reload this note.
-
-## How to add slides
-
-1. **Create the first slide:** Run the **Create Next Slide** command (\`Cmd/Ctrl+Shift+P\` → "Create Next Slide") — a new slide is created after this overview, and the \`deck\` property is rewired automatically.
-2. **Add more slides:** Open any slide and run **Create Next Slide** again — each run appends a new slide after the current one.
-3. **Enter Slides mode:** Open any slide and press \`Cmd/Ctrl+Shift+E\` to enter the immersive card view.
-
-**Convention for the \`deck\` property** (one property, up to two links):
-
-- **Overview page:** \`deck: ["[[first-slide]]"]\` — one link = the first page.
-- **Slide page:** \`deck: ["[[overview]]", "[[next-slide]]"]\` — first link = the overview page, second link = the next slide (omit it on the last slide).
-
-Page numbers are computed automatically by walking these links, so no \`page-number\` property is needed.
-`;
-
-      try {
-        const file = await plugin.app.vault.create(`${baseName}.md`, template);
-        const leaf = plugin.app.workspace.getLeaf(false);
-        await leaf.openFile(file, { state: { mode: "source" } });
-        new Notice(`Native Slides: Created "${baseName}.md"`);
-      } catch (error) {
-        new Notice(`Native Slides: could not create "${baseName}.md" (${String(error)})`);
-      }
-    },
+    id: "ns-show-panel",
+    name: "Show slides panel",
+    callback: () => void plugin.activateSlidesPanel(),
   });
   // Hide / show the mouse pointer window-wide (presenting; Slides mode only)
   plugin.addCommand({

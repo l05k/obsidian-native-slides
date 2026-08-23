@@ -1,5 +1,5 @@
 ---
-deck: ["[[overview]]"]
+deck: []
 author: Native Slides
 tags:
   - demo

@@ -12,47 +12,31 @@
 
 - **Slides mode** (_deck notes only_): an immersive, editable card view — "one screen = one card". Enter with the **Toggle Slides Mode** command (default hotkey `Mod+Shift+E`); the ribbon, sidebars and tab bar hide, the slide content sits in a **centered card** (80vw wide, theme-adaptive) whose look you choose from **six built-in style templates** — _Lecture (jyy)_ (default, modeled after the slideshow cards of [jyywiki.cn](https://jyywiki.cn) lecture notes), _Dashed outline_, _Paper card_, _Minimal_, _Accent edge_ and _Frosted glass_ — each restyling the card **and** the slides bar; the file name is hidden by default, and a **Slides title** setting can show any frontmatter property (or `filename` for the file name) as the card title, the editor **clips to a single screen** (no scrolling — content beyond the fold is clipped), and a slides bar shows the configured bar properties, ◀ ▶ navigation and the auto-computed page number. Exiting restores the view you came from (Source / Live Preview / Reading).
 - **Native modes stay untouched**: Source mode, the default Live Preview and Reading view keep Obsidian's default behaviour — no status-bar hiding, no slides bar, no fullscreen, no styling. Slides mode is the plugin's only surface, so it coexists cleanly with other plugins that also modify the reading view.
-- **PPT-style deck navigation** with **one reserved frontmatter property, `deck`** (up to two markdown links):
+- **PPT-style deck navigation** with **one reserved frontmatter property, `deck`** (next-only: at most one markdown link — the next slide; no overview page):
 
   ```yaml
-  # Overview page — one link = the first page of the deck
-  deck: ["[[welcome]]"]
-
-  # Slide page — first link = the overview page, second link = the next slide
-  deck: ["[[overview]]", "[[slide-2]]"]
-  # Last slide — only the overview link
-  deck: ["[[overview]]"]
+  # Slide — one link = the next slide
+  deck: ["[[slide-2]]"]
+  # Last slide — no link (empty list)
+  deck: []
   ```
 
-  - **Page numbers are auto-computed** by walking the link chain (overview → slide 1 → slide 2 → …), so no `page-number` property is needed. The overview page shows "Overview", slides show "Page N".
+  - **Page numbers are auto-computed** by walking the link chain (head slide → slide 2 → …), 1-based: the head slide is page 1, so no `page-number` property is needed.
   - Flip pages with the ◀ ▶ buttons in the slides bar, or with the **Previous Page / Next Page** commands (default hotkeys `Cmd/Ctrl+Shift+←/→`, rebindable under **Settings → Hotkeys**). Pressing them from a native mode enters Slides mode and flips. Both arrows are always shown; the one that cannot move (first page's ◀, last page's ▶) is disabled and light gray.
-  - **Create Next Slide** command: creates a new slide right after the current one — the file is named `<current>-next` (collision-aware: `-2`, `-3`, …), both `deck` properties are rewired automatically, and the new note opens ready for content. If the current note's second `deck` link points to a missing note, that exact note is created instead (fixing the ⚠ warning); on the overview page it inserts a new first page. Greyed out for notes that cannot take a next slide.
+  - **Create Next Slide** command: creates a new slide right after the current one — the file is named `<current>-next` (collision-aware: `-2`, `-3`, …), the `deck` links are rewired automatically, and the new note opens ready for content. If the current note's `deck` link points to a missing note, that exact note is created instead (fixing the ⚠ warning). Run it on a note that is not part of any deck to **start a brand-new deck**.
+
+- **Slides panel**: a sidebar view that lists every slide of the active note's deck in chain order — click an entry to jump to it. Open it with the **Show Slides Panel** command or the presentation ribbon icon.
 
 - **Presenting without a blinking caret**: click the slides bar to move focus out of the editor — the caret disappears while you talk; click any slide content to resume editing. The **Toggle Mouse Pointer** command (`Mod+Shift+M`) goes one step further and hides the mouse pointer window-wide (focus parked too); run it again to restore, and leaving Slides mode always restores it.
 - **Configurable bar properties**: choose which frontmatter properties appear in the slides bar and in what order. Settings → Bar properties accepts a comma-separated list (e.g. `university, short-title, date`); each value fills an equal-width column, and draggable dividers between columns let you resize them interactively (widths persist across sessions). Empty = no property columns. Missing properties are skipped silently. Column typography matches the page number (both scale with the bar height); columns render muted while the page number stays prominent.
 - **Auto-enter Slides mode** (settings, default off): open deck notes straight into Slides mode; leave off to enter manually.
 - A **settings tab** picks the style template, configures bar properties, and toggles the ◀ ▶ buttons, the page number, and auto-enter.
 - **Broken deck-link warnings**: if a `deck` link points to a note that doesn't exist, the slides bar shows a ⚠ warning chip so authors can spot typos (the chain simply ends or excludes the link).
-- **Commands**: _Toggle Slides Mode_ (`Mod+Shift+E`), _Previous Page / Next Page_, _Create Next Slide_, _Toggle Mouse Pointer_ (`Mod+Shift+M`), and _Toggle Slides Bar_ — all rebindable under _Settings → Hotkeys_.
+- **Commands**: _Toggle Slides Mode_ (`Mod+Shift+E`), _Previous Page / Next Page_, _Create Next Slide_, _Show Slides Panel_, _Toggle Mouse Pointer_ (`Mod+Shift+M`), and _Toggle Slides Bar_ — all rebindable under _Settings → Hotkeys_.
 
-## Overview page with an embedded Base view
+## Slides panel (sidebar)
 
-The example vault ships an `overview.md` that embeds an Obsidian **Base** view (core **Bases** plugin, introduced in Obsidian 1.10) filtering every note that **links to the overview page** — i.e. all slides:
-
-````markdown
-```base
-filters:
-  and:
-    - file.hasLink("overview")
-views:
-  - type: table
-    name: Deck
-```
-````
-
-Enable the core plugin if the view does not render: _Settings → Core plugins → Bases_.
-
-> The Base view needs Obsidian **1.10+** (the Bases core plugin); the plugin itself supports **1.7.0+** (its `minAppVersion`) — on older versions the overview table simply won't render.
+Since v1.0.0 there is no overview page — the **slides panel** takes over the "see the whole deck" role. Run the **Show Slides Panel** command (or click the presentation ribbon icon) and a sidebar view lists every slide of the active note's deck in chain order, numbered; clicking an entry opens that slide. The list follows the active note and stays in sync with deck edits.
 
 ## Example vault
 
@@ -65,9 +49,8 @@ The demo notes live in [`example-vault/`](example-vault/), which is the Obsidian
 1. Open the example vault: Obsidian → _Open another vault_ → select the `example-vault/` directory inside this repo.
 2. Allow community plugins: _Settings → Community plugins → Turn off Safe mode_ (one-time, manual).
 3. Enable **Native Slides** under _Settings → Community plugins_.
-4. (For the overview page) Enable the core **Bases** plugin: _Settings → Core plugins → Bases_.
 
-Open `welcome.md` and press `Cmd/Ctrl+Shift+E` to enter Slides mode — the slides bar shows the properties, ◀ ▶ buttons and "Page 1". Press `Cmd/Ctrl+Shift+→` to go to slide 2.
+Open `welcome.md` and press `Cmd/Ctrl+Shift+E` to enter Slides mode — the slides bar shows the configured properties, ◀ ▶ buttons and the page number. Press `Cmd/Ctrl+Shift+→` to go to the next slide, and run **Show Slides Panel** to see the whole deck.
 
 Demo deck: `overview.md` → `welcome.md` → `slide-2.md` → `slide-3.md`.
 
@@ -78,8 +61,8 @@ Demo deck: `overview.md` → `welcome.md` → `slide-2.md` → `slide-3.md`.
 | Hide the status bar (Slides mode) | `body.native-slides-mode .status-bar { display: none }` — native modes keep Obsidian's default status bar                                                                                                                   |
 | Immersive layout (Slides mode)    | `body.native-slides-mode` hides the ribbon / sidebars / tab bar; the slides bar takes the tab bar's measured height (`--native-slides-tabbar-height`)                                                                       |
 | Hide in-note properties           | `.markdown-source-view.mod-cm6.is-live-preview .metadata-container { display: none }` — properties live in the slides bar instead                                                                                           |
-| Deck resolution                   | `computeDeck()` reads `deck` (≤ 2 links) → resolves the overview and the first page → walks the chain via each slide's second link (cycle-guarded) → returns the chain + current index                                      |
-| Page number                       | position in the chain: index 0 = "Overview", slides = "Page N"; no stored `page-number` property                                                                                                                            |
+| Deck resolution                   | `computeDeck()` reads each slide's single next link → walks backward via a reverse `deck`-link index to the chain head → walks the chain forward (cycle-guarded) → returns the chain + current index                        |
+| Page number                       | position in the chain, 1-based (head slide = page 1); no stored `page-number` property                                                                                                                                      |
 | PPT navigation                    | `navigate()` steps along the chain and opens via `workspace.openLinkText`; it enters Slides mode first when invoked from a native mode                                                                                      |
 | Slides enter / exit               | `enterSlides()` records the current view state and forces the Live Preview; `exitSlides()` restores that exact view state (Source / Live Preview / Reading)                                                                 |
 | Create Next Slide                 | `planCreateNext()` (pure core) computes the new file name, the new note's `deck` links and the rewrites; the command applies them via `vault.create` + `fileManager.processFrontMatter` and opens the new note in edit mode |

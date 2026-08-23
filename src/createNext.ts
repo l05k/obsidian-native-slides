@@ -1,16 +1,18 @@
 /**
  * createNext.ts — Pure "Create Next Slide" planning core for native-slides.
  *
- * Everything in this module is free of Obsidian runtime dependencies so it can
- * be unit tested directly (see test/createNext.test.ts). main.ts adapts the
- * vault (metadataCache, computeDeck) to this pure interface and applies the
- * resulting plan with vault.create() + fileManager.processFrontMatter().
+ * Everything in this module is free of Obsidian runtime dependencies so it
+ * can be unit tested directly (see test/createNext.test.ts). main.ts adapts
+ * the vault (metadataCache, computeDeck) to this pure interface and applies
+ * the resulting plan with vault.create() + fileManager.processFrontMatter().
  *
- * The plan decides, for the current note:
+ * v1.0.0 convention — next-only, no overview page: a slide's `deck`
+ * property holds at most ONE link (its next slide). The plan decides, for
+ * the current note:
  *   - the name of the new slide file (collision-aware),
  *   - the raw `deck` link texts of the new note,
- *   - the rewrites needed on existing notes (in practice always the current
- *     note itself).
+ *   - the rewrites needed on existing notes (in practice always the
+ *     current note itself).
  */
 
 import { extractLinkText } from "./deck";
@@ -19,16 +21,8 @@ import { extractLinkText } from "./deck";
 export interface CreateNextInput {
   /** Basename (without extension) of the current note */
   currentName: string;
-  /** Raw `deck` link texts of the current note (extracted, up to two) */
+  /** Raw `deck` link texts of the current note (extracted, at most one) */
   currentLinks: string[];
-  /** True when the current note IS the deck's overview page (chain index 0) */
-  isOverview: boolean;
-  /**
-   * Raw link text the old first page uses to link back to the overview.
-   * Only meaningful for overview insertion (the overview itself only links
-   * forward, so its own frontmatter contains no self-reference).
-   */
-  overviewBackLink?: string;
   /** Basenames of every markdown note in the vault (collision-free naming) */
   existingNames: Set<string>;
 }
@@ -55,48 +49,20 @@ export interface CreateNextResult {
  * Plan the creation of a new slide after the current note.
  *
  * Behaviors:
- *   - Last slide (no second link): append `<current>-next` as the new last
- *     slide; the current note gains the second link.
- *   - Slide with a valid next: insert `<current>-next` between them; the new
- *     note takes over the old next link.
- *   - Slide whose second link is broken (plain, non-existing name): create
- *     exactly the declared missing note as the new last slide — the ⚠ warning
+ *   - No next link (last slide, fresh deck head, or a plain note starting
+ *     a brand-new deck): append `<current>-next` as the new last slide; the
+ *     current note's `deck` gains the link to it.
+ *   - Valid next link: insert `<current>-next` between the current note and
+ *     its next; the new note takes over the old next link.
+ *   - Broken next link (plain, non-existing name): create exactly the
+ *     declared missing note as the new next slide — the ⚠ warning
  *     disappears and the author's intent is honoured. A broken link that is
  *     not a plain basename (path-qualified, self-referencing) is treated as
  *     invalid and dropped (append a `<current>-next` last slide instead).
- *   - Overview page (single link = first page): insert a new first page; the
- *     overview's link points to it and the old first page is pushed back.
- *
- * Returns null when the note has no usable `deck` links.
  */
 export function planCreateNext(input: CreateNextInput): CreateNextResult | null {
-  const { currentName, currentLinks, isOverview } = input;
-  if (currentLinks.length === 0) return null;
-
-  // ── Overview page: insert a new first page after it ────────────────────
-  if (isOverview) {
-    const oldFirst = currentLinks[0];
-    if (!oldFirst) return null;
-    const oldFirstName = extractLinkText(oldFirst);
-    const firstPageExists = oldFirstName && input.existingNames.has(oldFirstName);
-    // When the declared first-page note does not exist yet, create exactly
-    // that note (honours the placeholder link from "New Slides Deck").
-    const newName =
-      oldFirstName && !firstPageExists
-        ? oldFirstName
-        : uniqueName(`${currentName}-next`, input.existingNames);
-    const back = input.overviewBackLink ?? `[[${currentName}]]`;
-    return {
-      newName,
-      newDeckLinks: firstPageExists ? [back, oldFirst] : [back],
-      rewrites: [{ name: currentName, deck: [`[[${newName}]]`] }],
-    };
-  }
-
-  // ── Slide: first link is the overview page ─────────────────────────────
-  const overviewLink = currentLinks[0];
-  if (!overviewLink) return null;
-  const nextLink = currentLinks[1];
+  const { currentName, currentLinks } = input;
+  const nextLink = currentLinks[0];
 
   if (nextLink) {
     const nextName = extractLinkText(nextLink);
@@ -104,30 +70,26 @@ export function planCreateNext(input: CreateNextInput): CreateNextResult | null 
       if (!input.existingNames.has(nextName)) {
         // The declared next note does not exist yet → create exactly that
         // note (fixes the broken-link warning, honours the author's intent).
-        return {
-          newName: nextName,
-          newDeckLinks: [overviewLink],
-          rewrites: [],
-        };
+        return { newName: nextName, newDeckLinks: [], rewrites: [] };
       }
       // A valid next note exists → insert between it and the current note.
       const newName = uniqueName(`${currentName}-next`, input.existingNames);
       return {
         newName,
-        newDeckLinks: [overviewLink, nextLink],
-        rewrites: [{ name: currentName, deck: [overviewLink, `[[${newName}]]`] }],
+        newDeckLinks: [nextLink],
+        rewrites: [{ name: currentName, deck: [`[[${newName}]]`] }],
       };
     }
     // Invalid (path-qualified / self-referencing) next link → drop it and
     // append a new last slide (fall through to the no-next branch).
   }
 
-  // ── Last slide → append a new last slide after it ──────────────────────
+  // ── No (usable) next link → append a new last slide ───────────────────
   const newName = uniqueName(`${currentName}-next`, input.existingNames);
   return {
     newName,
-    newDeckLinks: [overviewLink],
-    rewrites: [{ name: currentName, deck: [overviewLink, `[[${newName}]]`] }],
+    newDeckLinks: [],
+    rewrites: [{ name: currentName, deck: [`[[${newName}]]`] }],
   };
 }
 
