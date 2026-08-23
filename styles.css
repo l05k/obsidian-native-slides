@@ -97,8 +97,6 @@ body.native-slides-pointer-hidden * {
   max-width: 100%;
   height: 100%;
   overflow: hidden;
-  border-left: 1px solid var(--background-modifier-border);
-  border-right: 1px solid var(--background-modifier-border);
 }
 .native-slides-bar-prop-item {
   flex-grow: 0;
@@ -107,9 +105,9 @@ body.native-slides-pointer-hidden * {
   text-overflow: ellipsis;
   white-space: nowrap;
   padding: 0 10px;
-  color: var(--text-normal);
-  font-size: var(--font-ui-smaller, 12px);
-  line-height: 1.4;
+  color: var(--text-muted);
+  font-size: calc(var(--native-slides-tabbar-height, 38px) * 0.42);
+  line-height: 1;
   text-align: center;
   border-right: 1px solid var(--background-modifier-border);
   display: flex;
@@ -173,7 +171,7 @@ body.native-slides-pointer-hidden * {
   padding-left: 14px;
   padding-right: 6px;
   font-size: calc(var(--native-slides-tabbar-height, 38px) * 0.42);
-  color: var(--ns-page-color, var(--text-muted));
+  color: var(--ns-page-color, var(--text-normal));
   font-variant-numeric: tabular-nums;
 }
 
