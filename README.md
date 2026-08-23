@@ -29,7 +29,7 @@
   - **Create Next Slide** command: creates a new slide right after the current one — the file is named `<current>-next` (collision-aware: `-2`, `-3`, …), both `deck` properties are rewired automatically, and the new note opens ready for content. If the current note's second `deck` link points to a missing note, that exact note is created instead (fixing the ⚠ warning); on the overview page it inserts a new first page. Greyed out for notes that cannot take a next slide.
 
 - **Presenting without a blinking caret**: click the slides bar to move focus out of the editor — the caret disappears while you talk; click any slide content to resume editing. The **Toggle Mouse Pointer** command (`Mod+Shift+M`) goes one step further and hides the mouse pointer window-wide (focus parked too); run it again to restore, and leaving Slides mode always restores it.
-- **Bar properties** (settings): pick the frontmatter properties shown as centered columns in the slides bar (comma-separated names, e.g. `university, course, date`); drag the dividers between columns to resize them (widths persist). Empty setting = no columns; missing properties are skipped.
+- **Configurable bar properties**: choose which frontmatter properties appear in the slides bar and in what order. Settings → Bar properties accepts a comma-separated list (e.g. `university, short-title, date`); each value fills an equal-width column, and draggable dividers between columns let you resize them interactively (widths persist across sessions). Empty = no property columns. Missing properties are skipped silently. Column typography matches the page number (both scale with the bar height); columns render muted while the page number stays prominent.
 - **Auto-enter Slides mode** (settings, default off): open deck notes straight into Slides mode; leave off to enter manually.
 - A **settings tab** picks the style template, configures bar properties, and toggles the ◀ ▶ buttons, the page number, and auto-enter.
 - **Broken deck-link warnings**: if a `deck` link points to a note that doesn't exist, the slides bar shows a ⚠ warning chip so authors can spot typos (the chain simply ends or excludes the link).
@@ -133,3 +133,7 @@ The source is split into `src/` modules (`types`, `mode`, `deck-service`, `bar`,
 ## License
 
 Released under the [MIT License](LICENSE). Copyright (c) 2026 Yuanhui Luo.
+
+## Credits
+
+- **Lecture (jyy) style template**: modeled after the slideshow cards of [jyywiki.cn](https://jyywiki.cn) by [Yanyan Jiang](https://jyywiki.cn/). The card geometry (80vw width, soft shadow, thin bottom rule on headings, disc bullets with constant marker-to-text gap, list item spacing) is adapted from Jiang's lecture notes design.
