@@ -4,8 +4,8 @@ deck: []
 
 # Slide 3 · The end
 
-This is the last page — its `deck` has only **one link** (the overview page), so the ▶ button is shown **disabled (light gray)**.
+This is the last page — its `deck` has **no link** (`deck: []`), so the ▶ button is shown **disabled (light gray)**.
 
-**Add a new page?** Run the **Create Next Slide** command (command palette) — a new slide `slide-3-next.md` is created after this one, both `deck` properties are rewired automatically, and the new note opens in edit mode.
+**Add a new page?** Run the **Create Next Slide** command — a new slide `<current>-next.md` is created after this one, the `deck` links are rewired automatically, and the new note opens in edit mode. Run it on a note that is not part of any deck to **start a brand-new deck**.
 
-- Overview ◀ Slide 1 ◀ Slide 2 ◀ Slide 3
+- Slide 1 ▶ Slide 2 ▶ Slide 3

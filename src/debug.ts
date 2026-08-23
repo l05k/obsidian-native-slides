@@ -458,7 +458,7 @@ export async function dumpTypography(plugin: NativeSlidesPlugin): Promise<void> 
   // Edit side: each short note keeps every target element on screen
   const edit: Record<string, unknown> = {};
   for (const name of SAMPLE_NOTE_NAMES) {
-    const f = app.vault.getAbstractFileByPath(`${name}.md`);
+    const f = app.vault.getAbstractFileByPath(`tests/${name}.md`);
     if (!(f instanceof TFile)) continue;
     await leaf.openFile(f, { state: { mode: "source" } });
     await sleep(500);
@@ -468,7 +468,7 @@ export async function dumpTypography(plugin: NativeSlidesPlugin): Promise<void> 
 
   // Reading side: the kitchen-sink note renders everything at once
   let reading: Record<string, unknown> | null = null;
-  const demo = app.vault.getAbstractFileByPath("typography-demo.md");
+  const demo = app.vault.getAbstractFileByPath("tests/typography-demo.md");
   if (demo instanceof TFile) {
     await leaf.openFile(demo, { state: { mode: "preview" } });
     await sleep(800);

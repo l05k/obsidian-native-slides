@@ -4,7 +4,7 @@ deck: []
 
 # Typography Demo (H1)
 
-A normal paragraph with **bold text**, _italic text_, ~~strikethrough~~, `inline code`, an [external link](https://obsidian.md), and an [[overview|internal link]]. This paragraph exists so edit and reading views have plenty of text to compare.
+A normal paragraph with **bold text**, _italic text_, ~~strikethrough~~, `inline code`, an [external link](https://obsidian.md), and an [[welcome|internal link]]. This paragraph exists so edit and reading views have plenty of text to compare.
 
 ## H2 Heading
 
