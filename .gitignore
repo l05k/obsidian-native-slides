@@ -152,6 +152,9 @@ vite.config.ts.timestamp-*
 **/.obsidian/app.json
 **/.obsidian/hotkeys.json
 **/.obsidian/plugins/*/data.json
+# Third-party plugin installs & downloaded themes are per-machine artifacts
+**/.obsidian/plugins/obsidian42-brat/
+**/.obsidian/themes/
 .npm-cache/
 
 # macOS
