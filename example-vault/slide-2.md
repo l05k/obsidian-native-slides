@@ -2,7 +2,16 @@
 deck: ["[[slide-3]]"]
 ---
 
-# Slide 2 · Next-only deck
+# Make it yours
 
-- `deck: ["[[slide-3]]"]` — one link, the **next slide** (last slide: `deck: []`)
-- Style template, bar properties, page number, progress bar and more — tweak them under **Settings → Native Slides**
+Everything is adjustable under **Settings → Native Slides**:
+
+- Look
+  - Style template — six built-in themes
+  - Slides title — any property as the card title
+- Slides bar
+  - Bar properties — frontmatter values as columns
+  - Page number, progress bar, ◀ ▶ buttons
+- Behavior
+  - Auto-enter Slides mode
+  - Escape exits Slides mode

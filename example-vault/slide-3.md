@@ -2,8 +2,8 @@
 deck: []
 ---
 
-# Slide 3 · The end
+# Grow the Deck
 
-▶ is disabled — `deck: []`.
+This is the last page — ▶ stays disabled (`deck: []`).
 
-Run **Create next slide** to append a page.
+Run **Create next slide** to append a page after this one.
