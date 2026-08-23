@@ -22,6 +22,10 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 - **BREAKING — the overview page concept**: no dedicated overview note is required; any note can head a deck. The **New slides deck** command is removed (Create Next Slide covers starting a deck), and the example vault's overview/Base-view setup is replaced by the slides panel.
 
+### Fixed
+
+- **Slides card line overflow**: with Obsidian's _readable line width_ enabled, every editor line was sized for the full-width editor and spilled past the slide card's right border; lines now keep their natural width inside the card.
+
 ## [0.1.1] - 2026-08-19
 
 ### Added
