@@ -1,5 +1,5 @@
 ---
-deck: ["[[jyy-overview]]", "[[jyy-os-def]]"]
+deck: ["[[jyy-os-def]]"]
 title: 舞台已经搭好，去书写你的传奇
 source: https://jyywiki.cn/OS/2026/lect1
 ---

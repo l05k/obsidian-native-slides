@@ -1,5 +1,5 @@
 ---
-deck: ["[[jyy-overview]]"]
+deck: []
 title: 操作系统：定义
 source: https://jyywiki.cn/OS/2026/lect1
 ---

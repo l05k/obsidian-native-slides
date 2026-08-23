@@ -2,28 +2,16 @@
 deck: ["[[welcome]]"]
 ---
 
-# Overview · Deck index
+# Deck index · Page 1
 
-This is the **overview page** of the deck. Its `deck` property has **one link** — that link _is_ the first page (`welcome`).
+This note is the **first page (the head)** of the demo deck. Since v1.0.0 the `deck` property is **next-only**: its single link (`welcome`) is simply the next slide — no overview back-links, no special roles.
 
-Below is an embedded Obsidian **Base** view (core plugin) that filters every note **linking to this page** — i.e. all the slides:
+**Seeing the whole deck:** run the **Show slides panel** command (or click the presentation ribbon icon) — the sidebar panel lists every slide of the deck in chain order and jumps to the one you click.
 
-```base
-filters:
-  and:
-    - file.hasLink("overview")
-views:
-  - type: table
-    name: Deck
-```
+**Convention for the `deck` property** (one property, at most one link):
 
-> If the Base view does not render: enable the core **Bases** plugin
-> (_Settings → Core plugins → Bases_), then reload this note.
+- **Slide:** `deck: ["[[next-slide]]"]` — the next slide in the chain.
+- **Last slide:** `deck: []` — no link at all.
+- **Create Next Slide command:** run "Create next slide" on any slide to insert/append a new page after it (named `<current>-next`, collision-aware); the `deck` links are rewired automatically. Run it on a note that is not part of a deck to **start a brand-new deck**. If a slide's link points to a missing note, that exact note is created instead (fixing the ⚠ warning).
 
-**Convention for the `deck` property** (one property, up to two links):
-
-- **Overview page:** `deck: ["[[first-slide]]"]` — one link = the first page.
-- **Slide page:** `deck: ["[[overview]]", "[[next-slide]]"]` — first link = the overview page, second link = the next slide (omit it on the last slide).
-- **Create Next Slide command:** run "Create Next Slide" on a slide to append/insert a new page after it (named `<current>-next`, collision-aware) — both `deck` properties are rewired automatically. On this overview page it inserts a new **first page**. If a slide's second link points to a missing note, that exact note is created instead (fixing the ⚠ warning).
-
-Page numbers are computed automatically by walking these links, so no `page-number` property is needed. Open `welcome.md` and enter Slides mode (`Cmd/Ctrl+Shift+E`) to flip through the deck.
+Page numbers are computed automatically by walking these links (1-based, head = 1), so no `page-number` property is needed. Open `welcome.md` and enter Slides mode (`Cmd/Ctrl+Shift+E`) to flip through the deck.

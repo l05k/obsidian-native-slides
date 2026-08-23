@@ -16,16 +16,16 @@ describe("extractLinks", () => {
   });
 
   it("accepts a YAML list of strings", () => {
-    expect(extractLinks(["[[overview]]", "[[slide-2]]"])).toEqual(["overview", "slide-2"]);
+    expect(extractLinks(["[[slide-2]]"])).toEqual(["slide-2"]);
   });
 
   it("flattens nested arrays from unquoted [[x]] values", () => {
-    expect(extractLinks([["overview"], ["slide-2"]])).toEqual(["overview", "slide-2"]);
+    expect(extractLinks([["slide-2"]])).toEqual(["slide-2"]);
   });
 
-  it("caps at MAX_DECK_LINKS", () => {
-    expect(extractLinks(["[[a]]", "[[b]]", "[[c]]"])).toHaveLength(MAX_DECK_LINKS);
-    expect(extractLinks(["[[a]]", "[[b]]", "[[c]]"])).toEqual(["a", "b"]);
+  it("caps at MAX_DECK_LINKS (one link in v1.0.0)", () => {
+    expect(MAX_DECK_LINKS).toBe(1);
+    expect(extractLinks(["[[a]]", "[[b]]", "[[c]]"])).toEqual(["a"]);
   });
 
   it("returns [] for null/undefined/empty", () => {
@@ -39,18 +39,15 @@ describe("extractLinks", () => {
   });
 
   it("honors a custom max", () => {
-    expect(extractLinks(["[[a]]", "[[b]]"], 1)).toEqual(["a"]);
+    expect(extractLinks(["[[a]]", "[[b]]"], 2)).toEqual(["a", "b"]);
   });
 });
 
 // ── extractRawLinks ───────────────────────────────────────────────────────
 
 describe("extractRawLinks", () => {
-  it("returns the raw link strings exactly as written", () => {
-    expect(extractRawLinks(["[[overview]]", "[[slide-2|alias]]"])).toEqual([
-      "[[overview]]",
-      "[[slide-2|alias]]",
-    ]);
+  it("returns the raw link string exactly as written", () => {
+    expect(extractRawLinks(["[[slide-2|alias]]"])).toEqual(["[[slide-2|alias]]"]);
   });
 
   it("accepts a single string", () => {
@@ -58,7 +55,7 @@ describe("extractRawLinks", () => {
   });
 
   it("flattens nested arrays from unquoted [[x]] values", () => {
-    expect(extractRawLinks([["overview"], ["slide-2"]])).toEqual(["overview", "slide-2"]);
+    expect(extractRawLinks([["slide-2"]])).toEqual(["slide-2"]);
   });
 
   it("trims whitespace and drops empty strings", () => {
@@ -70,7 +67,7 @@ describe("extractRawLinks", () => {
   });
 
   it("caps at MAX_DECK_LINKS", () => {
-    expect(extractRawLinks(["[[a]]", "[[b]]", "[[c]]"])).toEqual(["[[a]]", "[[b]]"]);
+    expect(extractRawLinks(["[[a]]", "[[b]]", "[[c]]"])).toEqual(["[[a]]"]);
   });
 
   it("returns [] for null/undefined/empty", () => {
@@ -130,75 +127,90 @@ describe("formatValue", () => {
   });
 });
 
-// ── computeDeck ───────────────────────────────────────────────────────────
+// ── computeDeck (v1.0.0 next-only semantics) ──────────────────────────────
 
-/** Build a link graph: path → its resolved deck-link target paths */
+/** Forward graph: path → its resolved next-slide path (at most one) */
 function graphOf(defs: Record<string, string[]>): (path: string) => string[] {
   return (path) => defs[path] ?? [];
 }
 
-/** The demo deck: overview → welcome → slide-2 → slide-3 */
+/** Backward lookup derived from the forward graph (the reverse index) */
+function prevOfFactory(defs: Record<string, string[]>): (path: string) => string | undefined {
+  return (path) => Object.keys(defs).find((k) => defs[k]?.[0] === path);
+}
+
+/** The demo deck: welcome → slide-2 → slide-3 (next-only) */
 const demo = {
-  overview: ["welcome"],
-  welcome: ["overview", "slide-2"],
-  "slide-2": ["overview", "slide-3"],
-  "slide-3": ["overview"],
+  welcome: ["slide-2"],
+  "slide-2": ["slide-3"],
+  "slide-3": [],
 };
 
 describe("computeDeck", () => {
-  it("builds the full chain and index for a slide", () => {
-    const deck = computeDeck("slide-2", graphOf(demo))!;
-    expect(deck.chain).toEqual(["overview", "welcome", "slide-2", "slide-3"]);
+  it("builds the full chain and index for the head slide", () => {
+    const deck = computeDeck("welcome", graphOf(demo), prevOfFactory(demo))!;
+    expect(deck.chain).toEqual(["welcome", "slide-2", "slide-3"]);
+    expect(deck.index).toBe(0);
+  });
+
+  it("finds the chain head from a middle slide via backward walking", () => {
+    const deck = computeDeck("slide-2", graphOf(demo), prevOfFactory(demo))!;
+    expect(deck.chain).toEqual(["welcome", "slide-2", "slide-3"]);
+    expect(deck.index).toBe(1);
+  });
+
+  it("finds the chain head from the last slide (no own deck link)", () => {
+    const deck = computeDeck("slide-3", graphOf(demo), prevOfFactory(demo))!;
+    expect(deck.chain).toEqual(["welcome", "slide-2", "slide-3"]);
     expect(deck.index).toBe(2);
   });
 
-  it("returns index 0 for the overview page", () => {
-    const deck = computeDeck("overview", graphOf(demo))!;
-    expect(deck.chain[0]).toBe("overview");
+  it("treats a lone note as a one-page deck", () => {
+    const deck = computeDeck("solo", graphOf({ solo: [] }), prevOfFactory({ solo: [] }))!;
+    expect(deck.chain).toEqual(["solo"]);
     expect(deck.index).toBe(0);
   });
 
-  it("detects the last slide via its single overview link", () => {
-    const deck = computeDeck("slide-3", graphOf(demo))!;
-    expect(deck.index).toBe(3);
-    expect(deck.chain).toHaveLength(4);
+  it("handles a two-note deck with no role ambiguity (fixes #66)", () => {
+    const g = { a: ["b"], b: [] };
+    const fromA = computeDeck("a", graphOf(g), prevOfFactory(g))!;
+    expect(fromA.chain).toEqual(["a", "b"]);
+    expect(fromA.index).toBe(0);
+    const fromB = computeDeck("b", graphOf(g), prevOfFactory(g))!;
+    expect(fromB.chain).toEqual(["a", "b"]);
+    expect(fromB.index).toBe(1);
   });
 
-  it("disambiguates a note whose single link points back to it (overview)", () => {
-    const g = { o: ["w"], w: ["o"] };
-    const deck = computeDeck("o", graphOf(g))!;
-    expect(deck.chain).toEqual(["o", "w"]);
+  it("resolves a lone node as a one-page chain (membership is gated by the adapter)", () => {
+    const deck = computeDeck("untracked", graphOf(demo), prevOfFactory(demo))!;
+    expect(deck.chain).toEqual(["untracked"]);
     expect(deck.index).toBe(0);
   });
 
-  it("returns null for a note with no deck property", () => {
-    expect(computeDeck("untracked", graphOf(demo))).toBeNull();
+  it("ends the chain at a slide with no next link (broken links are stripped by the adapter)", () => {
+    const g = { a: ["b"], b: [] };
+    const deck = computeDeck("a", graphOf(g), prevOfFactory(g))!;
+    expect(deck.chain).toEqual(["a", "b"]);
   });
 
-  it("ends the chain when a slide has no next link", () => {
-    const g = { o: ["a"], a: ["o", "b"], b: ["o"] };
-    expect(computeDeck("b", graphOf(g))!.chain).toEqual(["o", "a", "b"]);
+  it("guards against cycles", () => {
+    const g = { a: ["b"], b: ["a"] };
+    const deck = computeDeck("a", graphOf(g), prevOfFactory(g))!;
+    // backward walk stops on revisit (head = b); forward walk stops on revisit
+    expect(deck.chain).toEqual(["b", "a"]);
+    expect(deck.index).toBe(1);
   });
 
-  it("guards against cycles (second link points back to the overview)", () => {
-    const g = { o: ["a"], a: ["o", "o"] };
-    const deck = computeDeck("a", graphOf(g))!;
-    expect(deck.chain).toEqual(["o", "a"]);
-  });
-
-  it("returns null when the note is not in its own chain", () => {
-    // "orphan" links into the deck but the chain never reaches it
+  it("resolves a forked predecessor deterministically (malformed input)", () => {
+    // orphan also points at slide-2 (two predecessors — malformed); the
+    // backward walk from orphan finds no predecessor, so orphan heads its
+    // own chain that merges into slide-2
     const g = {
-      o: ["welcome"],
-      welcome: ["o", "slide-2"],
-      "slide-2": ["o"],
-      orphan: ["o", "slide-2"],
+      welcome: ["slide-2"],
+      "slide-2": [],
+      orphan: ["slide-2"],
     };
-    expect(computeDeck("orphan", graphOf(g))).toBeNull();
-  });
-
-  it("handles a broken overview link as end-of-chain, not a crash", () => {
-    const g = { o: ["missing"], missing: [] };
-    expect(computeDeck("o", graphOf(g))).toBeNull();
+    const deck = computeDeck("orphan", graphOf(g), prevOfFactory(g))!;
+    expect(deck.chain).toEqual(["orphan", "slide-2"]);
   });
 });

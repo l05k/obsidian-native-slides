@@ -8,6 +8,20 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 ## [Unreleased]
 
+### Added
+
+- **Slides panel**: a new sidebar view (command **Show slides panel**, or the presentation ribbon icon) that lists every slide of the active note's deck in chain order, numbered; clicking an entry opens that slide. It follows the active note and stays in sync with deck edits — taking over the aggregation role the overview page used to play.
+- **Create Next Slide starts new decks**: running the command on a note that is not part of any deck turns it into the head of a brand-new deck and creates the next slide after it.
+
+### Changed
+
+- **BREAKING — next-only `deck` semantics (issue #67)**: a slide's `deck` property now holds **at most one link — the next slide** (last slide: `deck: []`). The overview back-link is gone; chains are resolved by walking backward via a reverse `deck`-link index. Old two-link decks (`[overview, next]`) are **not** understood — edit existing slides so `deck` holds only the next-slide link (old overview notes work unchanged as the chain's first page). This structurally eliminates the two-node deck ambiguity (#66).
+- **BREAKING — page numbers are 1-based over the whole chain**: the head slide is page 1; `N / Total` counts every slide (no overview offset).
+
+### Removed
+
+- **BREAKING — the overview page concept**: no dedicated overview note is required; any note can head a deck. The **New slides deck** command is removed (Create Next Slide covers starting a deck), and the example vault's overview/Base-view setup is replaced by the slides panel.
+
 ## [0.1.1] - 2026-08-19
 
 ### Added

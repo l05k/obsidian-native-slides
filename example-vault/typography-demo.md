@@ -1,5 +1,5 @@
 ---
-deck: ["[[overview]]"]
+deck: []
 ---
 
 # Typography Demo (H1)

@@ -1,5 +1,5 @@
 ---
-deck: ["[[overview]]", "[[slide-2]]"]
+deck: ["[[slide-2]]"]
 ---
 
 # Slide 1 · Welcome to PPT reading

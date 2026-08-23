@@ -3,21 +3,29 @@ import { planCreateNext } from "../src/createNext";
 
 const noNames = new Set<string>();
 
-describe("planCreateNext", () => {
-  // ── last slide → append ────────────────────────────────────────────────
+describe("planCreateNext (v1.0.0 next-only semantics)", () => {
+  // ── no next link → append / start a new deck ───────────────────────────
 
-  it("appends a new last slide after a last slide", () => {
+  it("appends a new last slide after a last slide (empty deck list)", () => {
     const plan = planCreateNext({
       currentName: "slide-3",
-      currentLinks: ["[[overview]]"],
-      isOverview: false,
+      currentLinks: [],
       existingNames: noNames,
     })!;
     expect(plan.newName).toBe("slide-3-next");
-    expect(plan.newDeckLinks).toEqual(["[[overview]]"]);
-    expect(plan.rewrites).toEqual([
-      { name: "slide-3", deck: ["[[overview]]", "[[slide-3-next]]"] },
-    ]);
+    expect(plan.newDeckLinks).toEqual([]);
+    expect(plan.rewrites).toEqual([{ name: "slide-3", deck: ["[[slide-3-next]]"] }]);
+  });
+
+  it("starts a brand-new deck from a plain note (no deck property)", () => {
+    const plan = planCreateNext({
+      currentName: "my-note",
+      currentLinks: [],
+      existingNames: noNames,
+    })!;
+    expect(plan.newName).toBe("my-note-next");
+    expect(plan.newDeckLinks).toEqual([]);
+    expect(plan.rewrites).toEqual([{ name: "my-note", deck: ["[[my-note-next]]"] }]);
   });
 
   // ── valid next → insert between ────────────────────────────────────────
@@ -25,26 +33,22 @@ describe("planCreateNext", () => {
   it("inserts between the current slide and its valid next", () => {
     const plan = planCreateNext({
       currentName: "slide-2",
-      currentLinks: ["[[overview]]", "[[slide-3]]"],
-      isOverview: false,
+      currentLinks: ["[[slide-3]]"],
       existingNames: new Set(["slide-3"]),
     })!;
     expect(plan.newName).toBe("slide-2-next");
-    expect(plan.newDeckLinks).toEqual(["[[overview]]", "[[slide-3]]"]);
-    expect(plan.rewrites).toEqual([
-      { name: "slide-2", deck: ["[[overview]]", "[[slide-2-next]]"] },
-    ]);
+    expect(plan.newDeckLinks).toEqual(["[[slide-3]]"]);
+    expect(plan.rewrites).toEqual([{ name: "slide-2", deck: ["[[slide-2-next]]"] }]);
   });
 
-  it("preserves the original link texts (alias forms) in the new note", () => {
+  it("preserves the original link text (alias forms) in the new note", () => {
     const plan = planCreateNext({
       currentName: "slide-2",
-      currentLinks: ["[[overview|Home]]", "[[slide-3]]"],
-      isOverview: false,
+      currentLinks: ["[[slide-3|Next]]"],
       existingNames: new Set(["slide-3"]),
     })!;
-    expect(plan.newDeckLinks).toEqual(["[[overview|Home]]", "[[slide-3]]"]);
-    expect(plan.rewrites[0].deck).toEqual(["[[overview|Home]]", "[[slide-2-next]]"]);
+    expect(plan.newDeckLinks).toEqual(["[[slide-3|Next]]"]);
+    expect(plan.rewrites[0].deck).toEqual(["[[slide-2-next]]"]);
   });
 
   // ── broken next → create the missing note ──────────────────────────────
@@ -52,96 +56,53 @@ describe("planCreateNext", () => {
   it("creates the missing declared next note (fixes the broken link)", () => {
     const plan = planCreateNext({
       currentName: "welcome",
-      currentLinks: ["[[overview]]", "[[missing-slide]]"],
-      isOverview: false,
+      currentLinks: ["[[missing-slide]]"],
       existingNames: noNames,
     })!;
     expect(plan.newName).toBe("missing-slide");
-    expect(plan.newDeckLinks).toEqual(["[[overview]]"]);
+    expect(plan.newDeckLinks).toEqual([]);
     expect(plan.rewrites).toEqual([]);
   });
 
   it("creates the missing note even when the link carries an alias", () => {
     const plan = planCreateNext({
       currentName: "welcome",
-      currentLinks: ["[[overview]]", "[[missing-slide|Draft]]"],
-      isOverview: false,
+      currentLinks: ["[[missing-slide|Draft]]"],
       existingNames: noNames,
     })!;
     expect(plan.newName).toBe("missing-slide");
-    expect(plan.newDeckLinks).toEqual(["[[overview]]"]);
+    expect(plan.newDeckLinks).toEqual([]);
   });
 
   it("treats a path-qualified broken link as invalid → appends a new last slide", () => {
     const plan = planCreateNext({
       currentName: "welcome",
-      currentLinks: ["[[overview]]", "[[sub/missing]]"],
-      isOverview: false,
+      currentLinks: ["[[sub/missing]]"],
       existingNames: noNames,
     })!;
     expect(plan.newName).toBe("welcome-next");
-    expect(plan.newDeckLinks).toEqual(["[[overview]]"]);
-    expect(plan.rewrites[0].deck).toEqual(["[[overview]]", "[[welcome-next]]"]);
+    expect(plan.newDeckLinks).toEqual([]);
+    expect(plan.rewrites[0].deck).toEqual(["[[welcome-next]]"]);
   });
 
   it("treats a self-referencing broken link as invalid → appends a new last slide", () => {
     const plan = planCreateNext({
       currentName: "welcome",
-      currentLinks: ["[[overview]]", "[[welcome]]"],
-      isOverview: false,
+      currentLinks: ["[[welcome]]"],
       existingNames: noNames,
     })!;
     expect(plan.newName).toBe("welcome-next");
-    expect(plan.newDeckLinks).toEqual(["[[overview]]"]);
+    expect(plan.newDeckLinks).toEqual([]);
   });
 
   it("inserts normally when the declared next note already exists", () => {
     const plan = planCreateNext({
       currentName: "welcome",
-      currentLinks: ["[[overview]]", "[[slide-2]]"],
-      isOverview: false,
+      currentLinks: ["[[slide-2]]"],
       existingNames: new Set(["slide-2"]),
     })!;
     expect(plan.newName).toBe("welcome-next");
-    expect(plan.newDeckLinks).toEqual(["[[overview]]", "[[slide-2]]"]);
-  });
-
-  // ── overview → insert a new first page ─────────────────────────────────
-
-  it("creates the missing first-page note when the overview link points to a non-existent note", () => {
-    const plan = planCreateNext({
-      currentName: "overview",
-      currentLinks: ["[[welcome]]"],
-      isOverview: true,
-      overviewBackLink: "[[overview]]",
-      existingNames: noNames,
-    })!;
-    expect(plan.newName).toBe("welcome");
-    expect(plan.newDeckLinks).toEqual(["[[overview]]"]);
-    expect(plan.rewrites).toEqual([{ name: "overview", deck: ["[[welcome]]"] }]);
-  });
-
-  it("inserts a new first page when the old first page already exists", () => {
-    const plan = planCreateNext({
-      currentName: "overview",
-      currentLinks: ["[[welcome]]"],
-      isOverview: true,
-      overviewBackLink: "[[overview]]",
-      existingNames: new Set(["welcome"]),
-    })!;
-    expect(plan.newName).toBe("overview-next");
-    expect(plan.newDeckLinks).toEqual(["[[overview]]", "[[welcome]]"]);
-    expect(plan.rewrites).toEqual([{ name: "overview", deck: ["[[overview-next]]"] }]);
-  });
-
-  it("falls back to a [[name]] back link when the old first page provides none", () => {
-    const plan = planCreateNext({
-      currentName: "overview",
-      currentLinks: ["[[welcome]]"],
-      isOverview: true,
-      existingNames: new Set(["welcome"]),
-    })!;
-    expect(plan.newDeckLinks).toEqual(["[[overview]]", "[[welcome]]"]);
+    expect(plan.newDeckLinks).toEqual(["[[slide-2]]"]);
   });
 
   // ── naming collisions ──────────────────────────────────────────────────
@@ -149,34 +110,9 @@ describe("planCreateNext", () => {
   it("dedups the new name against existing note basenames", () => {
     const plan = planCreateNext({
       currentName: "welcome",
-      currentLinks: ["[[overview]]"],
-      isOverview: false,
+      currentLinks: [],
       existingNames: new Set(["welcome-next", "welcome-next-2"]),
     })!;
     expect(plan.newName).toBe("welcome-next-3");
-  });
-
-  // ── invalid inputs ─────────────────────────────────────────────────────
-
-  it("returns null when the note has no deck links", () => {
-    expect(
-      planCreateNext({
-        currentName: "x",
-        currentLinks: [],
-        isOverview: false,
-        existingNames: noNames,
-      }),
-    ).toBeNull();
-  });
-
-  it("returns null for an overview with no first-page link", () => {
-    expect(
-      planCreateNext({
-        currentName: "o",
-        currentLinks: [],
-        isOverview: true,
-        existingNames: noNames,
-      }),
-    ).toBeNull();
   });
 });

@@ -1,7 +1,8 @@
 /**
  * native-slides — a "Slides mode" for Obsidian deck notes
  *
- * One reserved frontmatter key, `deck` (up to two markdown links), drives
+ * One reserved frontmatter key, `deck` (a single markdown link to the next
+ * slide — next-only semantics, no overview page since v1.0.0), drives
  * prev/next navigation and auto-computed page numbers. A deck note can be
  * entered into **Slides mode** — an immersive, editable (Live Preview) view
  * with a slides bar showing properties, navigation and the page number.
@@ -16,6 +17,7 @@
  *   - src/mode.ts         view mode / frontmatter helpers (pure, `App`-based)
  *   - src/deck-service.ts deck chain resolution + "create next slide" glue
  *   - src/bar.ts          bar DOM helpers (create / buttons / tab-bar measure)
+ *   - src/panel.ts        slides sidebar panel (deck slide list)
  *   - src/commands.ts     command registration (dev-gated debug command)
  *   - src/settings.ts     settings tab
  *   - src/debug.ts        typography measurement tooling (dev builds only)
@@ -28,6 +30,7 @@ import { registerCommands } from "./src/commands";
 import { DeckService } from "./src/deck-service";
 import { formatValue } from "./src/deck";
 import { activeFrontmatter, currentMode, frontmatterOf, isLivePreview } from "./src/mode";
+import { SlidesPanelView, SLIDES_PANEL_VIEW } from "./src/panel";
 import { NativeSlidesSettingTab } from "./src/settings";
 import { DECK_KEY, DEFAULT_SETTINGS, SLIDES_THEMES, type NativeSlidesSettings } from "./src/types";
 import { clearChildren } from "./src/utils";
@@ -90,6 +93,12 @@ export default class NativeSlidesPlugin extends Plugin {
 
     // ── 3. Commands ─────────────────────────────────────────────────────
     registerCommands(this);
+
+    // ── 3b. Slides sidebar panel (deck overview, replaces the old overview page) ──
+    this.registerView(SLIDES_PANEL_VIEW, (leaf) => new SlidesPanelView(this, leaf));
+    this.addRibbonIcon("presentation", "Show slides panel", () => {
+      void this.activateSlidesPanel();
+    });
 
     // ── 4. Pin the Slides editor to one screen ───────────────────────────
     // CSS `overflow: hidden` blocks the wheel, but native drag-select
@@ -266,6 +275,19 @@ export default class NativeSlidesPlugin extends Plugin {
   toggleSlides(): void {
     if (this.slidesMode) this.exitSlides();
     else void this.enterSlides();
+  }
+
+  /** Reveal the slides sidebar panel, creating it in the right sidebar if needed */
+  async activateSlidesPanel(): Promise<void> {
+    const existing = this.app.workspace.getLeavesOfType(SLIDES_PANEL_VIEW);
+    if (existing.length > 0) {
+      this.app.workspace.revealLeaf(existing[0]);
+      return;
+    }
+    const leaf = this.app.workspace.getRightLeaf(false);
+    if (!leaf) return;
+    await leaf.setViewState({ type: SLIDES_PANEL_VIEW, active: true });
+    this.app.workspace.revealLeaf(leaf);
   }
 
   /** Auto-enter Slides mode once per opened deck note when the setting is on */
@@ -476,11 +498,13 @@ export default class NativeSlidesPlugin extends Plugin {
     if (this.settings.pageNumberStyle !== "none" && deck) {
       const page = document.createElement("span");
       page.className = "native-slides-page";
-      // chain[0] is the overview (page 0); content slides start at index 1.
-      // Total = content pages only (excludes overview).
-      const total = deck.chain.length - 1;
+      // v1.0.0 next-only semantics: chain[0] is the head slide = page 1;
+      // total is the full chain length.
+      const total = deck.chain.length;
       page.textContent =
-        this.settings.pageNumberStyle === "fraction" ? `${deck.index} / ${total}` : `${deck.index}`;
+        this.settings.pageNumberStyle === "fraction"
+          ? `${deck.index + 1} / ${total}`
+          : `${deck.index + 1}`;
       this.bar.appendChild(page);
     }
 
