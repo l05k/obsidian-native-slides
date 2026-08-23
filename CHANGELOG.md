@@ -17,6 +17,7 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 - **BREAKING — next-only `deck` semantics (issue #67)**: a slide's `deck` property now holds **at most one link — the next slide** (last slide: `deck: []`). The overview back-link is gone; chains are resolved by walking backward via a reverse `deck`-link index. Old two-link decks (`[overview, next]`) are **not** understood — edit existing slides so `deck` holds only the next-slide link (old overview notes work unchanged as the chain's first page). This structurally eliminates the two-node deck ambiguity (#66).
 - **BREAKING — page numbers are 1-based over the whole chain**: the head slide is page 1; `N / Total` counts every slide (no overview offset).
+- **Example vault slimmed**: one three-page demo deck (`welcome` → `slide-2` → `slide-3`, page 1 carries `university` / `course` / `date` for _Bar properties_) plus one standalone jyywiki lecture slide; the old overview page, the bar-properties / broken-link / folded-properties demos and the duplicate jyy slides are gone, and the typography kitchen sink moved to `example-vault/tests/`.
 
 ### Removed
 
