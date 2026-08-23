@@ -4,6 +4,6 @@
   "version": "1.0.0",
   "minAppVersion": "1.7.0",
   "description": "Slides mode for deck notes: an immersive, editable card view with a bottom bar for properties and PPT-style navigation — one `deck` property (next-only link) drives prev/next, auto-computed page numbers and a slides sidebar panel.",
-  "author": "research-skills",
+  "author": "l05k",
   "isDesktopOnly": true
 }
