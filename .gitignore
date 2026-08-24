@@ -152,6 +152,10 @@ vite.config.ts.timestamp-*
 **/.obsidian/app.json
 **/.obsidian/hotkeys.json
 **/.obsidian/plugins/*/data.json
+# The example vault ships its look & demo settings so a fresh clone
+# opens exactly as documented (font size 23, plugin demo configuration)
+!example-vault/.obsidian/appearance.json
+!example-vault/.obsidian/plugins/native-slides/data.json
 # Third-party plugin installs & downloaded themes are per-machine artifacts
 **/.obsidian/plugins/obsidian42-brat/
 **/.obsidian/themes/
