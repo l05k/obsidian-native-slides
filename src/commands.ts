@@ -49,11 +49,26 @@ export function registerCommands(plugin: NativeSlidesPlugin): void {
   plugin.addCommand({
     id: "ns-create-next",
     name: "Create next slide",
-    // Greyed out in the palette unless the active note can take a next slide
+    // Greyed out unless the active note is part of a deck — plain notes
+    // start decks with "Create new slide" instead.
     checkCallback: (checking) => {
       const file = plugin.app.workspace.getActiveFile();
-      if (!file) return false;
+      if (!file || !plugin.deckService.isMember(file)) return false;
       const plan = plugin.deckService.planCreateNext(file);
+      if (!plan) return false;
+      if (!checking) void plugin.deckService.executeCreateNext(file, plan);
+      return true;
+    },
+  });
+  // Create New Slide — a brand-new deck's first page (non-deck notes only)
+  plugin.addCommand({
+    id: "ns-create-new",
+    name: "Create new slide",
+    // Greyed out when the active note already belongs to a deck
+    checkCallback: (checking) => {
+      const file = plugin.app.workspace.getActiveFile();
+      if (!file || plugin.deckService.isMember(file)) return false;
+      const plan = plugin.deckService.planCreateNew();
       if (!plan) return false;
       if (!checking) void plugin.deckService.executeCreateNext(file, plan);
       return true;

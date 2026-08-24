@@ -1,5 +1,6 @@
 /**
- * createNext.ts — Pure "Create Next Slide" planning core for native-slides.
+ * createNext.ts — Pure "Create Next Slide" / "Create New Slide" planning
+ * core for native-slides.
  *
  * Everything in this module is free of Obsidian runtime dependencies so it
  * can be unit tested directly (see test/createNext.test.ts). main.ts adapts
@@ -7,12 +8,14 @@
  * the resulting plan with vault.create() + fileManager.processFrontMatter().
  *
  * v1.0.0 convention — next-only, no overview page: a slide's `deck`
- * property holds at most ONE link (its next slide). The plan decides, for
- * the current note:
+ * property holds at most ONE link (its next slide). planCreateNext decides,
+ * for the current deck note:
  *   - the name of the new slide file (collision-aware),
  *   - the raw `deck` link texts of the new note,
  *   - the rewrites needed on existing notes (in practice always the
- *     current note itself).
+ *     current note).
+ * planCreateNew plans a brand-new deck's first page (a fresh note that is
+ * not part of any deck yet — `deck: []`, no rewrites anywhere).
  */
 
 import { extractLinkText } from "./deck";
@@ -90,6 +93,21 @@ export function planCreateNext(input: CreateNextInput): CreateNextResult | null 
     newName,
     newDeckLinks: [],
     rewrites: [{ name: currentName, deck: [`[[${newName}]]`] }],
+  };
+}
+
+/**
+ * Plan the creation of a brand-new deck's first page.
+ *
+ * The new note starts as a single-slide deck (`deck: []`) and nothing else
+ * is touched — the note it was launched from stays as-is. Later pages are
+ * added with Create Next Slide from inside the deck.
+ */
+export function planCreateNew(input: { existingNames: Set<string> }): CreateNextResult {
+  return {
+    newName: uniqueName("untitled-slides", input.existingNames),
+    newDeckLinks: [],
+    rewrites: [],
   };
 }
 

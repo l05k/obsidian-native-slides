@@ -1,5 +1,9 @@
 import { App, Notice, TFile } from "obsidian";
-import { planCreateNext as plan, type CreateNextResult } from "./createNext";
+import {
+  planCreateNew as planNew,
+  planCreateNext as plan,
+  type CreateNextResult,
+} from "./createNext";
 import { computeDeck, extractLinks, extractRawLinks, type DeckInfo } from "./deck";
 import { frontmatterOf } from "./mode";
 import { DECK_KEY } from "./types";
@@ -9,14 +13,18 @@ export class DeckService {
   constructor(private app: App) {}
 
   /**
-   * Resolve the current note's position inside its deck. A note qualifies
-   * when it holds a `deck` property (even empty — a fresh single slide) or
-   * when some other slide declares it as its next slide.
+   * Whether the note belongs to a deck: it holds a `deck` property (even
+   * empty — a fresh single slide) or some other slide declares it as its
+   * next slide.
    */
-  compute(file: TFile): DeckInfo | null {
+  isMember(file: TFile): boolean {
     const fm = frontmatterOf(this.app, file);
-    const member = (fm !== null && DECK_KEY in fm) || this.prevOf(file.path) !== undefined;
-    if (!member) return null;
+    return (fm !== null && DECK_KEY in fm) || this.prevOf(file.path) !== undefined;
+  }
+
+  /** Resolve the current note's position inside its deck (null when not a member) */
+  compute(file: TFile): DeckInfo | null {
+    if (!this.isMember(file)) return null;
     return computeDeck(
       file.path,
       (path) => this.linkPaths(path),
@@ -58,14 +66,24 @@ export class DeckService {
 
   /**
    * Plan a "Create Next Slide" run for the active note. Deck slides
-   * insert/append after the current note; a note without a `deck` link
-   * starts a brand-new deck (it becomes the head slide).
+   * insert/append after the current note. (Plain notes are routed to
+   * planCreateNew by the command — this core still handles them as
+   * "no usable next link → append".)
    */
   planCreateNext(file: TFile): CreateNextResult | null {
     const fm = frontmatterOf(this.app, file);
     const raw = fm ? extractRawLinks(fm[DECK_KEY]) : [];
     const existingNames = new Set(this.app.vault.getMarkdownFiles().map((f) => f.basename));
     return plan({ currentName: file.basename, currentLinks: raw, existingNames });
+  }
+
+  /**
+   * Plan a "Create New Slide" run: a brand-new deck's first page in the
+   * same folder as the active note, which itself stays untouched.
+   */
+  planCreateNew(): CreateNextResult {
+    const existingNames = new Set(this.app.vault.getMarkdownFiles().map((f) => f.basename));
+    return planNew({ existingNames });
   }
 
   /** Apply a plan: create the note, rewire `deck` properties, open it */
