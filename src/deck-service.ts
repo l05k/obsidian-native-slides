@@ -5,8 +5,17 @@ import {
   type CreateNextResult,
 } from "./createNext";
 import { computeDeck, extractLinks, extractRawLinks, type DeckInfo } from "./deck";
+import { pickLandingPath, planDeleteSlides } from "./deleteSlides";
 import { frontmatterOf } from "./mode";
 import { DECK_KEY } from "./types";
+
+/** Result of a Delete slides run */
+export interface DeleteSlidesResult {
+  /** Paths actually moved to the trash */
+  trashed: string[];
+  /** Where the editor should land afterwards (null = keep current note) */
+  landingPath: string | null;
+}
 
 /** Deck chain resolution + "Create Next Slide" glue (wraps the pure core). */
 export class DeckService {
@@ -86,9 +95,9 @@ export class DeckService {
     return planNew({ existingNames });
   }
 
-  /** Apply a Create Next Slide plan: the slide joins its deck's folder */
-  async executeCreateNext(file: TFile, plan: CreateNextResult): Promise<void> {
-    await this.applyPlan(file, plan, dirPrefix(file.parent?.path));
+  /** Apply a Create Next Slide plan; open=false keeps the current note in the editor */
+  async executeCreateNext(file: TFile, plan: CreateNextResult, open = true): Promise<void> {
+    await this.applyPlan(file, plan, dirPrefix(file.parent?.path), open);
   }
 
   /**
@@ -106,8 +115,13 @@ export class DeckService {
     );
   }
 
-  /** Apply a plan: create the note, rewire `deck` properties, open it */
-  private async applyPlan(file: TFile | null, plan: CreateNextResult, dir: string): Promise<void> {
+  /** Apply a plan: create the note, rewire `deck` properties, optionally open it */
+  private async applyPlan(
+    file: TFile | null,
+    plan: CreateNextResult,
+    dir: string,
+    open = true,
+  ): Promise<void> {
     const newPath = `${dir}${plan.newName}.md`;
     const frontmatter = plan.newDeckLinks.map((link) => JSON.stringify(link)).join(", ");
     const content = `---\ndeck: [${frontmatter}]\n---\n`;
@@ -128,9 +142,49 @@ export class DeckService {
       });
     }
 
+    if (!open) return;
+
     // Open the new note in the current pane, edit mode (Live Preview)
     const leaf = this.app.workspace.getLeaf(false);
     await leaf.openFile(newFile, { state: { mode: "source" } });
+  }
+
+  /**
+   * Delete slides out of an ordered deck chain: splice the chain around
+   * every deleted run (the predecessor's `deck` takes over the run's first
+   * survivor), then move each deleted note to the trash. `focusPath` is the
+   * note the editor currently shows — when it is among the deleted, the
+   * result names the nearest surviving neighbour to open instead.
+   */
+  async executeDeleteSlides(
+    chain: string[],
+    deletePaths: ReadonlySet<string>,
+    focusPath: string | null,
+  ): Promise<DeleteSlidesResult> {
+    const rewrites = planDeleteSlides(chain, deletePaths);
+
+    for (const rewrite of rewrites) {
+      const f = this.app.vault.getAbstractFileByPath(rewrite.path);
+      if (!(f instanceof TFile)) continue;
+      const next = rewrite.nextPath ? this.app.vault.getAbstractFileByPath(rewrite.nextPath) : null;
+      await this.app.fileManager.processFrontMatter(f, (fm) => {
+        fm[DECK_KEY] = next instanceof TFile ? [`[[${next.basename}]]`] : [];
+      });
+    }
+
+    const trashed: string[] = [];
+    for (const path of deletePaths) {
+      const f = this.app.vault.getAbstractFileByPath(path);
+      if (!(f instanceof TFile)) continue;
+      try {
+        await this.app.vault.trash(f, true);
+        trashed.push(path);
+      } catch (error) {
+        new Notice(`Native Slides: could not delete "${f.basename}" (${String(error)})`);
+      }
+    }
+
+    return { trashed, landingPath: pickLandingPath(chain, deletePaths, focusPath) };
   }
 }
 
