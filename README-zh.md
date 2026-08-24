@@ -7,6 +7,8 @@
 
 **设计原则** —— 零侵入（对笔记内容零改动、仅保留 `deck` 一个属性）、原生编辑（Slides 模式外一切保持默认）、next 链贯穿（单链接驱动页序）、界面可调（外观与 slides 栏皆设置项）；此外不持久化配置以外的内容、实现高效且代码规范优美。详见 [docs/design-zh.md](docs/design-zh.md)。
 
+![Welcome 页在 Slides 模式下的演示](docs/welcome.png)
+
 ## 功能特性
 
 - **Slides 模式**（仅 deck 笔记）：沉浸式、可编辑的卡片视图——"一屏一卡"。用 **Toggle Slides Mode** 命令（默认快捷键 `Mod+Shift+E`）进入；丝带、左右侧边栏与 tab 栏隐藏，幻灯片内容位于**居中卡片**（宽 80vw，主题自适应）内，外观可从 **六套内置样式模板**中选择——_Lecture (jyy)_（默认，参照 [jyywiki.cn](https://jyywiki.cn) 讲义的幻灯片卡片制作）、_虚线边框_、_纸片卡片_、_极简_、_强调边_、_磨砂玻璃_——每套模板同时重绘卡片与 slides 栏；默认隐藏文件名，可通过 **Slides title** 设置选择显示任意 frontmatter 属性（或 `filename` 显示文件名）作为卡片标题，编辑器**裁切到单屏**（不滚动——超出折叠的内容被裁掉），slides 栏显示已配置的 bar properties、◀ ▶ 翻页与自动页号。退出时还原进入前的视图（Source / Live Preview / Reading）。

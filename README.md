@@ -8,6 +8,8 @@
 
 **Design principles** — zero intrusion, native editing, a next-link chain, and an adjustable surface; no persistence beyond configuration, and efficient, idiomatic code. See [docs/design.md](docs/design.md).
 
+![Welcome slide in Slides mode](docs/welcome.png)
+
 ## Features
 
 - **Slides mode** (_deck notes only_): an immersive, editable card view — "one screen = one card". Enter with the **Toggle Slides Mode** command (default hotkey `Mod+Shift+E`); the ribbon, sidebars and tab bar hide, the slide content sits in a **centered card** (80vw wide, theme-adaptive) whose look you choose from **six built-in style templates** — _Lecture (jyy)_ (default, modeled after the slideshow cards of [jyywiki.cn](https://jyywiki.cn) lecture notes), _Dashed outline_, _Paper card_, _Minimal_, _Accent edge_ and _Frosted glass_ — each restyling the card **and** the slides bar; the file name is hidden by default, and a **Slides title** setting can show any frontmatter property (or `filename` for the file name) as the card title, the editor **clips to a single screen** (no scrolling — content beyond the fold is clipped), and a slides bar shows the configured bar properties, ◀ ▶ navigation and the auto-computed page number. Exiting restores the view you came from (Source / Live Preview / Reading).
