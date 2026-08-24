@@ -25,10 +25,8 @@
   - **Create Next Slide 命令**（仅 deck 笔记可用）：在当前笔记之后创建一张新幻灯片——新文件命名为 `<当前名>-next`（重名自动追加 `-2`、`-3`），`deck` 链接自动改写，新笔记以编辑模式打开，可直接输入内容。若当前笔记的 `deck` 链接指向不存在的笔记，则直接创建那个声明的笔记（顺带消除 ⚠ 警告）。
   - **Create New Slide 命令**（不属于任何 deck 的笔记可用）：**开启一套全新 deck**——新建一个笔记（`untitled-slides`，重名自动追加序号）作为第一页，frontmatter 为 `deck: []`；执行命令时所在的笔记保持原样不动。空白标签页也能用（新笔记落在 Obsidian 的"新笔记默认位置"）。之后在 deck 内用 Create Next Slide 继续加页。
 
-- **Slides 面板**：侧边栏视图，按链序列出当前笔记所属 deck 的全部幻灯片——点击即跳转。用 **Show Slides Panel** 命令或丝带的演示图标打开。右键条目可 **Create next slide**（插到该页之后）与 **Delete slide**；按住 `Cmd/Ctrl` 可把条目逐张加入/移出选中（再次点击已选中项才取消），`Shift` 可范围选中——每次范围选择都会同时纳入你当前正在查看的那张；再右键已选中的条目即可删除整个选区——deck 链自动拼接，被删笔记进垃圾桶（确认弹窗可在 设置 → Confirm slide deletion 关闭）。
-
 - **演示时没有闪烁光标**：点一下 slides 栏即可让编辑器失焦——讲解时不再有闪烁的输入光标；点回任意幻灯片内容即可继续编辑。**Toggle Mouse Pointer** 命令（`Mod+Shift+M`）更进一步：全窗口隐藏鼠标指针并顺带失焦；再执行一次恢复，退出 Slides 模式也会自动恢复。
-- **可配置 slides 栏属性**：选择哪些 frontmatter 属性显示在 slides 栏中以及显示顺序。设置 → Bar properties 接受逗号分隔的列表（如 `university, short-title, date`）；每个值占据等宽列，列之间的分隔条可拖拽调整宽度（宽度跨会话持久化）。留空 = 不显示属性列。缺失的属性会被静默跳过。属性列排版与页号一致（均随 bar 高度缩放）：属性列为灰色弱化显示，页号保持醒目。
+- **可配置 slides 栏属性**：选择哪些 frontmatter 属性显示在 slides 栏中以及显示顺序。设置 → Bar properties 接受逗号分隔的列表（如 `series, level, date`）；每个值占据等宽列，列之间的分隔条可拖拽调整宽度（宽度跨会话持久化）。留空 = 不显示属性列。缺失的属性会被静默跳过。属性列排版与页号一致（均随 bar 高度缩放）：属性列为灰色弱化显示，页号保持醒目。
 - **自动进入 Slides 模式**（设置项，默认关）：打开 deck 笔记直接进入 Slides；关闭则手动进入。
 - **设置页**：可选择样式模板、配置 bar properties，可开关 ◀ ▶ 按钮、页号显示与自动进入。
 - **断链警告**：`deck` 链接指向不存在的笔记时，slides 栏显示 ⚠ 警告标签，方便作者发现笔误（该链只会终止或排除，不会报错）。
@@ -42,7 +40,7 @@ v1.0.0 起不再有概览页——**slides 面板**接管"纵览整套 deck"的�
 
 ## 示例库
 
-演示笔记位于 [`example-vault/`](example-vault/)，这就是要打开的 Obsidian 示例库。它包含一套三页演示套件——`Welcome.md`（frontmatter 含 `university` / `course` / `date`，用于 _Bar properties_ 设置）、`Adjustable settings.md`（next-only `deck` 约定 + 设置项指引）、`Grow the Deck.md`（最后一页，`deck: []`）——文件名与卡片上展示的标题一致——以及测试笔记用到的 `demo-image.png`。`example-vault/tests/` 下有 `typography-demo.md`（Markdown 全家桶——标题/列表/任务/引用/代码块/表格/图片，用于测试 Slides 排版）和五个 `typography-sample-*.md` 笔记（**仅开发版** `Debug: Dump Typography Styles` 命令专用的固定一页采样笔记——请勿改名或删除）。示例库还带一份最小化的 `.obsidian/` 配置——包括演示外观（`baseFontSize` 23、默认主题）和插件的演示设置（Lecture (jyy) 模板、`university, course, date` bar properties）——全新克隆打开即与文档一致。另外还有一个插件目录 `example-vault/.obsidian/plugins/native-slides/`，其中的文件（`manifest.json`、`main.js`、`styles.css`）都是**指向仓库根目录的符号链接**——示例库始终运行当前构建。
+演示笔记位于 [`example-vault/`](example-vault/)，这就是要打开的 Obsidian 示例库。它包含一套三页演示套件——`Welcome.md`（核心设计原则的极简介绍，不展示属性列）、**Make it yours（随心定制）**（设置项指引，frontmatter 携带 `series` / `level` / `date` 作为 _Bar properties_ 演示）、`Grow the Deck.md`（最后一页，`deck: []`）——文件名与卡片上展示的标题一致——以及测试笔记用到的 `demo-image.png`。`example-vault/tests/` 下有 `typography-demo.md`（Markdown 全家桶，用于测试 Slides 排版）和五个 `typography-sample-*.md` 笔记（**仅开发版** `Debug: Dump Typography Styles` 命令专用的固定一页采样笔记——请勿改名或删除）。示例库还带一份最小化的 `.obsidian/` 配置——包括演示外观（`baseFontSize` 23、默认主题）和插件的演示设置（Lecture (jyy) 模板、`series, level, date` bar properties）——以及一个插件目录，其中的文件都是**指向仓库根目录的符号链接**——示例库始终运行当前构建。
 
 > 符号链接需要文件系统支持（macOS/Linux 开箱即用；Windows 需开启开发者模式）。若无法使用符号链接，把 `main.js`、`manifest.json`、`styles.css` 复制到 `example-vault/.obsidian/plugins/native-slides/` 即可。
 
@@ -52,9 +50,9 @@ v1.0.0 起不再有概览页——**slides 面板**接管"纵览整套 deck"的�
 2. 允许第三方插件：设置 → 第三方插件 → 关闭"安全模式"（一次性手动操作）；
 3. 在第三方插件列表启用 **Native Slides**。
 
-打开 `Welcome.md`，按 `Cmd/Ctrl+Shift+E` 进入 Slides 模式——底部即显示已配置属性、◀ ▶ 按钮与页号；按 `Cmd/Ctrl+Shift+→` 翻到下一张；运行 **Show Slides Panel** 可纵览整套 deck。
+打开 `Welcome.md`，按 `Cmd/Ctrl+Shift+E` 进入 Slides 模式——底部即显示 ◀ ▶ 按钮与页号（配置的属性列在 **Make it yours（随心定制）** 页出现）；按 `Cmd/Ctrl+Shift+→` 翻到下一张；运行 **Show Slides Panel** 可纵览整套 deck。
 
-演示套件：`Welcome.md` → `Adjustable settings.md` → `Grow the Deck.md`。
+演示套件：`Welcome.md` → `Make it yours.md` → `Grow the Deck.md`。
 
 ## 工作原理
 
@@ -105,7 +103,7 @@ npm run dev        # 监听 main.ts，变更时自动重建 main.js
 - **开发构建**（`npm run build` / `npm run dev`）会注册 `Debug: Dump Typography Styles` 命令：在**编辑与阅读两种视图**各采样一次当前笔记、计算差异，并写入 vault 根目录的 `.native-slides-debug.json`（无需手动复制控制台输出）。在开启 Slides 模式的 deck 笔记上运行；`example-vault/` 里五个 `typography-sample-*.md` 是它的固定一页采样夹具——请勿改名或删除。
 - **发布构建**（`npm run build:release`）会压缩 `main.js`，并通过 `--define:DEV_MODE=false` + tree-shaking 彻底移除 debug 命令及其支撑代码。发布后执行 `npm run build` 即可恢复开发版产物。
 
-源码已拆分到 `src/` 模块（`types`、`mode`、`deck-service`、`bar`、`commands`、`settings`、`debug`、`deck`、`createNext`），`main.ts` 仅作编排入口。
+源码已拆分到 `src/` 模块（`types`、`mode`、`deck-service`、`panel`、`bar`、`commands`、`settings`、`debug`、`deck`、`createNext`、`deleteSlides`），`main.ts` 仅作编排入口。
 
 ## 已知限制
 

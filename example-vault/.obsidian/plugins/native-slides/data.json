@@ -8,6 +8,6 @@
   "escExitsSlides": false,
   "slidesTitle": "title",
   "slidesTheme": "jyy",
-  "barProperties": "university, course, date",
+  "barProperties": "series, level, date",
   "barPropertyWidths": "[24.94289506102285,44.31231929151693,30.744785647460237]"
 }
