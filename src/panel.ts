@@ -105,7 +105,7 @@ export class SlidesPanelView extends ItemView {
     if (chain.length === 0) {
       const empty = root.createDiv({ cls: "native-slides-panel-empty" });
       empty.setText(
-        "No slides deck — open a deck note, or run Create next slide on any note to start one.",
+        "No slides deck — open a deck note, or run create next slide on any note to start one.",
       );
       return;
     }

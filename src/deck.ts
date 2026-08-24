@@ -141,12 +141,22 @@ export function extractLinkText(value: unknown): string | null {
 /** Render a property value as readable text: arrays/objects → JSON, else String */
 export function formatValue(value: unknown): string {
   if (value === null || value === undefined) return "—";
-  if (typeof value === "object") {
-    try {
-      return JSON.stringify(value);
-    } catch {
+  switch (typeof value) {
+    case "string":
+      return value;
+    case "object":
+      try {
+        return JSON.stringify(value) ?? "—";
+      } catch {
+        // circular / un-stringifiable structure — not expected from frontmatter
+        return "—";
+      }
+    case "number":
+    case "boolean":
+    case "bigint":
       return String(value);
-    }
+    default:
+      // symbol / function — not expected from frontmatter
+      return typeof value;
   }
-  return String(value);
 }

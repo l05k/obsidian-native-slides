@@ -443,12 +443,12 @@ function sampleStyles(app: App): Record<string, unknown> | null {
 export async function dumpTypography(plugin: NativeSlidesPlugin): Promise<void> {
   const app = plugin.app;
   if (!document.body.classList.contains("native-slides-mode")) {
-    new Notice("Native Slides: enter Slides mode first (Mod+Shift+E on a deck note)");
+    new Notice("Native slides: enter Slides mode first (Mod+Shift+E on a deck note)");
     return;
   }
   const view = app.workspace.getActiveViewOfType(MarkdownView);
   if (!view) {
-    new Notice("Native Slides: no active Markdown note");
+    new Notice("Native slides: no active Markdown note");
     return;
   }
   const startMode = view.getMode();
@@ -481,7 +481,7 @@ export async function dumpTypography(plugin: NativeSlidesPlugin): Promise<void> 
     plugin.refresh();
   }
   if (!reading) {
-    new Notice("Native Slides: reading sample failed");
+    new Notice("Native slides: reading sample failed");
     return;
   }
 
@@ -490,7 +490,7 @@ export async function dumpTypography(plugin: NativeSlidesPlugin): Promise<void> 
     await app.vault.adapter.write(".native-slides-debug.json", JSON.stringify(payload, null, 2));
     new Notice("Typography dump → .native-slides-debug.json (vault root)");
   } catch (error) {
-    new Notice(`Native Slides: could not write debug file (${String(error)})`);
+    new Notice(`Native slides: could not write debug file (${String(error)})`);
   }
 }
 
