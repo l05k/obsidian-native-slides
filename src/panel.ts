@@ -130,16 +130,30 @@ export class SlidesPanelView extends ItemView {
   /** Click routing: plain = open, Mod = toggle select, Shift = range select */
   private onItemClick(e: MouseEvent, index: number, f: TFile): void {
     if (e.shiftKey || e.ctrlKey || e.metaKey) {
-      if (e.shiftKey && this.anchor !== null) {
-        const from = this.items.findIndex((it) => it.path === this.anchor);
-        if (from !== -1) {
+      if (e.shiftKey) {
+        // Range anchor: the last selected item, or the displayed slide
+        // when no usable anchor exists (first Shift+click in a session).
+        const activePath = this.app.workspace.getActiveFile()?.path ?? null;
+        const anchorPath =
+          this.anchor !== null && this.items.some((it) => it.path === this.anchor)
+            ? this.anchor
+            : activePath;
+        const from = this.items.findIndex((it) => it.path === anchorPath);
+        if (anchorPath !== null && from !== -1) {
           const [lo, hi] = from < index ? [from, index] : [index, from];
           for (let i = lo; i <= hi; i++) this.selected.add(this.items[i].path);
+          // The displayed slide joins every Shift selection — extending a
+          // selection never silently drops the page you are looking at.
+          if (activePath !== null && this.items.some((it) => it.path === activePath)) {
+            this.selected.add(activePath);
+          }
           this.anchor = this.items[index].path;
           this.syncSelectionClasses();
           return;
         }
       }
+      // Mod (or Shift with no reachable anchor): pure toggle — the only way
+      // to cancel an item out of the selection.
       if (this.selected.has(f.path)) this.selected.delete(f.path);
       else this.selected.add(f.path);
       this.anchor = f.path;
