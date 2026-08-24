@@ -84,6 +84,8 @@ export class SlidesPanelView extends ItemView {
       const live = new Set(chain);
       for (const path of this.selected) if (!live.has(path)) this.selected.delete(path);
     }
+    // A dead anchor must not silently turn a Shift+click into a toggle
+    if (this.anchor !== null && !chain.includes(this.anchor)) this.anchor = null;
 
     if (!chainEquals(this.lastChain, chain)) {
       this.rebuild(chain);
@@ -145,7 +147,10 @@ export class SlidesPanelView extends ItemView {
       return;
     }
     this.selected.clear();
-    this.anchor = null;
+    // No selection after a plain click, but the clicked slide stays the
+    // Shift+click anchor — matching the file-explorer feel: pick a slide,
+    // then Shift+click a later one to select the whole range between them.
+    this.anchor = f.path;
     this.syncSelectionClasses();
     void this.openSlide(f);
   }
@@ -211,7 +216,7 @@ export class SlidesPanelView extends ItemView {
     );
 
     for (const path of paths) this.selected.delete(path);
-    this.anchor = null;
+    if (this.anchor !== null && paths.includes(this.anchor)) this.anchor = null;
 
     if (result.landingPath) {
       const f = this.app.vault.getAbstractFileByPath(result.landingPath);
