@@ -37,7 +37,7 @@ const STYLE_SECTIONS = [
 
 /** Promise-based sleep */
 function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
 /**
@@ -492,7 +492,6 @@ export async function dumpTypography(plugin: NativeSlidesPlugin): Promise<void> 
   } catch (error) {
     new Notice(`Native Slides: could not write debug file (${String(error)})`);
   }
-  console.log("[native-slides debug-styles]", JSON.stringify(payload, null, 2));
 }
 
 /** Register the dev-only debug command (called only when DEV_MODE is true). */

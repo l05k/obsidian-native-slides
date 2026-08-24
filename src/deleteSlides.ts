@@ -43,8 +43,8 @@ export function planDeleteSlides(
     if (!path || deletePaths.has(path)) continue;
     // Find the first survivor after this note's position.
     let j = i + 1;
-    while (j < chain.length && deletePaths.has(chain[j] as string)) j++;
-    const nextPath = j < chain.length ? (chain[j] as string) : null;
+    while (j < chain.length && deletePaths.has(chain[j])) j++;
+    const nextPath = j < chain.length ? chain[j] : null;
     const changed = nextPath !== (chain[i + 1] ?? null);
     if (changed) rewrites.push({ path, nextPath });
   }
@@ -66,10 +66,10 @@ export function pickLandingPath(
   const index = chain.indexOf(focusPath);
   if (index === -1) return null;
   for (let i = index + 1; i < chain.length; i++) {
-    if (!deletePaths.has(chain[i] as string)) return chain[i] as string;
+    if (!deletePaths.has(chain[i])) return chain[i];
   }
   for (let i = index - 1; i >= 0; i--) {
-    if (!deletePaths.has(chain[i] as string)) return chain[i] as string;
+    if (!deletePaths.has(chain[i])) return chain[i];
   }
   return null;
 }

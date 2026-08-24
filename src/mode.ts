@@ -3,7 +3,7 @@ import { App, MarkdownView, TFile } from "obsidian";
 /** Mode of the active Markdown view: 'preview'=reading 'source'=editing ''=none */
 export function currentMode(app: App): "preview" | "source" | "" {
   const view = app.workspace.getActiveViewOfType(MarkdownView);
-  return view ? (view.getMode() as "preview" | "source") : "";
+  return view ? view.getMode() : "";
 }
 
 /**

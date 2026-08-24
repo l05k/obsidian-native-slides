@@ -145,7 +145,8 @@ export default class NativeSlidesPlugin extends Plugin {
   // ── Settings ──────────────────────────────────────────────────────────
 
   async loadSettings(): Promise<void> {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    const data = (await this.loadData()) as Partial<NativeSlidesSettings> | null;
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, data ?? {});
   }
 
   async saveSettings(): Promise<void> {
@@ -281,13 +282,13 @@ export default class NativeSlidesPlugin extends Plugin {
   async activateSlidesPanel(): Promise<void> {
     const existing = this.app.workspace.getLeavesOfType(SLIDES_PANEL_VIEW);
     if (existing.length > 0) {
-      this.app.workspace.revealLeaf(existing[0]);
+      await this.app.workspace.revealLeaf(existing[0]);
       return;
     }
     const leaf = this.app.workspace.getRightLeaf(false);
     if (!leaf) return;
     await leaf.setViewState({ type: SLIDES_PANEL_VIEW, active: true });
-    this.app.workspace.revealLeaf(leaf);
+    await this.app.workspace.revealLeaf(leaf);
   }
 
   /** Auto-enter Slides mode once per opened deck note when the setting is on */
@@ -335,18 +336,18 @@ export default class NativeSlidesPlugin extends Plugin {
    */
   private getBarPropertyWidths(count: number): number[] {
     try {
-      const stored = JSON.parse(this.settings.barPropertyWidths || "[]");
+      const stored = JSON.parse(this.settings.barPropertyWidths || "[]") as unknown;
       if (
         Array.isArray(stored) &&
         stored.length === count &&
         stored.every((n) => typeof n === "number")
       ) {
-        return stored;
+        return stored as number[];
       }
     } catch {
       // ignore
     }
-    return Array(count).fill(100 / count);
+    return new Array<number>(count).fill(100 / count);
   }
 
   /** Save column width percentages to settings */
@@ -389,10 +390,10 @@ export default class NativeSlidesPlugin extends Plugin {
     if (barVisible) {
       document.documentElement.style.removeProperty("--native-slides-bar-height");
     } else {
-      document.documentElement.style.setProperty("--native-slides-bar-height", "0px");
+      document.documentElement.setCssProps({ "--native-slides-bar-height": "0px" });
     }
     if (!barVisible) {
-      this.bar.style.display = "none";
+      this.bar.setCssStyles({ display: "none" });
       return;
     }
     if (!file) return; // barVisible implies a file, but narrow for TypeScript
@@ -406,10 +407,9 @@ export default class NativeSlidesPlugin extends Plugin {
     if (this.settings.showNavButtons && deck) {
       const hasPrev = deck.index > 0;
       const hasNext = deck.index < deck.chain.length - 1;
-      const nav = document.createElement("div");
-      nav.className = "native-slides-nav";
-      nav.appendChild(navButton("◀", "Previous page", () => this.navigate("prev"), !hasPrev));
-      nav.appendChild(navButton("▶", "Next page", () => this.navigate("next"), !hasNext));
+      const nav = createEl("div", { cls: "native-slides-nav" });
+      nav.appendChild(navButton("◀", "Previous page", () => void this.navigate("prev"), !hasPrev));
+      nav.appendChild(navButton("▶", "Next page", () => void this.navigate("next"), !hasNext));
       this.bar.appendChild(nav);
     }
 
@@ -429,22 +429,20 @@ export default class NativeSlidesPlugin extends Plugin {
       }
 
       if (entries.length > 0) {
-        const container = document.createElement("div");
-        container.className = "native-slides-bar-properties";
+        const container = createEl("div", { cls: "native-slides-bar-properties" });
 
         const widths = this.getBarPropertyWidths(entries.length);
 
         for (let i = 0; i < entries.length; i++) {
           const [, value] = entries[i];
-          const item = document.createElement("span");
-          item.className = "native-slides-bar-prop-item";
-          item.style.flexBasis = `calc(${widths[i]}% - ${((entries.length - 1) * 4) / entries.length}px)`;
-          item.textContent = value;
+          const item = createEl("span", { cls: "native-slides-bar-prop-item", text: value });
+          item.setCssStyles({
+            flexBasis: `calc(${widths[i]}% - ${((entries.length - 1) * 4) / entries.length}px)`,
+          });
           container.appendChild(item);
 
           if (i < entries.length - 1) {
-            const divider = document.createElement("div");
-            divider.className = "native-slides-bar-divider";
+            const divider = createEl("div", { cls: "native-slides-bar-divider" });
             divider.addEventListener("mousedown", (e) => {
               e.preventDefault();
               const startX = e.clientX;
@@ -459,22 +457,22 @@ export default class NativeSlidesPlugin extends Plugin {
                 const items = container.querySelectorAll<HTMLElement>(
                   ".native-slides-bar-prop-item",
                 );
-                items[i].style.flexBasis =
-                  `calc(${newLeft}% - ${((entries.length - 1) * 4) / entries.length}px)`;
-                items[i + 1].style.flexBasis =
-                  `calc(${newRight}% - ${((entries.length - 1) * 4) / entries.length}px)`;
+                items[i].setCssStyles({
+                  flexBasis: `calc(${newLeft}% - ${((entries.length - 1) * 4) / entries.length}px)`,
+                });
+                items[i + 1].setCssStyles({
+                  flexBasis: `calc(${newRight}% - ${((entries.length - 1) * 4) / entries.length}px)`,
+                });
               };
               const onUp = () => {
                 document.removeEventListener("mousemove", onMove);
                 document.removeEventListener("mouseup", onUp);
-                document.body.style.cursor = "";
-                document.body.style.userSelect = "";
+                document.body.setCssStyles({ cursor: "", userSelect: "" });
                 void this.saveBarPropertyWidths(widths);
               };
               document.addEventListener("mousemove", onMove);
               document.addEventListener("mouseup", onUp);
-              document.body.style.cursor = "col-resize";
-              document.body.style.userSelect = "none";
+              document.body.setCssStyles({ cursor: "col-resize", userSelect: "none" });
             });
             container.appendChild(divider);
           }
@@ -487,35 +485,37 @@ export default class NativeSlidesPlugin extends Plugin {
     // Broken deck links → warning chip so deck authors spot typos
     const broken = file ? this.deckService.broken(file) : [];
     if (broken.length > 0) {
-      const warn = document.createElement("span");
-      warn.className = "native-slides-warn";
-      warn.textContent = "⚠ " + broken.join(", ");
-      warn.title = "Broken deck link(s) — the target note does not exist";
+      const warn = createEl("span", {
+        cls: "native-slides-warn",
+        text: "⚠ " + broken.join(", "),
+        attr: { title: "Broken deck link(s) — the target note does not exist" },
+      });
       this.bar.appendChild(warn);
     }
 
     // ── Bottom-right: auto-computed page number ──
     if (this.settings.pageNumberStyle !== "none" && deck) {
-      const page = document.createElement("span");
-      page.className = "native-slides-page";
       // v1.0.0 next-only semantics: chain[0] is the head slide = page 1;
       // total is the full chain length.
       const total = deck.chain.length;
-      page.textContent =
-        this.settings.pageNumberStyle === "fraction"
-          ? `${deck.index + 1} / ${total}`
-          : `${deck.index + 1}`;
+      const page = createEl("span", {
+        cls: "native-slides-page",
+        text:
+          this.settings.pageNumberStyle === "fraction"
+            ? `${deck.index + 1} / ${total}`
+            : `${deck.index + 1}`,
+      });
       this.bar.appendChild(page);
     }
 
     // ── Progress indicator: discrete clickable segments at bar top ──
     if (this.settings.showProgress && deck && deck.chain.length > 1) {
-      const progress = document.createElement("div");
-      progress.className = "native-slides-progress";
+      const progress = createEl("div", { cls: "native-slides-progress" });
       for (let i = 0; i < deck.chain.length; i++) {
-        const seg = document.createElement("div");
         const state = i < deck.index ? "past" : i === deck.index ? "current" : "future";
-        seg.className = `native-slides-progress-seg native-slides-progress-seg--${state}`;
+        const seg = createEl("div", {
+          cls: `native-slides-progress-seg native-slides-progress-seg--${state}`,
+        });
         seg.addEventListener("click", () => void this.jumpTo(i));
         progress.appendChild(seg);
       }
@@ -524,6 +524,6 @@ export default class NativeSlidesPlugin extends Plugin {
 
     // Hide the slides bar entirely when it has nothing to display (no properties,
     // and not part of a deck)
-    this.bar.style.display = this.bar.childElementCount === 0 ? "none" : "";
+    this.bar.setCssStyles({ display: this.bar.childElementCount === 0 ? "none" : "" });
   }
 }

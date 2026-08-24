@@ -60,9 +60,15 @@ export class ConfirmDeleteModal extends Modal {
     const row = this.contentEl.createDiv({ cls: "native-slides-confirm-delete-dontask" });
     row.createEl("label").setText("Don't ask again");
     const checkbox = row.createEl("input", { type: "checkbox" });
-    checkbox.addEventListener("change", async () => {
-      await this.onDontAsk();
-      checkbox.disabled = true;
+    checkbox.addEventListener("change", () => {
+      void this.onDontAsk().then(
+        () => {
+          checkbox.disabled = true;
+        },
+        () => {
+          // keep the checkbox enabled if persisting the preference failed
+        },
+      );
     });
   }
 
