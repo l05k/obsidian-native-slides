@@ -1,8 +1,7 @@
 /** Create the slides bar DOM element (hidden until refresh() shows it) */
 export function createBar(): HTMLElement {
-  const bar = document.createElement("div");
-  bar.className = "native-slides-bar";
-  bar.style.display = "none";
+  const bar = createEl("div", { cls: "native-slides-bar" });
+  bar.setCssStyles({ display: "none" });
   bar.title = "Click to park the mouse — hides the editor caret while presenting";
   // Presentation parking: clicking the bar keeps focus out of the editor so
   // the blinking caret disappears. preventDefault stops the click from moving
@@ -22,10 +21,11 @@ export function navButton(
   onClick: () => void,
   disabled = false,
 ): HTMLButtonElement {
-  const btn = document.createElement("button");
-  btn.className = "native-slides-nav-btn";
-  btn.textContent = label;
-  btn.title = tip;
+  const btn = createEl("button", {
+    cls: "native-slides-nav-btn",
+    text: label,
+    attr: { title: tip },
+  });
   btn.disabled = disabled;
   if (!disabled) btn.addEventListener("click", onClick);
   return btn;
@@ -43,7 +43,7 @@ export function syncTabBarHeight(cached: number): number {
   );
   if (tabBar && tabBar.offsetHeight > 0) cached = tabBar.offsetHeight;
   if (cached > 0) {
-    document.documentElement.style.setProperty("--native-slides-tabbar-height", `${cached}px`);
+    document.documentElement.setCssProps({ "--native-slides-tabbar-height": `${cached}px` });
   } else {
     // No measurement yet (tab bar hidden since load) — let the CSS fallback apply.
     document.documentElement.style.removeProperty("--native-slides-tabbar-height");

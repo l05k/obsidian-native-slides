@@ -30,7 +30,7 @@
 - **演示时没有闪烁光标**：点一下 slides 栏即可让编辑器失焦——讲解时不再有闪烁的输入光标；点回任意幻灯片内容即可继续编辑。**Toggle Mouse Pointer** 命令（`Mod+Shift+M`）更进一步：全窗口隐藏鼠标指针并顺带失焦；再执行一次恢复，退出 Slides 模式也会自动恢复。
 - **可配置 slides 栏属性**：选择哪些 frontmatter 属性显示在 slides 栏中以及显示顺序。设置 → Bar properties 接受逗号分隔的列表（如 `series, level, date`）；每个值占据等宽列，列之间的分隔条可拖拽调整宽度（宽度跨会话持久化）。留空 = 不显示属性列。缺失的属性会被静默跳过。属性列排版与页号一致（均随 bar 高度缩放）：属性列为灰色弱化显示，页号保持醒目。
 - **自动进入 Slides 模式**（设置项，默认关）：打开 deck 笔记直接进入 Slides；关闭则手动进入。
-- **设置页**：可选择样式模板、配置 bar properties，可开关 ◀ ▶ 按钮、页号显示与自动进入。
+- **设置页**：可选择样式模板、配置 bar properties，可开关 ◀ ▶ 按钮、页号显示与自动进入；Obsidian 1.13.0+ 下各项设置可被设置搜索索引。
 - **断链警告**：`deck` 链接指向不存在的笔记时，slides 栏显示 ⚠ 警告标签，方便作者发现笔误（该链只会终止或排除，不会报错）。
 - **命令**：_Toggle Slides Mode_（`Mod+Shift+E`）、_Previous Page / Next Page_（`Mod+Shift+←/→`）、_Create Next Slide_（`Mod+Shift+N`）、_Create New Slide_、_Show Slides Panel_、_Toggle Mouse Pointer_（`Mod+Shift+M`）、_Toggle Slides Bar_——都可在 _设置 → 快捷键_ 重新绑定。
 
@@ -38,7 +38,7 @@
 
 v1.0.0 起不再有概览页——**slides 面板**接管"纵览整套 deck"的角色。运行 **Show Slides Panel** 命令（或点丝带的演示图标），侧边栏即按链序列出当前笔记所属 deck 的全部幻灯片（带编号）；点击任一条目即打开对应幻灯片。列表跟随当前活动笔记，并随 deck 编辑实时刷新。
 
-右键条目弹出来菜单：**Create next slide** —— 与命令行为一致，但相对**被右键的那页**插入（新笔记命名为 `⟨该页名⟩-next`，自动接线，创建后不打开）；**Delete slide** —— 把笔记移入垃圾桶并拼接链（前一页的 `deck` 链接直接跨过被删页）。按 `Cmd/Ctrl` 逐张加入/移出选中（移出只能再次 ctrl+click 它），`Shift` 范围选择——范围始终连带你当前查看的那张页；没有已选锚点时第一次 shift+click 就以当前页为起点。右键已选中的条目，菜单显示 **Delete N slides** 一次删除多页。若删除的是当前打开的页，编辑区自动跳到最近的幸存页（优先下一张，其次前一张）。确认弹窗列出将被删除的页名；勾选 **Don't ask again** 或关闭 **设置 → Confirm slide deletion**（默认开）可跳过确认。
+右键条目弹出来菜单：**Create next slide** —— 与命令行为一致，但相对**被右键的那页**插入（新笔记命名为 `⟨该页名⟩-next`，自动接线，创建后不打开）；**Delete slide** —— 把笔记移入回收站（按设置中的删除位置偏好：库内回收站或系统回收站）并拼接链（前一页的 `deck` 链接直接跨过被删页）。按 `Cmd/Ctrl` 逐张加入/移出选中（移出只能再次 ctrl+click 它），`Shift` 范围选择——范围始终连带你当前查看的那张页；没有已选锚点时第一次 shift+click 就以当前页为起点。右键已选中的条目，菜单显示 **Delete N slides** 一次删除多页。若删除的是当前打开的页，编辑区自动跳到最近的幸存页（优先下一张，其次前一张）。确认弹窗列出将被删除的页名；勾选 **Don't ask again** 或关闭 **设置 → Confirm slide deletion**（默认开）可跳过确认。
 
 ## 示例库
 
@@ -69,7 +69,7 @@ v1.0.0 起不再有概览页——**slides 面板**接管"纵览整套 deck"的�
 | Slides 进入/退出          | `enterSlides()` 记录当前视图状态并强制切到 Live Preview；`exitSlides()` 精确还原该视图状态（Source / Live Preview / Reading）                                                         |
 | Create Next Slide         | `planCreateNext()`（纯逻辑核心）算出新文件名、新笔记的 `deck` 链接与改写方案；命令用 `vault.create` + `fileManager.processFrontMatter` 执行，并在编辑模式打开新笔记。仅 deck 笔记可用 |
 | Create New Slide          | `planCreateNew()`（纯逻辑核心）为新 deck 第一页命名（`untitled-slides`，防重名）；在"新笔记默认位置"以 `deck: []` 创建，其余一概不动。空白标签页也可用                                |
-| 设置                      | `PluginSettingTab` + `loadData/saveData` 持久化开关；快捷键走 Obsidian 原生命令系统                                                                                                   |
+| 设置                      | 声明式设置 API（Obsidian ≥ 1.13.0，可被设置搜索索引）+ 传统 `PluginSettingTab` 回退；`loadData/saveData` 持久化开关；快捷键走 Obsidian 原生命令系统                                   |
 
 ## 开发
 

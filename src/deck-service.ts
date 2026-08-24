@@ -137,7 +137,7 @@ export class DeckService {
     // Rewire the current note's `deck` (keeps all other properties intact)
     for (const rewrite of plan.rewrites) {
       if (!file || rewrite.name !== file.basename) continue; // in practice always the current note
-      await this.app.fileManager.processFrontMatter(file, (fm) => {
+      await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
         fm[DECK_KEY] = rewrite.deck;
       });
     }
@@ -167,7 +167,7 @@ export class DeckService {
       const f = this.app.vault.getAbstractFileByPath(rewrite.path);
       if (!(f instanceof TFile)) continue;
       const next = rewrite.nextPath ? this.app.vault.getAbstractFileByPath(rewrite.nextPath) : null;
-      await this.app.fileManager.processFrontMatter(f, (fm) => {
+      await this.app.fileManager.processFrontMatter(f, (fm: Record<string, unknown>) => {
         fm[DECK_KEY] = next instanceof TFile ? [`[[${next.basename}]]`] : [];
       });
     }
@@ -177,7 +177,7 @@ export class DeckService {
       const f = this.app.vault.getAbstractFileByPath(path);
       if (!(f instanceof TFile)) continue;
       try {
-        await this.app.vault.trash(f, true);
+        await this.app.fileManager.trashFile(f);
         trashed.push(path);
       } catch (error) {
         new Notice(`Native Slides: could not delete "${f.basename}" (${String(error)})`);

@@ -8,6 +8,17 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-08-24
+
+### Changed
+
+- **Delete slides follows your trash preference**: deleting slides from the panel now uses Obsidian's file manager (`trashFile`), so notes go to your configured trash location (vault trash or OS trash) instead of always the system trash.
+- **Settings are searchable (Obsidian ≥ 1.13.0)**: the settings tab now implements the declarative settings API — every option appears in the Settings search — while keeping the classic form as a fallback for older Obsidian versions.
+
+### Fixed
+
+- **Official plugin review linter compliance**: replaced direct inline-style assignments with `setCssStyles`/`setCssProps`, `document.createElement` with Obsidian's `createEl` helpers, and the settings heading with a proper `Setting` heading; typed `loadData`/`JSON.parse`/`Array()` results, awaited `revealLeaf`, removed unnecessary type assertions, and cleaned up debug tooling (uses `window.setTimeout`, no more console dump). The minimum Obsidian version is raised to **1.7.2** (`workspace.revealLeaf`).
+
 ## [1.0.0] - 2026-08-24
 
 ### Added
