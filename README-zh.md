@@ -23,7 +23,7 @@
   - **页号自动计算**：沿链接链（链头 → 第 2 页 → …）编号，从 1 开始（链头 = 第 1 页），无需再写 `page-number` 属性。
   - 点 slides 栏 ◀ ▶ 按钮翻页，或用 **上一页 / 下一页** 命令（默认快捷键 `Cmd/Ctrl+Shift+←/→`，可在 **设置 → 快捷键** 重新绑定）。在原生模式按下也会自动进入 Slides 并翻页。两个箭头始终显示；无法移动的那一个（第一页的 ◀、最后一页的 ▶）为浅灰色禁用态。
   - **Create Next Slide 命令**（仅 deck 笔记可用）：在当前笔记之后创建一张新幻灯片——新文件命名为 `<当前名>-next`（重名自动追加 `-2`、`-3`），`deck` 链接自动改写，新笔记以编辑模式打开，可直接输入内容。若当前笔记的 `deck` 链接指向不存在的笔记，则直接创建那个声明的笔记（顺带消除 ⚠ 警告）。
-  - **Create New Slide 命令**（不属于任何 deck 的笔记可用）：**开启一套全新 deck**——新建一个笔记（`untitled-slides`，重名自动追加序号）作为第一页，frontmatter 为 `deck: []`；执行命令时所在的笔记保持原样不动。之后在 deck 内用 Create Next Slide 继续加页。
+  - **Create New Slide 命令**（不属于任何 deck 的笔记可用）：**开启一套全新 deck**——新建一个笔记（`untitled-slides`，重名自动追加序号）作为第一页，frontmatter 为 `deck: []`；执行命令时所在的笔记保持原样不动。空白标签页也能用（新笔记落在 Obsidian 的"新笔记默认位置"）。之后在 deck 内用 Create Next Slide 继续加页。
 
 - **Slides 面板**：侧边栏视图，按链序列出当前笔记所属 deck 的全部幻灯片——点击即跳转。用 **Show Slides Panel** 命令或丝带的演示图标打开。
 
@@ -66,7 +66,7 @@ v1.0.0 起不再有概览页——**slides 面板**接管"纵览整套 deck"的�
 | PPT 翻页                  | `navigate()` 沿链步进，用 `workspace.openLinkText` 打开；从原生模式触发时会先进入 Slides 模式                                                                                         |
 | Slides 进入/退出          | `enterSlides()` 记录当前视图状态并强制切到 Live Preview；`exitSlides()` 精确还原该视图状态（Source / Live Preview / Reading）                                                         |
 | Create Next Slide         | `planCreateNext()`（纯逻辑核心）算出新文件名、新笔记的 `deck` 链接与改写方案；命令用 `vault.create` + `fileManager.processFrontMatter` 执行，并在编辑模式打开新笔记。仅 deck 笔记可用 |
-| Create New Slide          | `planCreateNew()`（纯逻辑核心）为新 deck 第一页命名（`untitled-slides`，防重名）；在当前笔记所在文件夹以 `deck: []` 创建，其余一概不动。仅非 deck 笔记可用                            |
+| Create New Slide          | `planCreateNew()`（纯逻辑核心）为新 deck 第一页命名（`untitled-slides`，防重名）；在"新笔记默认位置"以 `deck: []` 创建，其余一概不动。空白标签页也可用                                |
 | 设置                      | `PluginSettingTab` + `loadData/saveData` 持久化开关；快捷键走 Obsidian 原生命令系统                                                                                                   |
 
 ## 开发

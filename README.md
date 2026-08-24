@@ -24,7 +24,7 @@
   - **Page numbers are auto-computed** by walking the link chain (head slide → slide 2 → …), 1-based: the head slide is page 1, so no `page-number` property is needed.
   - Flip pages with the ◀ ▶ buttons in the slides bar, or with the **Previous Page / Next Page** commands (default hotkeys `Cmd/Ctrl+Shift+←/→`, rebindable under **Settings → Hotkeys**). Pressing them from a native mode enters Slides mode and flips. Both arrows are always shown; the one that cannot move (first page's ◀, last page's ▶) is disabled and light gray.
   - **Create Next Slide** command (deck notes only): creates a new slide right after the current one — the file is named `<current>-next` (collision-aware: `-2`, `-3`, …), the `deck` links are rewired automatically, and the new note opens ready for content. If the current note's `deck` link points to a missing note, that exact note is created instead (fixing the ⚠ warning).
-  - **Create New Slide** command (notes not in any deck): starts a **brand-new deck** — a fresh note (`untitled-slides`, collision-aware) is created as its first page with `deck: []`; the note you ran it from stays untouched. Grow the deck by running Create Next Slide from inside it.
+  - **Create New Slide** command (notes not in any deck): starts a **brand-new deck** — a fresh note (`untitled-slides`, collision-aware) is created as its first page with `deck: []`; the note you ran it from stays untouched. Works from a blank tab too (the note lands in your default location for new notes). Grow the deck by running Create Next Slide from inside it.
 
 - **Slides panel**: a sidebar view that lists every slide of the active note's deck in chain order — click an entry to jump to it. Open it with the **Show Slides Panel** command or the presentation ribbon icon.
 
@@ -67,7 +67,7 @@ Demo deck: `welcome.md` → `slide-2.md` → `slide-3.md`.
 | PPT navigation                    | `navigate()` steps along the chain and opens via `workspace.openLinkText`; it enters Slides mode first when invoked from a native mode                                                                                                       |
 | Slides enter / exit               | `enterSlides()` records the current view state and forces the Live Preview; `exitSlides()` restores that exact view state (Source / Live Preview / Reading)                                                                                  |
 | Create Next Slide                 | `planCreateNext()` (pure core) computes the new file name, the new note's `deck` links and the rewrites; the command applies them via `vault.create` + `fileManager.processFrontMatter` and opens the new note in edit mode. Deck notes only |
-| Create New Slide                  | `planCreateNew()` (pure core) names a fresh first-page note (`untitled-slides`, collision-aware); created with `deck: []` in the active note's folder — nothing else is touched. Non-deck notes only                                         |
+| Create New Slide                  | `planCreateNew()` (pure core) names a fresh first-page note (`untitled-slides`, collision-aware); created with `deck: []` in the default new-note location — nothing else is touched. Available everywhere, blank tab included               |
 | Settings                          | `PluginSettingTab` + `loadData/saveData` persist the toggles; hotkeys use Obsidian's native command system                                                                                                                                   |
 
 ## Development

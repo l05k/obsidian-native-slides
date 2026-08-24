@@ -61,21 +61,14 @@ export function registerCommands(plugin: NativeSlidesPlugin): void {
       return true;
     },
   });
-  // Create New Slide — a brand-new deck's first page (non-deck notes only)
+  // Create New Slide — a brand-new deck's first page (non-deck notes only;
+  // also works from a blank tab — lands in the default new-note location)
   plugin.addCommand({
     id: "ns-create-new",
     name: "Create new slide",
     // No default hotkey: Mod+Shift+N belongs to Create next slide — two
     // commands sharing one default hotkey trips Obsidian's conflict UI.
-    // Greyed out when the active note already belongs to a deck
-    checkCallback: (checking) => {
-      const file = plugin.app.workspace.getActiveFile();
-      if (!file || plugin.deckService.isMember(file)) return false;
-      const plan = plugin.deckService.planCreateNew();
-      if (!plan) return false;
-      if (!checking) void plugin.deckService.executeCreateNext(file, plan);
-      return true;
-    },
+    callback: () => void plugin.deckService.executeCreateNew(plugin.deckService.planCreateNew()),
   });
   // Toggle Slides mode — the immersive card view (deck notes only)
   plugin.addCommand({

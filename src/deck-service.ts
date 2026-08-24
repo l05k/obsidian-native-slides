@@ -86,9 +86,28 @@ export class DeckService {
     return planNew({ existingNames });
   }
 
-  /** Apply a plan: create the note, rewire `deck` properties, open it */
+  /** Apply a Create Next Slide plan: the slide joins its deck's folder */
   async executeCreateNext(file: TFile, plan: CreateNextResult): Promise<void> {
-    const dir = file.parent?.path ? file.parent.path + "/" : "";
+    await this.applyPlan(file, plan, dirPrefix(file.parent?.path));
+  }
+
+  /**
+   * Apply a Create New Slide plan. Lands in Obsidian's default new-note
+   * location (Settings → Files & links → Default location for new notes);
+   * with "same folder as current" configured that is the active note's own
+   * folder. Works with no note open at all (blank tab).
+   */
+  async executeCreateNew(plan: CreateNextResult): Promise<void> {
+    const sourcePath = this.app.workspace.getActiveFile()?.path ?? "";
+    await this.applyPlan(
+      null,
+      plan,
+      dirPrefix(this.app.fileManager.getNewFileParent(sourcePath)?.path),
+    );
+  }
+
+  /** Apply a plan: create the note, rewire `deck` properties, open it */
+  private async applyPlan(file: TFile | null, plan: CreateNextResult, dir: string): Promise<void> {
     const newPath = `${dir}${plan.newName}.md`;
     const frontmatter = plan.newDeckLinks.map((link) => JSON.stringify(link)).join(", ");
     const content = `---\ndeck: [${frontmatter}]\n---\n`;
@@ -103,7 +122,7 @@ export class DeckService {
 
     // Rewire the current note's `deck` (keeps all other properties intact)
     for (const rewrite of plan.rewrites) {
-      if (rewrite.name !== file.basename) continue; // in practice always the current note
+      if (!file || rewrite.name !== file.basename) continue; // in practice always the current note
       await this.app.fileManager.processFrontMatter(file, (fm) => {
         fm[DECK_KEY] = rewrite.deck;
       });
@@ -113,4 +132,10 @@ export class DeckService {
     const leaf = this.app.workspace.getLeaf(false);
     await leaf.openFile(newFile, { state: { mode: "source" } });
   }
+}
+
+/** Folder path → trailing-slash prefix ("" for vault root) */
+function dirPrefix(path: string | undefined): string {
+  if (!path || path === "/") return "";
+  return `${path.replace(/\/+$/, "")}/`;
 }

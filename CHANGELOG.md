@@ -11,7 +11,7 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 ### Added
 
 - **Slides panel**: a new sidebar view (command **Show slides panel**, or the presentation ribbon icon) that lists every slide of the active note's deck in chain order, numbered; clicking an entry opens that slide. It follows the active note and stays in sync with deck edits — taking over the aggregation role the overview page used to play.
-- **Create new slide starts new decks**: running the command on a note that is not part of any deck creates a brand-new deck's first page — a fresh note (`untitled-slides`, collision-aware) with `deck: []`, leaving the note it was launched from untouched.
+- **Create new slide starts new decks**: running the command on a note that is not part of any deck creates a brand-new deck's first page — a fresh note (`untitled-slides`, collision-aware) with `deck: []`, leaving the note it was launched from untouched. It also works from a blank tab: the note lands in the default location for new notes.
 
 ### Changed
 
