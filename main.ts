@@ -230,9 +230,7 @@ export default class NativeSlidesPlugin extends Plugin {
       } else if (src) {
         const fm = frontmatterOf(this.app, file);
         const v = fm?.[src];
-        if (v != null) {
-          text = typeof v === "string" ? v : Array.isArray(v) ? v.join(", ") : String(v);
-        }
+        if (v != null) text = formatValue(v);
       }
     }
 
@@ -337,13 +335,7 @@ export default class NativeSlidesPlugin extends Plugin {
   private getBarPropertyWidths(count: number): number[] {
     try {
       const stored = JSON.parse(this.settings.barPropertyWidths || "[]") as unknown;
-      if (
-        Array.isArray(stored) &&
-        stored.length === count &&
-        stored.every((n) => typeof n === "number")
-      ) {
-        return stored as number[];
-      }
+      if (isNumberList(stored, count)) return stored;
     } catch {
       // ignore
     }
@@ -407,7 +399,7 @@ export default class NativeSlidesPlugin extends Plugin {
     if (this.settings.showNavButtons && deck) {
       const hasPrev = deck.index > 0;
       const hasNext = deck.index < deck.chain.length - 1;
-      const nav = createEl("div", { cls: "native-slides-nav" });
+      const nav = createDiv({ cls: "native-slides-nav" });
       nav.appendChild(navButton("◀", "Previous page", () => void this.navigate("prev"), !hasPrev));
       nav.appendChild(navButton("▶", "Next page", () => void this.navigate("next"), !hasNext));
       this.bar.appendChild(nav);
@@ -429,20 +421,20 @@ export default class NativeSlidesPlugin extends Plugin {
       }
 
       if (entries.length > 0) {
-        const container = createEl("div", { cls: "native-slides-bar-properties" });
+        const container = createDiv({ cls: "native-slides-bar-properties" });
 
         const widths = this.getBarPropertyWidths(entries.length);
 
         for (let i = 0; i < entries.length; i++) {
           const [, value] = entries[i];
-          const item = createEl("span", { cls: "native-slides-bar-prop-item", text: value });
+          const item = createSpan({ cls: "native-slides-bar-prop-item", text: value });
           item.setCssStyles({
             flexBasis: `calc(${widths[i]}% - ${((entries.length - 1) * 4) / entries.length}px)`,
           });
           container.appendChild(item);
 
           if (i < entries.length - 1) {
-            const divider = createEl("div", { cls: "native-slides-bar-divider" });
+            const divider = createDiv({ cls: "native-slides-bar-divider" });
             divider.addEventListener("mousedown", (e) => {
               e.preventDefault();
               const startX = e.clientX;
@@ -485,7 +477,7 @@ export default class NativeSlidesPlugin extends Plugin {
     // Broken deck links → warning chip so deck authors spot typos
     const broken = file ? this.deckService.broken(file) : [];
     if (broken.length > 0) {
-      const warn = createEl("span", {
+      const warn = createSpan({
         cls: "native-slides-warn",
         text: "⚠ " + broken.join(", "),
         attr: { title: "Broken deck link(s) — the target note does not exist" },
@@ -498,7 +490,7 @@ export default class NativeSlidesPlugin extends Plugin {
       // v1.0.0 next-only semantics: chain[0] is the head slide = page 1;
       // total is the full chain length.
       const total = deck.chain.length;
-      const page = createEl("span", {
+      const page = createSpan({
         cls: "native-slides-page",
         text:
           this.settings.pageNumberStyle === "fraction"
@@ -510,10 +502,10 @@ export default class NativeSlidesPlugin extends Plugin {
 
     // ── Progress indicator: discrete clickable segments at bar top ──
     if (this.settings.showProgress && deck && deck.chain.length > 1) {
-      const progress = createEl("div", { cls: "native-slides-progress" });
+      const progress = createDiv({ cls: "native-slides-progress" });
       for (let i = 0; i < deck.chain.length; i++) {
         const state = i < deck.index ? "past" : i === deck.index ? "current" : "future";
-        const seg = createEl("div", {
+        const seg = createDiv({
           cls: `native-slides-progress-seg native-slides-progress-seg--${state}`,
         });
         seg.addEventListener("click", () => void this.jumpTo(i));
@@ -526,4 +518,11 @@ export default class NativeSlidesPlugin extends Plugin {
     // and not part of a deck)
     this.bar.setCssStyles({ display: this.bar.childElementCount === 0 ? "none" : "" });
   }
+}
+
+/** Whether `value` is an array of exactly `count` numbers (stored bar widths). */
+function isNumberList(value: unknown, count: number): value is number[] {
+  return (
+    Array.isArray(value) && value.length === count && value.every((n) => typeof n === "number")
+  );
 }

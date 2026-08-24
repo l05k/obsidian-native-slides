@@ -1,6 +1,6 @@
 /** Create the slides bar DOM element (hidden until refresh() shows it) */
 export function createBar(): HTMLElement {
-  const bar = createEl("div", { cls: "native-slides-bar" });
+  const bar = createDiv({ cls: "native-slides-bar" });
   bar.setCssStyles({ display: "none" });
   bar.title = "Click to park the mouse — hides the editor caret while presenting";
   // Presentation parking: clicking the bar keeps focus out of the editor so

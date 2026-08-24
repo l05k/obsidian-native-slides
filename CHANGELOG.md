@@ -8,6 +8,16 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-08-24
+
+### Changed
+
+- **Reviewer linter round 2**: settings styles are sentence-case (e.g. "Show previous/next buttons", "Auto-enter slides mode") and the notice prefix is "Native slides"; property values fall back to `—` instead of `[object Object]`.
+
+### Fixed
+
+- **Official plugin review linter — second report**: the settings tab now persists declarative-control changes without touching the 1.13.0-only `setControlValue` base (minAppVersion stays 1.7.2) and no longer carries a "Native Slides · Settings" heading (both heading rules); bar markup uses `createDiv`/`createSpan` helpers instead of `createEl("div"/"span")`; the stored bar-widths check became a proper type guard (no unnecessary assertion).
+
 ## [1.0.1] - 2026-08-24
 
 ### Changed

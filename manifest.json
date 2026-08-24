@@ -1,7 +1,7 @@
 {
   "id": "native-slides",
   "name": "Native Slides",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "minAppVersion": "1.7.2",
   "description": "Slides mode for deck notes: an immersive, editable card view with a slides bar for properties and PPT-style navigation, driven by one deck property.",
   "author": "l05k",

@@ -130,7 +130,7 @@ export class DeckService {
     try {
       newFile = await this.app.vault.create(newPath, content);
     } catch (error) {
-      new Notice(`Native Slides: could not create "${plan.newName}.md" (${String(error)})`);
+      new Notice(`Native slides: could not create "${plan.newName}.md" (${String(error)})`);
       return;
     }
 
@@ -180,7 +180,7 @@ export class DeckService {
         await this.app.fileManager.trashFile(f);
         trashed.push(path);
       } catch (error) {
-        new Notice(`Native Slides: could not delete "${f.basename}" (${String(error)})`);
+        new Notice(`Native slides: could not delete "${f.basename}" (${String(error)})`);
       }
     }
 
