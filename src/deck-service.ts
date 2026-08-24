@@ -1,5 +1,9 @@
 import { App, Notice, TFile } from "obsidian";
-import { planCreateNext as plan, type CreateNextResult } from "./createNext";
+import {
+  planCreateNew as planNew,
+  planCreateNext as plan,
+  type CreateNextResult,
+} from "./createNext";
 import { computeDeck, extractLinks, extractRawLinks, type DeckInfo } from "./deck";
 import { frontmatterOf } from "./mode";
 import { DECK_KEY } from "./types";
@@ -9,14 +13,18 @@ export class DeckService {
   constructor(private app: App) {}
 
   /**
-   * Resolve the current note's position inside its deck. A note qualifies
-   * when it holds a `deck` property (even empty — a fresh single slide) or
-   * when some other slide declares it as its next slide.
+   * Whether the note belongs to a deck: it holds a `deck` property (even
+   * empty — a fresh single slide) or some other slide declares it as its
+   * next slide.
    */
-  compute(file: TFile): DeckInfo | null {
+  isMember(file: TFile): boolean {
     const fm = frontmatterOf(this.app, file);
-    const member = (fm !== null && DECK_KEY in fm) || this.prevOf(file.path) !== undefined;
-    if (!member) return null;
+    return (fm !== null && DECK_KEY in fm) || this.prevOf(file.path) !== undefined;
+  }
+
+  /** Resolve the current note's position inside its deck (null when not a member) */
+  compute(file: TFile): DeckInfo | null {
+    if (!this.isMember(file)) return null;
     return computeDeck(
       file.path,
       (path) => this.linkPaths(path),
@@ -58,8 +66,9 @@ export class DeckService {
 
   /**
    * Plan a "Create Next Slide" run for the active note. Deck slides
-   * insert/append after the current note; a note without a `deck` link
-   * starts a brand-new deck (it becomes the head slide).
+   * insert/append after the current note. (Plain notes are routed to
+   * planCreateNew by the command — this core still handles them as
+   * "no usable next link → append".)
    */
   planCreateNext(file: TFile): CreateNextResult | null {
     const fm = frontmatterOf(this.app, file);
@@ -68,9 +77,37 @@ export class DeckService {
     return plan({ currentName: file.basename, currentLinks: raw, existingNames });
   }
 
-  /** Apply a plan: create the note, rewire `deck` properties, open it */
+  /**
+   * Plan a "Create New Slide" run: a brand-new deck's first page in the
+   * same folder as the active note, which itself stays untouched.
+   */
+  planCreateNew(): CreateNextResult {
+    const existingNames = new Set(this.app.vault.getMarkdownFiles().map((f) => f.basename));
+    return planNew({ existingNames });
+  }
+
+  /** Apply a Create Next Slide plan: the slide joins its deck's folder */
   async executeCreateNext(file: TFile, plan: CreateNextResult): Promise<void> {
-    const dir = file.parent?.path ? file.parent.path + "/" : "";
+    await this.applyPlan(file, plan, dirPrefix(file.parent?.path));
+  }
+
+  /**
+   * Apply a Create New Slide plan. Lands in Obsidian's default new-note
+   * location (Settings → Files & links → Default location for new notes);
+   * with "same folder as current" configured that is the active note's own
+   * folder. Works with no note open at all (blank tab).
+   */
+  async executeCreateNew(plan: CreateNextResult): Promise<void> {
+    const sourcePath = this.app.workspace.getActiveFile()?.path ?? "";
+    await this.applyPlan(
+      null,
+      plan,
+      dirPrefix(this.app.fileManager.getNewFileParent(sourcePath)?.path),
+    );
+  }
+
+  /** Apply a plan: create the note, rewire `deck` properties, open it */
+  private async applyPlan(file: TFile | null, plan: CreateNextResult, dir: string): Promise<void> {
     const newPath = `${dir}${plan.newName}.md`;
     const frontmatter = plan.newDeckLinks.map((link) => JSON.stringify(link)).join(", ");
     const content = `---\ndeck: [${frontmatter}]\n---\n`;
@@ -85,7 +122,7 @@ export class DeckService {
 
     // Rewire the current note's `deck` (keeps all other properties intact)
     for (const rewrite of plan.rewrites) {
-      if (rewrite.name !== file.basename) continue; // in practice always the current note
+      if (!file || rewrite.name !== file.basename) continue; // in practice always the current note
       await this.app.fileManager.processFrontMatter(file, (fm) => {
         fm[DECK_KEY] = rewrite.deck;
       });
@@ -95,4 +132,10 @@ export class DeckService {
     const leaf = this.app.workspace.getLeaf(false);
     await leaf.openFile(newFile, { state: { mode: "source" } });
   }
+}
+
+/** Folder path → trailing-slash prefix ("" for vault root) */
+function dirPrefix(path: string | undefined): string {
+  if (!path || path === "/") return "";
+  return `${path.replace(/\/+$/, "")}/`;
 }

@@ -11,13 +11,15 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 ### Added
 
 - **Slides panel**: a new sidebar view (command **Show slides panel**, or the presentation ribbon icon) that lists every slide of the active note's deck in chain order, numbered; clicking an entry opens that slide. It follows the active note and stays in sync with deck edits — taking over the aggregation role the overview page used to play.
-- **Create Next Slide starts new decks**: running the command on a note that is not part of any deck turns it into the head of a brand-new deck and creates the next slide after it.
+- **Create new slide starts new decks**: running the command on a note that is not part of any deck creates a brand-new deck's first page — a fresh note (`untitled-slides`, collision-aware) with `deck: []`, leaving the note it was launched from untouched. It also works from a blank tab: the note lands in the default location for new notes.
 
 ### Changed
 
+- **BREAKING — Create Next Slide is deck-notes-only**: the command now requires the active note to belong to a deck (greyed out otherwise); plain notes start decks with **Create new slide** instead.
+
 - **BREAKING — next-only `deck` semantics (issue #67)**: a slide's `deck` property now holds **at most one link — the next slide** (last slide: `deck: []`). The overview back-link is gone; chains are resolved by walking backward via a reverse `deck`-link index. Old two-link decks (`[overview, next]`) are **not** understood — edit existing slides so `deck` holds only the next-slide link (old overview notes work unchanged as the chain's first page). This structurally eliminates the two-node deck ambiguity (#66).
 - **BREAKING — page numbers are 1-based over the whole chain**: the head slide is page 1; `N / Total` counts every slide (no overview offset).
-- **Example vault slimmed**: one three-page demo deck (`welcome` → `slide-2` → `slide-3`, page 1 carries `university` / `course` / `date` for _Bar properties_); the old overview page, the bar-properties / broken-link / folded-properties demos and all jyy lecture notes are gone, and every typography test note (kitchen sink + the five dev-only samples) moved to `example-vault/tests/`.
+- **Example vault slimmed**: one three-page demo deck (`Welcome` → `Adjustable settings` → `Grow the Deck`, page 1 carries `university` / `course` / `date` for _Bar properties_; file names match the slide titles); the old overview page, the bar-properties / broken-link / folded-properties demos and all jyy lecture notes are gone, and every typography test note (kitchen sink + the five dev-only samples) moved to `example-vault/tests/`.
 
 ### Removed
 

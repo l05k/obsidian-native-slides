@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { planCreateNext } from "../src/createNext";
+import { planCreateNew, planCreateNext } from "../src/createNext";
 
 const noNames = new Set<string>();
 
 describe("planCreateNext (v1.0.0 next-only semantics)", () => {
-  // ── no next link → append / start a new deck ───────────────────────────
+  // ── no next link → append a new last slide ─────────────────────────────
 
   it("appends a new last slide after a last slide (empty deck list)", () => {
     const plan = planCreateNext({
@@ -17,7 +17,7 @@ describe("planCreateNext (v1.0.0 next-only semantics)", () => {
     expect(plan.rewrites).toEqual([{ name: "slide-3", deck: ["[[slide-3-next]]"] }]);
   });
 
-  it("starts a brand-new deck from a plain note (no deck property)", () => {
+  it("treats a plain note as head-less and appends (core fallback; the UI routes plain notes to Create new slide)", () => {
     const plan = planCreateNext({
       currentName: "my-note",
       currentLinks: [],
@@ -114,5 +114,21 @@ describe("planCreateNext (v1.0.0 next-only semantics)", () => {
       existingNames: new Set(["welcome-next", "welcome-next-2"]),
     })!;
     expect(plan.newName).toBe("welcome-next-3");
+  });
+});
+
+describe("planCreateNew (brand-new deck's first page)", () => {
+  it("plans a single-slide deck with no rewrites anywhere", () => {
+    const plan = planCreateNew({ existingNames: noNames });
+    expect(plan.newName).toBe("untitled-slides");
+    expect(plan.newDeckLinks).toEqual([]);
+    expect(plan.rewrites).toEqual([]);
+  });
+
+  it("dedups the name against existing note basenames", () => {
+    const plan = planCreateNew({
+      existingNames: new Set(["untitled-slides", "untitled-slides-2"]),
+    });
+    expect(plan.newName).toBe("untitled-slides-3");
   });
 });

@@ -1,5 +1,5 @@
 ---
-deck: ["[[slide-2]]"]
+deck: ["[[Adjustable settings]]"]
 university: xxx university
 course: Operating Systems
 date: 2026-08-19
@@ -8,7 +8,7 @@ tags:
   - demo
 ---
 
-# Slide 1 · Welcome
+# Welcome
 
 One screen = one card.
 
