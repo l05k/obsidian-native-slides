@@ -49,6 +49,9 @@ export function registerCommands(plugin: NativeSlidesPlugin): void {
   plugin.addCommand({
     id: "ns-create-next",
     name: "Create next slide",
+    // Same default hotkey as Create new slide — the two are mutually
+    // exclusive (deck member vs plain note), so exactly one ever applies.
+    hotkeys: [{ modifiers: ["Mod", "Shift"], key: "N" }],
     // Greyed out unless the active note is part of a deck — plain notes
     // start decks with "Create new slide" instead.
     checkCallback: (checking) => {
@@ -64,6 +67,9 @@ export function registerCommands(plugin: NativeSlidesPlugin): void {
   plugin.addCommand({
     id: "ns-create-new",
     name: "Create new slide",
+    // Same default hotkey as Create next slide — the two are mutually
+    // exclusive (deck member vs plain note), so exactly one ever applies.
+    hotkeys: [{ modifiers: ["Mod", "Shift"], key: "N" }],
     // Greyed out when the active note already belongs to a deck
     checkCallback: (checking) => {
       const file = plugin.app.workspace.getActiveFile();

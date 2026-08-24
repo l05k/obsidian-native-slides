@@ -33,7 +33,7 @@
 - **Auto-enter Slides mode** (settings, default off): open deck notes straight into Slides mode; leave off to enter manually.
 - A **settings tab** picks the style template, configures bar properties, and toggles the ◀ ▶ buttons, the page number, and auto-enter.
 - **Broken deck-link warnings**: if a `deck` link points to a note that doesn't exist, the slides bar shows a ⚠ warning chip so authors can spot typos (the chain simply ends or excludes the link).
-- **Commands**: _Toggle Slides Mode_ (`Mod+Shift+E`), _Previous Page / Next Page_, _Create Next Slide_, _Create New Slide_, _Show Slides Panel_, _Toggle Mouse Pointer_ (`Mod+Shift+M`), and _Toggle Slides Bar_ — all rebindable under _Settings → Hotkeys_.
+- **Commands**: _Toggle Slides Mode_ (`Mod+Shift+E`), _Previous Page / Next Page_ (`Mod+Shift+←/→`), _Create Next Slide_ / _Create New Slide_ (shared `Mod+Shift+N` — exactly one applies depending on whether the active note belongs to a deck), _Show Slides Panel_, _Toggle Mouse Pointer_ (`Mod+Shift+M`), and _Toggle Slides Bar_ — all rebindable under _Settings → Hotkeys_.
 
 ## Slides panel (sidebar)
 
