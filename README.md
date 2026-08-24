@@ -41,7 +41,7 @@ Since v1.0.0 there is no overview page — the **slides panel** takes over the "
 
 ## Example vault
 
-The demo notes live in [`example-vault/`](example-vault/), which is the Obsidian vault you open to try the plugin. It contains a three-page demo deck — `welcome.md` (frontmatter with `university` / `course` / `date` for the _Bar properties_ setting), `slide-2.md` (the next-only `deck` convention + a pointer to the plugin settings), `slide-3.md` (the last page, `deck: []`) — and a `demo-image.png` used by the test notes. Under `example-vault/tests/` there is `typography-demo.md` (a Markdown kitchen sink — headings, lists, tasks, quotes, code blocks, tables, images — used to test Slides typography) and five `typography-sample-*.md` notes (fixed one-page samples consumed by the **dev-only** `Debug: Dump Typography Styles` command — do not rename or remove them). The vault also carries a minimal `.obsidian/` configuration — including the demo look (`baseFontSize` 23, default theme) and the plugin's demo settings (Lecture (jyy) template, `university, course, date` bar properties) — so a fresh clone opens exactly as documented. It also has a plugin folder `example-vault/.obsidian/plugins/native-slides/` whose files (`manifest.json`, `main.js`, `styles.css`) are **symlinks to the repository root** — so the example vault always runs the current build.
+The demo notes live in [`example-vault/`](example-vault/), which is the Obsidian vault you open to try the plugin. It contains a three-page demo deck — `Welcome.md` (frontmatter with `university` / `course` / `date` for the _Bar properties_ setting), `Adjustable settings.md` (the next-only `deck` convention + a pointer to the plugin settings), `Grow the Deck.md` (the last page, `deck: []`) — file names match the slide titles shown on the cards — and a `demo-image.png` used by the test notes. Under `example-vault/tests/` there is `typography-demo.md` (a Markdown kitchen sink — headings, lists, tasks, quotes, code blocks, tables, images — used to test Slides typography) and five `typography-sample-*.md` notes (fixed one-page samples consumed by the **dev-only** `Debug: Dump Typography Styles` command — do not rename or remove them). The vault also carries a minimal `.obsidian/` configuration — including the demo look (`baseFontSize` 23, default theme) and the plugin's demo settings (Lecture (jyy) template, `university, course, date` bar properties) — so a fresh clone opens exactly as documented. It also has a plugin folder `example-vault/.obsidian/plugins/native-slides/` whose files (`manifest.json`, `main.js`, `styles.css`) are **symlinks to the repository root** — so the example vault always runs the current build.
 
 > Symlinks require filesystem support (macOS/Linux work out of the box; on Windows enable Developer Mode). If symlinks are unavailable, copy `main.js`, `manifest.json`, `styles.css` into `example-vault/.obsidian/plugins/native-slides/`.
 
@@ -51,9 +51,9 @@ The demo notes live in [`example-vault/`](example-vault/), which is the Obsidian
 2. Allow community plugins: _Settings → Community plugins → Turn off Safe mode_ (one-time, manual).
 3. Enable **Native Slides** under _Settings → Community plugins_.
 
-Open `welcome.md` and press `Cmd/Ctrl+Shift+E` to enter Slides mode — the slides bar shows the configured properties, ◀ ▶ buttons and the page number. Press `Cmd/Ctrl+Shift+→` to go to the next slide, and run **Show Slides Panel** to see the whole deck.
+Open `Welcome.md` and press `Cmd/Ctrl+Shift+E` to enter Slides mode — the slides bar shows the configured properties, ◀ ▶ buttons and the page number. Press `Cmd/Ctrl+Shift+→` to go to the next slide, and run **Show Slides Panel** to see the whole deck.
 
-Demo deck: `welcome.md` → `slide-2.md` → `slide-3.md`.
+Demo deck: `Welcome.md` → `Adjustable settings.md` → `Grow the Deck.md`.
 
 ## How it works
 

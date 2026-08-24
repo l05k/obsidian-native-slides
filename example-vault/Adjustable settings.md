@@ -1,5 +1,5 @@
 ---
-deck: ["[[slide-3]]"]
+deck: ["[[Grow the Deck]]"]
 ---
 
 # Adjustable settings
