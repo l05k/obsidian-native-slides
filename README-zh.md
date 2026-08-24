@@ -5,7 +5,7 @@
 > 一个 Obsidian 插件：把 deck 笔记变成 **Slides**——沉浸式、可编辑（Live Preview）的
 > "一屏一卡"视图，slides 栏提供属性展示与 PPT 式翻页——由一个 frontmatter 属性驱动。
 
-**设计原则** —— 对笔记内容零侵入、对 properties 最小侵入（仅 `deck` 一个属性）、不持久化配置以外的不必要内容、实现高效且代码规范优美。详见 [docs/design-zh.md](docs/design-zh.md)。
+**设计原则** —— 零侵入（对笔记内容零改动、仅保留 `deck` 一个属性）、原生编辑（Slides 模式外一切保持默认）、next 链贯穿（单链接驱动页序）、界面可调（外观与 slides 栏皆设置项）；此外不持久化配置以外的内容、实现高效且代码规范优美。详见 [docs/design-zh.md](docs/design-zh.md)。
 
 ## 功能特性
 

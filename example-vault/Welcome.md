@@ -10,5 +10,5 @@ Core design principles:
 
 - **Zero intrusion** — `deck` is the only reserved frontmatter property.
 - **Native editing** — Slides mode keeps Live Preview; other views stay untouched.
-- **Chain-driven** — one next-link per slide; page numbers are computed.
-- **Adjustable** — the slides bar and look are settings, not content.
+- **Next-link chain** — one next-link per slide; page numbers are computed.
+- **Adjustable surface** — the slides bar and look are settings, not content.

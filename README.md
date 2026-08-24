@@ -6,7 +6,7 @@
 > editable (Live Preview) "one screen = one card" view with a slides bar for
 > properties and PPT-style navigation — driven by a single frontmatter property.
 
-**Design principles** — zero intrusion into note content, minimal properties footprint (a single `deck` key), no persistence beyond configuration, and efficient, idiomatic code. See [docs/design.md](docs/design.md).
+**Design principles** — zero intrusion, native editing, a next-link chain, and an adjustable surface; no persistence beyond configuration, and efficient, idiomatic code. See [docs/design.md](docs/design.md).
 
 ## Features
 
