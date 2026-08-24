@@ -140,6 +140,18 @@ export class NativeSlidesSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
+      .setName("Confirm slide deletion")
+      .setDesc(
+        "Ask for confirmation before deleting slides from the Slides panel's right-click menu. Deletion moves slides to the trash.",
+      )
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.confirmDeleteSlides).onChange(async (value) => {
+          this.plugin.settings.confirmDeleteSlides = value;
+          await this.plugin.saveSettings();
+        }),
+      );
+
+    new Setting(containerEl)
       .setName("Navigation hotkeys")
       .setDesc(
         "Default: Previous Page Mod+Shift+←, Next Page Mod+Shift+→. Rebind under Settings → Hotkeys.",

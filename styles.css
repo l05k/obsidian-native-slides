@@ -206,6 +206,16 @@ body.native-slides-pointer-hidden * {
 .native-slides-panel-item.is-active .native-slides-panel-num {
   color: var(--text-accent);
 }
+/* Multi-select for the right-click Delete slides action */
+.native-slides-panel-item.is-selected,
+.native-slides-panel-item.is-selected:hover {
+  background: var(--background-modifier-active-hover);
+  box-shadow: inset 0 0 0 1px var(--background-modifier-border-accent);
+  color: var(--text-normal);
+}
+.native-slides-panel-item.is-selected .native-slides-panel-num {
+  color: var(--text-accent);
+}
 .native-slides-panel-num {
   flex-shrink: 0;
   min-width: 1.5em;

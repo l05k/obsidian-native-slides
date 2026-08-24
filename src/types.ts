@@ -38,6 +38,8 @@ export interface NativeSlidesSettings {
   barProperties: string;
   /** JSON array of column width percentages for bar properties (draggable dividers) */
   barPropertyWidths: string;
+  /** Ask for confirmation before deleting slides from the panel (default on) */
+  confirmDeleteSlides: boolean;
 }
 
 export const DEFAULT_SETTINGS: NativeSlidesSettings = {
@@ -52,6 +54,7 @@ export const DEFAULT_SETTINGS: NativeSlidesSettings = {
   slidesTheme: "jyy",
   barProperties: "",
   barPropertyWidths: "",
+  confirmDeleteSlides: true,
 };
 
 /** Reserved frontmatter key driving deck navigation (never rendered as a chip) */
