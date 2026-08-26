@@ -57,6 +57,12 @@ export default class NativeSlidesPlugin extends Plugin {
   private tabBarHeight = 0;
   /** Whether the mouse pointer is hidden for presenting (session state) */
   pointerHidden = false;
+  /** Currently observed editor content element (solo-image tagging) */
+  private soloImageHost: HTMLElement | null = null;
+  /** Pending debounce timer for the solo-image retag */
+  private soloImageTimer: number | null = null;
+  /** Mutation observer keeping the solo-image tags fresh */
+  private soloImageObserver: MutationObserver | null = null;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -135,6 +141,9 @@ export default class NativeSlidesPlugin extends Plugin {
   }
 
   onunload(): void {
+    this.soloImageObserver?.disconnect();
+    this.soloImageObserver = null;
+    this.soloImageHost = null;
     this.bar?.remove();
     this.bar = null;
     document.body.classList.remove("native-slides-mode");
@@ -236,6 +245,48 @@ export default class NativeSlidesPlugin extends Plugin {
 
     if (text) content.setAttribute("data-slides-title", text);
     else content.removeAttribute("data-slides-title");
+  }
+
+  /**
+   * Tag every image-only line in the editor with
+   * `native-slides-solo-image` so styles.css can center it while keeping
+   * the embed inline (line height stays the image height).
+   */
+  private tagSoloImageLines(content: HTMLElement): void {
+    for (const line of content.querySelectorAll<HTMLElement>(":scope > .cm-line")) {
+      line.classList.toggle("native-slides-solo-image", isSoloImageLine(line));
+    }
+  }
+
+  /**
+   * Keep the solo-image tags fresh: CodeMirror re-creates line elements on
+   * every re-render, so a one-shot pass goes stale. The observer re-tags on
+   * mutations (debounced — CM performs many small updates per keystroke)
+   * while Slides mode is active. Re-attaches whenever the content element
+   * changes or its previous host was replaced by a re-render (Obsidian
+   * rebuilds the editor on view switches).
+   */
+  private syncSoloImageObserver(content: HTMLElement | null): void {
+    if (this.soloImageHost === content && this.soloImageHost?.isConnected) return;
+    if (this.soloImageObserver) {
+      this.soloImageObserver.disconnect();
+      this.soloImageObserver = null;
+    }
+    this.soloImageHost = content;
+    if (!content) return;
+    this.soloImageObserver = new MutationObserver(() => {
+      if (this.soloImageTimer !== null) window.clearTimeout(this.soloImageTimer);
+      this.soloImageTimer = window.setTimeout(() => {
+        this.soloImageTimer = null;
+        const el =
+          this.app.workspace
+            .getActiveViewOfType(MarkdownView)
+            ?.contentEl.querySelector<HTMLElement>(".cm-content") ?? this.soloImageHost;
+        if (el) this.tagSoloImageLines(el);
+      }, 60);
+    });
+    this.soloImageObserver.observe(content, { childList: true, subtree: true });
+    this.tagSoloImageLines(content);
   }
 
   /** Enter Slides mode: record the exit state and force the Live Preview */
@@ -374,6 +425,14 @@ export default class NativeSlidesPlugin extends Plugin {
     if (!slides) this.pointerHidden = false; // leaving Slides restores the pointer
     this.syncPointerClass(slides);
     this.updateInlineTitle(slides);
+
+    // Keep standalone-image line tags fresh while Slides mode is active
+    const contentEl = slides
+      ? (this.app.workspace
+          .getActiveViewOfType(MarkdownView)
+          ?.contentEl.querySelector<HTMLElement>(".cm-content") ?? null)
+      : null;
+    this.syncSoloImageObserver(contentEl);
 
     const barVisible = slides && this.settings.showSlidesBar && !this.settings.barHidden;
     // When bar is hidden, set bottom padding to 0 so the card fills the full
@@ -525,4 +584,39 @@ function isNumberList(value: unknown, count: number): value is number[] {
   return (
     Array.isArray(value) && value.length === count && value.every((n) => typeof n === "number")
   );
+}
+
+/**
+ * Whether a line element holds an image and nothing else (no typed text and
+ * no list/quote markers) — a "standalone image line". CodeMirror's own
+ * widget plumbing (cm-widgetBuffer placeholders, the fold indicator) is
+ * ignored; any real img (raw markdown image or embed) counts.
+ */
+function isSoloImageLine(line: Element): boolean {
+  let sawImage = false;
+  let sawText = false;
+  for (const node of Array.from(line.childNodes)) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      if (node.textContent && node.textContent.trim()) sawText = true;
+      continue;
+    }
+    if (!node.instanceOf(HTMLElement)) continue;
+    if (
+      node.classList.contains("cm-widgetBuffer") ||
+      node.classList.contains("cm-fold-indicator")
+    ) {
+      continue;
+    }
+    if (node.tagName === "IMG") {
+      sawImage = true;
+      continue;
+    }
+    if (node.classList.contains("cm-formatting")) {
+      if (node.textContent && node.textContent.trim()) sawText = true;
+      continue;
+    }
+    if (node.querySelector("img")) sawImage = true;
+    else if (node.textContent && node.textContent.trim()) sawText = true;
+  }
+  return sawImage && !sawText;
 }

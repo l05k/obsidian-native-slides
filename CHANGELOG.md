@@ -8,6 +8,10 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 ## [Unreleased]
 
+### Changed
+
+- **Image embeds keep their native inline flow in Slides mode**: text around an inline `![[image]]` no longer gets stacked into separate padded rows — the line renders like Live Preview. Standalone image lines (just the embed on the line) are still centered, but via a JS-tagged line class with `text-align` instead of blockifying the embed, so the line height equals the image height — no more empty bands above/below. CodeMirror's internal zero-width widget buffers are also taken out of the flow, removing phantom line boxes around embeds and on foldable lines (#86).
+
 ## [1.0.2] - 2026-08-24
 
 ### Changed
