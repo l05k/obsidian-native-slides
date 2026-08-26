@@ -218,12 +218,10 @@ export default class NativeSlidesPlugin extends Plugin {
   }
 
   /**
-   * Render the card title (an H1 inside the card) per the `slidesTitle`
-   * setting, via the `.cm-content` data-slides-title attribute — the CSS
-   * ::before pseudo-element renders it. "" (default) shows nothing;
-   * "filename" uses the file name; any other value names a frontmatter
-   * property. The file name (inline title) outside the card is always hidden
-   * by CSS in Slides mode.
+   * Render the card title per the `slidesTitle` setting. "filename" restyles
+   * the native inline title into the card title (still editable — typing
+   * renames the note); "" shows nothing; any other value names a frontmatter
+   * property rendered read-only via the ::before pseudo-element.
    */
   private updateInlineTitle(slides: boolean): void {
     const view = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -231,16 +229,27 @@ export default class NativeSlidesPlugin extends Plugin {
     const content = view?.contentEl.querySelector<HTMLElement>(".cm-content");
     if (!content || !file) return;
 
+    const src = this.settings.slidesTitle.trim();
+
+    // "filename": restyle the native .inline-title into the card title. It
+    // stays contenteditable, so editing it renames the note as in Live
+    // Preview. The native inline title lives on the markdown-source-view
+    // element (a sibling branch of the card), so the styling hook is a
+    // view attribute + a brand-new .cm-content attribute that reserves the
+    // title's height the same way the pseudo-element version did.
+    const nativeTitle = slides && src === "filename";
+    const sourceView = view?.contentEl.querySelector<HTMLElement>(".markdown-source-view");
+    if (nativeTitle && sourceView) sourceView.setAttribute("data-ns-inline-title", "filename");
+    else sourceView?.removeAttribute("data-ns-inline-title");
+    content.toggleAttribute("data-slides-title-native", nativeTitle);
+
+    // Property-backed titles render read-only via the ::before pseudo-element
+    // (no editing surface — the properties panel is hidden in Slides mode).
     let text: string | null = null;
-    if (slides) {
-      const src = this.settings.slidesTitle.trim();
-      if (src === "filename") {
-        text = file.basename;
-      } else if (src) {
-        const fm = frontmatterOf(this.app, file);
-        const v = fm?.[src];
-        if (v != null) text = formatValue(v);
-      }
+    if (slides && src && src !== "filename") {
+      const fm = frontmatterOf(this.app, file);
+      const v = fm?.[src];
+      if (v != null) text = formatValue(v);
     }
 
     if (text) content.setAttribute("data-slides-title", text);

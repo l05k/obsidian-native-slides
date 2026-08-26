@@ -408,6 +408,29 @@ body.native-slides-mode
   padding-bottom: 0 !important;
   max-width: none;
 }
+/* Shared slide typography constants resolve on the card AND on the card
+   title. The title element (.inline-title) is a direct child of the sizer
+   (not of the card), so the values are declared here — on their common
+   ancestor — and both read identical numbers. */
+body.native-slides-mode
+  .workspace-leaf.mod-active
+  .markdown-source-view.mod-cm6.is-live-preview
+  .cm-sizer {
+  --ns-pad-y: 0.5em;
+  --ns-pad-x: 1em;
+  --ns-title-spacing: 0px; /* the card title sits flush under the card edge */
+  --h1-size: 1.4em;
+  --h1-weight: 700;
+  --h1-line-height: 1.43;
+  --h2-size: 1.125em;
+  --h2-weight: 600;
+  --h2-line-height: 1.56;
+  --h3-size: 1em;
+  --h3-weight: 600;
+  --p-spacing: 0.5em;
+  --list-spacing: 0px; /* list gaps come from the padding rules in section 10f */
+  --code-size: 0.875em;
+}
 body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
@@ -423,23 +446,8 @@ body.native-slides-mode
   border: var(--ns-card-border, none);
   border-radius: var(--ns-card-radius, var(--radius-s));
   box-shadow: var(--ns-card-shadow, none);
-  /* Shared slide typography (tuned on the Lecture (jyy) template, applied to
-     all of them). No font-size lock: every metric is em-based, so the whole
-     layout scales as one piece with Obsidian's editor font size. */
-  --ns-pad-y: 0.5em;
-  --ns-pad-x: 1em;
-  --h1-size: 1.4em;
-  --h1-weight: 700;
-  --h1-line-height: 1.43;
-  --h2-size: 1.125em;
-  --h2-weight: 600;
-  --h2-line-height: 1.56;
-  --h3-size: 1em;
-  --h3-weight: 600;
-  --p-spacing: 0.5em;
-  --list-spacing: 0px; /* list gaps come from the padding rules in section 10f */
-  --ns-title-spacing: 0px; /* the card title sits flush under the card edge */
-  --code-size: 0.875em;
+  /* No font-size lock: every metric is em-based, so the whole layout
+     scales as one piece with Obsidian's editor font size. */
 }
 body.native-slides-mode
   .workspace-leaf.mod-active
@@ -470,7 +478,11 @@ body.native-slides-mode
 body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
-  .cm-content[data-slides-title] {
+  .cm-content[data-slides-title],
+body.native-slides-mode
+  .workspace-leaf.mod-active
+  .markdown-source-view.mod-cm6.is-live-preview
+  .cm-content[data-slides-title-native] {
   position: relative;
   padding-top: calc(
     var(--ns-pad-y, 0.5em) + var(--ns-title-spacing, var(--p-spacing, 1rem)) +
@@ -496,6 +508,41 @@ body.native-slides-mode
   margin: 0;
   border-bottom: var(--ns-title-rule, none);
   padding-bottom: var(--ns-title-rule-pad, 0px);
+}
+/* ── 9b2. Editable card title (Slides title = Filename) ──
+   Instead of painting the file name via a pseudo-element, restyle the
+   native .inline-title (it is contenteditable in Live Preview and editing
+   it renames the note) into the card title. Geometry matches the card:
+   left/right = the card's auto-centered 80vw box + its padding offset;
+   top = the card's padding; all typography vars are resolved with the
+   shared sizer constants (the /1.4 division converts them from the card's
+   font context to the title's own H1 font context). The title's height is
+   still reserved by the .cm-content padding-top above; the title keeps the
+   native rename behavior since type/click land on the real element. */
+body.native-slides-mode
+  .workspace-leaf.mod-active
+  .markdown-source-view.mod-cm6.is-live-preview[data-ns-inline-title]
+  .cm-sizer
+  > .inline-title {
+  position: absolute;
+  top: calc(var(--ns-pad-y, 0.5em) / 1.4);
+  left: calc((100% - 80vw) / 2 + var(--ns-pad-x, 1em) / 1.4);
+  right: calc((100% - 80vw) / 2 + var(--ns-pad-x, 1em) / 1.4);
+  margin: 0;
+  padding-top: calc(var(--ns-title-spacing, var(--p-spacing, 1rem)) / 1.4);
+  padding-bottom: calc(var(--ns-title-rule-pad, 0px) / 1.4);
+  font-family: var(--h1-font, inherit);
+  font-size: var(--h1-size, 1.4em);
+  line-height: var(--h1-line-height, 1.43);
+  font-weight: var(--h1-weight, 700);
+  font-variant: var(--h1-variant, normal);
+  letter-spacing: normal;
+  color: var(--h1-color, inherit);
+  border-bottom: var(--ns-title-rule, none);
+  display: block;
+  /* Paint above the card (.cm-content is a later positioned sibling in
+     stack order) so clicks reach the editable title. */
+  z-index: 1;
 }
 /* ── 9c. Unify the body H1 letter-spacing with the title ────
    Themes often tighten heading letter-spacing (here -0.015em); the generated
@@ -859,6 +906,9 @@ body.native-slides-mode
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
+  /* Anchors the absolute card title (.inline-title, a direct child) to the
+     card, which is also laid out inside the sizer. */
+  position: relative;
 }
 body.native-slides-mode
   .workspace-leaf.mod-active
