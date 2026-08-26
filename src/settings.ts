@@ -64,7 +64,7 @@ export class NativeSlidesSettingTab extends PluginSettingTab {
       },
       {
         name: "Slides title",
-        desc: "Frontmatter property to show as the card title (H1). Leave empty for none; type `filename` to use the file name.",
+        desc: "Frontmatter property to show as the card title (H1). Leave empty for none; type `filename` to use the file name — that title is editable (renames the note); property-backed titles are read-only (edit the property outside slides mode).",
         control: { key: "slidesTitle", type: "text", placeholder: "E.g. Title" },
       },
       {
