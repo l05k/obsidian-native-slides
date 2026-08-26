@@ -8,6 +8,10 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 ## [Unreleased]
 
+### Fixed
+
+- **No more phantom top padding on foldable lines**: a long first line whose next line starts with deep indentation no longer gains a spurious empty row above it in Slides mode. Root cause: CodeMirror's internal zero-width `cm-widgetBuffer` placeholder (inserted when Obsidian marks the line foldable) was caught by the standalone-image centering rule and pushed the text down by a full line box; buffers are now excluded from that rule and taken out of the inline flow (#88).
+
 ## [1.0.2] - 2026-08-24
 
 ### Changed
