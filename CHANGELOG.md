@@ -8,6 +8,10 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 ## [Unreleased]
 
+### Changed
+
+- **Card title is editable (Slides title = filename)**: the card title now renders with the native inline title element instead of a painted pseudo-element, so clicking it focuses the real editor — typing renames the note, exactly as in Live Preview. The title keeps the card geometry (H1 metrics pixel-identical to a body H1, height reserved, click mapping unchanged). Property-backed titles remain read-only on the card; edit the property in the note's properties panel. The shared slide typography variables moved to the sizer so the card and its title resolve identical values (#87).
+
 ### Fixed
 
 - **No more phantom top padding on foldable lines**: a long first line whose next line starts with deep indentation no longer gains a spurious empty row above it in Slides mode. Root cause: CodeMirror's internal zero-width `cm-widgetBuffer` placeholder (inserted when Obsidian marks the line foldable) was caught by the standalone-image centering rule and pushed the text down by a full line box; buffers are now excluded from that rule and taken out of the inline flow (#88).
