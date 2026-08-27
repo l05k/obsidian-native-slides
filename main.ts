@@ -57,12 +57,10 @@ export default class NativeSlidesPlugin extends Plugin {
   private tabBarHeight = 0;
   /** Whether the mouse pointer is hidden for presenting (session state) */
   pointerHidden = false;
-  /** Currently observed editor content element (solo-image tagging) */
-  private soloImageHost: HTMLElement | null = null;
-  /** Pending debounce timer for the solo-image retag */
-  private soloImageTimer: number | null = null;
   /** Mutation observer keeping the solo-image tags fresh */
   private soloImageObserver: MutationObserver | null = null;
+  /** Pending debounce timer for the solo-image retag */
+  private soloImageTimer: number | null = null;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -143,7 +141,6 @@ export default class NativeSlidesPlugin extends Plugin {
   onunload(): void {
     this.soloImageObserver?.disconnect();
     this.soloImageObserver = null;
-    this.soloImageHost = null;
     this.bar?.remove();
     this.bar = null;
     document.body.classList.remove("native-slides-mode");
@@ -268,21 +265,25 @@ export default class NativeSlidesPlugin extends Plugin {
   }
 
   /**
-   * Keep the solo-image tags fresh: CodeMirror re-creates line elements on
-   * every re-render (and replaces `.cm-content` itself on view-mode
-   * switches), so a one-shot pass goes stale. The observer watches the
-   * view's stable container (`view.contentEl`) and, after each debounced
-   * burst, re-resolves the CURRENT `.cm-content` before tagging — so a
-   * replaced editor never leaves the observer watching a dead node.
+   * Keep the solo-image tags fresh while Slides mode is active. CodeMirror
+   * re-creates line elements on every re-render, and Obsidian swaps the
+   * whole editor subtree on view-mode switches — so no fixed observation
+   * target is safe (observers attached to a former `.cm-content` or
+   * `view.contentEl` silently watch a detached node and never fire again).
+   * The observer therefore watches `document.body` and, per debounced
+   * burst, re-resolves the CURRENT active editor before tagging.
    */
-  private syncSoloImageObserver(host: HTMLElement | null): void {
-    if (this.soloImageHost === host) return;
+  private syncSoloImageObserver(active: boolean): void {
+    if (active && this.soloImageObserver) {
+      this.tagCurrentContent();
+      return;
+    }
+    if (!active && !this.soloImageObserver) return;
     if (this.soloImageObserver) {
       this.soloImageObserver.disconnect();
       this.soloImageObserver = null;
     }
-    this.soloImageHost = host;
-    if (!host) return;
+    if (!active) return;
     this.soloImageObserver = new MutationObserver(() => {
       if (this.soloImageTimer !== null) window.clearTimeout(this.soloImageTimer);
       this.soloImageTimer = window.setTimeout(() => {
@@ -290,7 +291,7 @@ export default class NativeSlidesPlugin extends Plugin {
         this.tagCurrentContent();
       }, 60);
     });
-    this.soloImageObserver.observe(host, { childList: true, subtree: true });
+    this.soloImageObserver.observe(document.body, { childList: true, subtree: true });
     this.tagCurrentContent();
   }
 
@@ -439,11 +440,10 @@ export default class NativeSlidesPlugin extends Plugin {
     this.syncPointerClass(slides);
     this.updateInlineTitle(slides);
 
-    // Keep standalone-image line tags fresh while Slides mode is active —
-    // watch the view's stable content container (not .cm-content, which
-    // Obsidian replaces on view-mode switches).
-    const mdView = slides ? this.app.workspace.getActiveViewOfType(MarkdownView) : null;
-    this.syncSoloImageObserver(mdView?.contentEl ?? null);
+    // Keep standalone-image line tags fresh while Slides mode is active.
+    // The observer watches document.body and re-resolves the active editor
+    // each pass, so editor rebuilds (view-mode switches) cannot strand it.
+    this.syncSoloImageObserver(slides);
 
     const barVisible = slides && this.settings.showSlidesBar && !this.settings.barHidden;
     // When bar is hidden, set bottom padding to 0 so the card fills the full
