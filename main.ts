@@ -266,51 +266,98 @@ export default class NativeSlidesPlugin extends Plugin {
     else content.removeAttribute("data-slides-title");
   }
 
-  /**
-   * Tag every image-only line in the editor with
-   * `native-slides-solo-image` so styles.css can center it while keeping
-   * the embed inline (line height stays the image height).
-   */
-  private tagSoloImageLines(content: HTMLElement): void {
+  /** Tag every image-only line with the solo class; true if any line changed. */
+  private tagSoloImageLines(content: HTMLElement): boolean {
+    let changed = false;
     for (const line of content.querySelectorAll<HTMLElement>(":scope > .cm-line")) {
-      line.classList.toggle("native-slides-solo-image", isSoloImageLine(line));
+      const want = isSoloImageLine(line);
+      if (line.classList.contains("native-slides-solo-image") !== want) {
+        changed = true;
+        line.classList.toggle("native-slides-solo-image", want);
+      }
     }
+    return changed;
   }
+
+  /** Current active editor container (listener host for solo certification) */
+  private soloImageHost: HTMLElement | null = null;
+  /** View-level capture listener (pointerdown/image loads) renewing the window */
+  private soloViewHandler: ((ev: Event) => void) | null = null;
+  /** Document-level selectionchange listener renewing the window */
+  private soloDocHandler: (() => void) | null = null;
+  /** Self-heal budget for the expiry pass (window re-arms ≤ this many times) */
+  private soloRearms = 0;
 
   /**
    * Keep the solo-image tags fresh while Slides mode is active. CodeMirror
    * re-creates line elements inside its render pipeline, so tags must be
-   * re-certified at a moment that is guaranteed to land before the browser
-   * paints the rebuilt lines. rAF callbacks run after the frame's tasks and
-   * before layout/paint, so a line built in the task phase is re-tagged in
-   * the same frame — an uncentered solo image can never be painted.
+   * re-certified at a moment that lands before the browser paints rebuilt
+   * lines. rAF callbacks run after the frame's tasks and before layout/
+   * paint, so a line built in the task phase is re-tagged in the same
+   * frame — an uncentered solo image can never be painted with the window
+   * open.
    *
-   * To avoid running at 60fps forever, the certification is event-driven
-   * and bounded: Obsidian's public `workspace.on("editor-change")` event
-   * opens a 500ms certification window (renewed by every edit); the rAF
-   * chain runs only while the window is open and stops when idle. Entry
-   * into Slides mode schedules the first window as well, covering the
-   * editor rebuild that follows the mode switch. The pass itself is cheap
-   * (viewport-scoped lines, idempotent classList.toggle).
+   * No permanent 60fps loop: certifications are event-driven and bounded.
+   * A window is opened/renewed by every content edit (`editor-change`),
+   * by caret/selection moves and clicks (selectionchange/pointerdown —
+   * clicking the image line flips its preview between raw markdown and the
+   * embed, re-rendering the line), and by image loads; entry into Slides
+   * mode opens a long window covering the editor rebuild that follows the
+   * mode switch. If the window expires and the expiry pass still had to
+   * change tags (the DOM was still settling), it re-arms a fresh window,
+   * up to `soloRearms` budget. The rAF chain stops the moment the window
+   * is closed, so idle = no scheduled work.
    */
   private syncSoloImageObserver(active: boolean): void {
     if (active) {
-      this.scheduleSoloCertify();
+      const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+      const host = view?.contentEl ?? null;
+      if (host && this.soloViewHandler === null) {
+        this.soloImageHost = host;
+        this.soloViewHandler = () => {
+          if (this.slidesMode) this.scheduleSoloCertify();
+        };
+        host.addEventListener("pointerdown", this.soloViewHandler, true);
+        host.addEventListener("load", this.soloViewHandler, true);
+        this.soloDocHandler = () => {
+          if (this.slidesMode) this.scheduleSoloCertify();
+        };
+        document.addEventListener("selectionchange", this.soloDocHandler);
+      }
+      this.soloRearms = 0;
+      this.scheduleSoloCertify(2500);
       return;
     }
+    if (this.soloViewHandler && this.soloImageHost) {
+      this.soloImageHost.removeEventListener("pointerdown", this.soloViewHandler, true);
+      this.soloImageHost.removeEventListener("load", this.soloViewHandler, true);
+    }
+    this.soloViewHandler = null;
+    this.soloImageHost = null;
+    if (this.soloDocHandler) document.removeEventListener("selectionchange", this.soloDocHandler);
+    this.soloDocHandler = null;
     if (this.soloImageFrame !== null) {
       window.cancelAnimationFrame(this.soloImageFrame);
       this.soloImageFrame = null;
     }
   }
 
-  /** Open (or renew) the rAF certification window for ~500ms. */
-  private scheduleSoloCertify(): void {
-    this.soloRetagUntil = window.performance.now() + 500;
+  /** Open (or renew) the rAF certification window for `ms` milliseconds. */
+  private scheduleSoloCertify(ms = 500): void {
+    this.soloRetagUntil = window.performance.now() + ms;
     if (this.soloImageFrame !== null) return; // window already covered
     const tick = (): void => {
       this.soloImageFrame = null;
-      if (window.performance.now() >= this.soloRetagUntil) return; // window closed
+      if (window.performance.now() >= this.soloRetagUntil) {
+        // Window closed: if the final pass still had to change tags, the
+        // editor was still settling — re-arm a fresh window while the
+        // budget allows.
+        if (this.soloRearms < 4 && this.tagCurrentContent()) {
+          this.soloRearms++;
+          this.scheduleSoloCertify();
+        }
+        return;
+      }
       this.tagCurrentContent();
       this.soloImageFrame = window.requestAnimationFrame(tick);
     };
@@ -318,11 +365,11 @@ export default class NativeSlidesPlugin extends Plugin {
   }
 
   /** Tag the solo-image lines of the active editor, wherever it is now. */
-  private tagCurrentContent(): void {
+  private tagCurrentContent(): boolean {
     const content = this.app.workspace
       .getActiveViewOfType(MarkdownView)
       ?.contentEl.querySelector<HTMLElement>(".cm-content");
-    if (content) this.tagSoloImageLines(content);
+    return content ? this.tagSoloImageLines(content) : false;
   }
 
   /** Enter Slides mode: record the exit state and force the Live Preview */
