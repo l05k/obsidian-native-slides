@@ -269,33 +269,37 @@ export default class NativeSlidesPlugin extends Plugin {
 
   /**
    * Keep the solo-image tags fresh: CodeMirror re-creates line elements on
-   * every re-render, so a one-shot pass goes stale. The observer re-tags on
-   * mutations (debounced — CM performs many small updates per keystroke)
-   * while Slides mode is active. Re-attaches whenever the content element
-   * changes or its previous host was replaced by a re-render (Obsidian
-   * rebuilds the editor on view switches).
+   * every re-render (and replaces `.cm-content` itself on view-mode
+   * switches), so a one-shot pass goes stale. The observer watches the
+   * view's stable container (`view.contentEl`) and, after each debounced
+   * burst, re-resolves the CURRENT `.cm-content` before tagging — so a
+   * replaced editor never leaves the observer watching a dead node.
    */
-  private syncSoloImageObserver(content: HTMLElement | null): void {
-    if (this.soloImageHost === content && this.soloImageHost?.isConnected) return;
+  private syncSoloImageObserver(host: HTMLElement | null): void {
+    if (this.soloImageHost === host) return;
     if (this.soloImageObserver) {
       this.soloImageObserver.disconnect();
       this.soloImageObserver = null;
     }
-    this.soloImageHost = content;
-    if (!content) return;
+    this.soloImageHost = host;
+    if (!host) return;
     this.soloImageObserver = new MutationObserver(() => {
       if (this.soloImageTimer !== null) window.clearTimeout(this.soloImageTimer);
       this.soloImageTimer = window.setTimeout(() => {
         this.soloImageTimer = null;
-        const el =
-          this.app.workspace
-            .getActiveViewOfType(MarkdownView)
-            ?.contentEl.querySelector<HTMLElement>(".cm-content") ?? this.soloImageHost;
-        if (el) this.tagSoloImageLines(el);
+        this.tagCurrentContent();
       }, 60);
     });
-    this.soloImageObserver.observe(content, { childList: true, subtree: true });
-    this.tagSoloImageLines(content);
+    this.soloImageObserver.observe(host, { childList: true, subtree: true });
+    this.tagCurrentContent();
+  }
+
+  /** Tag the solo-image lines of the active editor, wherever it is now. */
+  private tagCurrentContent(): void {
+    const content = this.app.workspace
+      .getActiveViewOfType(MarkdownView)
+      ?.contentEl.querySelector<HTMLElement>(".cm-content");
+    if (content) this.tagSoloImageLines(content);
   }
 
   /** Enter Slides mode: record the exit state and force the Live Preview */
@@ -435,13 +439,11 @@ export default class NativeSlidesPlugin extends Plugin {
     this.syncPointerClass(slides);
     this.updateInlineTitle(slides);
 
-    // Keep standalone-image line tags fresh while Slides mode is active
-    const contentEl = slides
-      ? (this.app.workspace
-          .getActiveViewOfType(MarkdownView)
-          ?.contentEl.querySelector<HTMLElement>(".cm-content") ?? null)
-      : null;
-    this.syncSoloImageObserver(contentEl);
+    // Keep standalone-image line tags fresh while Slides mode is active —
+    // watch the view's stable content container (not .cm-content, which
+    // Obsidian replaces on view-mode switches).
+    const mdView = slides ? this.app.workspace.getActiveViewOfType(MarkdownView) : null;
+    this.syncSoloImageObserver(mdView?.contentEl ?? null);
 
     const barVisible = slides && this.settings.showSlidesBar && !this.settings.barHidden;
     // When bar is hidden, set bottom padding to 0 so the card fills the full
