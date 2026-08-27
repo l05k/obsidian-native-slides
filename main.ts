@@ -57,8 +57,10 @@ export default class NativeSlidesPlugin extends Plugin {
   private tabBarHeight = 0;
   /** Whether the mouse pointer is hidden for presenting (session state) */
   pointerHidden = false;
-  /** Animation-frame loop re-certifying the solo-image tags each frame */
+  /** Animation-frame counter re-certifying solo-image tags while editing */
   private soloImageFrame: number | null = null;
+  /** Deadline until which the rAF certification window stays open (ms) */
+  private soloRetagUntil = 0;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -93,14 +95,14 @@ export default class NativeSlidesPlugin extends Plugin {
       }, 500),
     );
 
-    // ── 2b. Solo-image safety net: re-tag on a slow interval while Slides
-    // mode is active. The per-frame certifier handles typing, but stray
-    // editor rebuilds outside the rAF cadence (e.g. view switches during a
-    // long block) are covered by this interval. Idempotent, so no flicker. ──
-    this.registerInterval(
-      window.setInterval(() => {
-        if (this.slidesMode && this.soloImageFrame !== null) this.tagCurrentContent();
-      }, 500),
+    // ── 2b. Solo-image certification windows: an edit event opens a ~500ms
+    // window of per-frame re-certification, keeping solo image lines
+    // centered across CodeMirror's line rebuilds. The window closes as soon
+    // as the editor is idle, so no background work runs between edits. ──
+    this.registerEvent(
+      this.app.workspace.on("editor-change", () => {
+        if (this.slidesMode) this.scheduleSoloCertify();
+      }),
     );
 
     // ── 3. Commands ─────────────────────────────────────────────────────
@@ -274,31 +276,40 @@ export default class NativeSlidesPlugin extends Plugin {
 
   /**
    * Keep the solo-image tags fresh while Slides mode is active. CodeMirror
-   * re-creates line elements during its render pipeline, and Obsidian swaps
-   * whole editor subtrees on view-mode switches — event-driven retagging
-   * (mutation observers, debounced timers) either misses the re-render or
-   * arrives tens/hundreds of milliseconds later, letting the browser paint
-   * the freshly built line WITHOUT its centering class: the image visibly
-   * jumps to the left on every keystroke.
+   * re-creates line elements inside its render pipeline, so tags must be
+   * re-certified at a moment that is guaranteed to land before the browser
+   * paints the rebuilt lines. rAF callbacks run after the frame's tasks and
+   * before layout/paint, so a line built in the task phase is re-tagged in
+   * the same frame — an uncentered solo image can never be painted.
    *
-   * Instead, an animation-frame loop re-certifies the active editor's lines
-   * on EVERY frame while Slides mode is on. rAF callbacks run after the
-   * frame's tasks and before layout/paint, so a line rebuilt in the task
-   * phase is re-tagged in the same frame: the browser can never paint an
-   * uncentered solo image. The pass is cheap (viewport-only DOM lines) and
-   * classList.toggle is idempotent.
+   * To avoid running at 60fps forever, the certification is event-driven
+   * and bounded: Obsidian's public `workspace.on("editor-change")` event
+   * opens a 500ms certification window (renewed by every edit); the rAF
+   * chain runs only while the window is open and stops when idle. Entry
+   * into Slides mode schedules the first window as well, covering the
+   * editor rebuild that follows the mode switch. The pass itself is cheap
+   * (viewport-scoped lines, idempotent classList.toggle).
    */
   private syncSoloImageObserver(active: boolean): void {
-    if (active && this.soloImageFrame !== null) return;
-    if (!active && this.soloImageFrame === null) return;
+    if (active) {
+      this.scheduleSoloCertify();
+      return;
+    }
     if (this.soloImageFrame !== null) {
       window.cancelAnimationFrame(this.soloImageFrame);
       this.soloImageFrame = null;
     }
-    if (!active) return;
+  }
+
+  /** Open (or renew) the rAF certification window for ~500ms. */
+  private scheduleSoloCertify(): void {
+    this.soloRetagUntil = window.performance.now() + 500;
+    if (this.soloImageFrame !== null) return; // window already covered
     const tick = (): void => {
-      this.soloImageFrame = window.requestAnimationFrame(tick);
+      this.soloImageFrame = null;
+      if (window.performance.now() >= this.soloRetagUntil) return; // window closed
       this.tagCurrentContent();
+      this.soloImageFrame = window.requestAnimationFrame(tick);
     };
     this.soloImageFrame = window.requestAnimationFrame(tick);
   }
