@@ -108,6 +108,19 @@ export default class NativeSlidesPlugin extends Plugin {
       }),
     );
 
+    // ── 2c. Caret/pointer/focus activity re-arms the solo-image
+    // certification window even when no content changed: switching to
+    // another app and back re-renders editor lines (caret sync, viewport
+    // refresh) while the rAF loop is throttled/suspended in the background,
+    // so the class can be lost without any editor event. Focus/visibility
+    // changes are the only signals that arrive in that case. ──
+    this.registerDomEvent(window, "focus", () => {
+      if (this.slidesMode) this.scheduleSoloCertify();
+    });
+    this.registerDomEvent(document, "visibilitychange", () => {
+      if (document.visibilityState === "visible" && this.slidesMode) this.scheduleSoloCertify();
+    });
+
     // ── 3. Commands ─────────────────────────────────────────────────────
     registerCommands(this);
 
