@@ -57,8 +57,8 @@ export default class NativeSlidesPlugin extends Plugin {
   private tabBarHeight = 0;
   /** Whether the mouse pointer is hidden for presenting (session state) */
   pointerHidden = false;
-  /** Mutation observer keeping the solo-image tags fresh */
-  private soloImageObserver: MutationObserver | null = null;
+  /** Animation-frame loop re-certifying the solo-image tags each frame */
+  private soloImageFrame: number | null = null;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -93,15 +93,13 @@ export default class NativeSlidesPlugin extends Plugin {
       }, 500),
     );
 
-    // ── 2b. Solo-image safety net: re-tag once a second while Slides mode
-    // is active. The mutation path re-tags immediately, but Obsidian's
-    // asynchronous editor rebuilds leave a small attach-race window where a
-    // re-rendered line escapes the observer; the interval guarantees the
-    // class converges within 500ms. It is idempotent (classList.toggle is a
-    // no-op when the class is already present) so it causes no flicker. ──
+    // ── 2b. Solo-image safety net: re-tag on a slow interval while Slides
+    // mode is active. The per-frame certifier handles typing, but stray
+    // editor rebuilds outside the rAF cadence (e.g. view switches during a
+    // long block) are covered by this interval. Idempotent, so no flicker. ──
     this.registerInterval(
       window.setInterval(() => {
-        if (this.slidesMode && this.soloImageObserver) this.tagCurrentContent();
+        if (this.slidesMode && this.soloImageFrame !== null) this.tagCurrentContent();
       }, 500),
     );
 
@@ -149,8 +147,8 @@ export default class NativeSlidesPlugin extends Plugin {
   }
 
   onunload(): void {
-    this.soloImageObserver?.disconnect();
-    this.soloImageObserver = null;
+    if (this.soloImageFrame !== null) window.cancelAnimationFrame(this.soloImageFrame);
+    this.soloImageFrame = null;
     this.bar?.remove();
     this.bar = null;
     document.body.classList.remove("native-slides-mode");
@@ -276,31 +274,33 @@ export default class NativeSlidesPlugin extends Plugin {
 
   /**
    * Keep the solo-image tags fresh while Slides mode is active. CodeMirror
-   * re-creates line elements on its re-renders, and Obsidian swaps the whole
-   * editor subtree on view-mode switches — the observer watches
-   * `document.body` and re-resolves the CURRENT active editor each pass.
-   * Crucially the re-tag runs synchronously in the mutation callback (a
-   * microtask, before the browser paints): a line recreated without the
-   * class is re-tagged in the same frame, so the centering never visibly
-   * flaps. Debouncing would reintroduce a 60ms window of left-aligned
-   * painting on every keystroke.
+   * re-creates line elements during its render pipeline, and Obsidian swaps
+   * whole editor subtrees on view-mode switches — event-driven retagging
+   * (mutation observers, debounced timers) either misses the re-render or
+   * arrives tens/hundreds of milliseconds later, letting the browser paint
+   * the freshly built line WITHOUT its centering class: the image visibly
+   * jumps to the left on every keystroke.
+   *
+   * Instead, an animation-frame loop re-certifies the active editor's lines
+   * on EVERY frame while Slides mode is on. rAF callbacks run after the
+   * frame's tasks and before layout/paint, so a line rebuilt in the task
+   * phase is re-tagged in the same frame: the browser can never paint an
+   * uncentered solo image. The pass is cheap (viewport-only DOM lines) and
+   * classList.toggle is idempotent.
    */
   private syncSoloImageObserver(active: boolean): void {
-    if (active && this.soloImageObserver) {
-      this.tagCurrentContent();
-      return;
-    }
-    if (!active && !this.soloImageObserver) return;
-    if (this.soloImageObserver) {
-      this.soloImageObserver.disconnect();
-      this.soloImageObserver = null;
+    if (active && this.soloImageFrame !== null) return;
+    if (!active && this.soloImageFrame === null) return;
+    if (this.soloImageFrame !== null) {
+      window.cancelAnimationFrame(this.soloImageFrame);
+      this.soloImageFrame = null;
     }
     if (!active) return;
-    this.soloImageObserver = new MutationObserver(() => {
+    const tick = (): void => {
+      this.soloImageFrame = window.requestAnimationFrame(tick);
       this.tagCurrentContent();
-    });
-    this.soloImageObserver.observe(document.body, { childList: true, subtree: true });
-    this.tagCurrentContent();
+    };
+    this.soloImageFrame = window.requestAnimationFrame(tick);
   }
 
   /** Tag the solo-image lines of the active editor, wherever it is now. */
