@@ -95,13 +95,16 @@ export default class NativeSlidesPlugin extends Plugin {
       }, 500),
     );
 
-    // ── 2b. Solo-image certification windows: an edit event opens a ~500ms
-    // window of per-frame re-certification, keeping solo image lines
-    // centered across CodeMirror's line rebuilds. The window closes as soon
+    // ── 2b. Solo-image certification windows: each editor-change event
+    // re-certifies immediately (the doc update is already in the DOM when
+    // the event fires) and opens a ~500ms window of per-frame re-certification
+    // covering CodeMirror's deferred re-renders. The rAF chain closes as soon
     // as the editor is idle, so no background work runs between edits. ──
     this.registerEvent(
       this.app.workspace.on("editor-change", () => {
-        if (this.slidesMode) this.scheduleSoloCertify();
+        if (!this.slidesMode) return;
+        this.tagCurrentContent();
+        this.scheduleSoloCertify();
       }),
     );
 
