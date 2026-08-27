@@ -93,6 +93,18 @@ export default class NativeSlidesPlugin extends Plugin {
       }, 500),
     );
 
+    // ── 2b. Solo-image safety net: re-tag once a second while Slides mode
+    // is active. The mutation path re-tags immediately, but Obsidian's
+    // asynchronous editor rebuilds leave a small attach-race window where a
+    // re-rendered line escapes the observer; the interval guarantees the
+    // class converges within 500ms. It is idempotent (classList.toggle is a
+    // no-op when the class is already present) so it causes no flicker. ──
+    this.registerInterval(
+      window.setInterval(() => {
+        if (this.slidesMode && this.soloImageObserver) this.tagCurrentContent();
+      }, 500),
+    );
+
     // ── 3. Commands ─────────────────────────────────────────────────────
     registerCommands(this);
 
