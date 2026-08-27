@@ -59,8 +59,6 @@ export default class NativeSlidesPlugin extends Plugin {
   pointerHidden = false;
   /** Mutation observer keeping the solo-image tags fresh */
   private soloImageObserver: MutationObserver | null = null;
-  /** Pending debounce timer for the solo-image retag */
-  private soloImageTimer: number | null = null;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -266,12 +264,14 @@ export default class NativeSlidesPlugin extends Plugin {
 
   /**
    * Keep the solo-image tags fresh while Slides mode is active. CodeMirror
-   * re-creates line elements on every re-render, and Obsidian swaps the
-   * whole editor subtree on view-mode switches — so no fixed observation
-   * target is safe (observers attached to a former `.cm-content` or
-   * `view.contentEl` silently watch a detached node and never fire again).
-   * The observer therefore watches `document.body` and, per debounced
-   * burst, re-resolves the CURRENT active editor before tagging.
+   * re-creates line elements on its re-renders, and Obsidian swaps the whole
+   * editor subtree on view-mode switches — the observer watches
+   * `document.body` and re-resolves the CURRENT active editor each pass.
+   * Crucially the re-tag runs synchronously in the mutation callback (a
+   * microtask, before the browser paints): a line recreated without the
+   * class is re-tagged in the same frame, so the centering never visibly
+   * flaps. Debouncing would reintroduce a 60ms window of left-aligned
+   * painting on every keystroke.
    */
   private syncSoloImageObserver(active: boolean): void {
     if (active && this.soloImageObserver) {
@@ -285,11 +285,7 @@ export default class NativeSlidesPlugin extends Plugin {
     }
     if (!active) return;
     this.soloImageObserver = new MutationObserver(() => {
-      if (this.soloImageTimer !== null) window.clearTimeout(this.soloImageTimer);
-      this.soloImageTimer = window.setTimeout(() => {
-        this.soloImageTimer = null;
-        this.tagCurrentContent();
-      }, 60);
+      this.tagCurrentContent();
     });
     this.soloImageObserver.observe(document.body, { childList: true, subtree: true });
     this.tagCurrentContent();
