@@ -8,6 +8,10 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 ## [Unreleased]
 
+### Added
+
+- **Copy slide capacity** command: measures the live Slides layout of the active note and copies an AI-ready capacity report to the clipboard — the screen and text-area dimensions (slides bar and card title reserves are subtracted, so the numbers always describe exactly the one screen you are looking at), the line box of each element type (H1/H2/H3, body, bullet, code, first image — measured on the current note, or derived from the pinned Slides typography when the note has none), how many latin/CJK characters fit per line, and capacity examples (body lines, bullets, H1 + bullets). The message follows the Obsidian UI language (Chinese when the app is Chinese, otherwise English). Run it inside Slides mode (#44).
+
 ### Changed
 
 - **Card title is editable (Slides title = filename)**: the card title now renders with the native inline title element instead of a painted pseudo-element, so clicking it focuses the real editor — typing renames the note, exactly as in Live Preview. The title keeps the card geometry (H1 metrics pixel-identical to a body H1, height reserved, click mapping unchanged). Property-backed titles remain read-only on the card; edit the property in the note's properties panel. The shared slide typography variables moved to the sizer so the card and its title resolve identical values (#87).

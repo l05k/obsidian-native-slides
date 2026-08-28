@@ -1,4 +1,5 @@
 import type NativeSlidesPlugin from "../main";
+import { copyCapacityPrompt } from "./capacity";
 import { registerDebugCommand } from "./debug";
 import { frontmatterOf } from "./mode";
 import { DECK_KEY } from "./types";
@@ -69,6 +70,16 @@ export function registerCommands(plugin: NativeSlidesPlugin): void {
     // No default hotkey: Mod+Shift+N belongs to Create next slide — two
     // commands sharing one default hotkey trips Obsidian's conflict UI.
     callback: () => void plugin.deckService.executeCreateNew(plugin.deckService.planCreateNew()),
+  });
+  // Copy a one-screen capacity report of the current Slides layout
+  plugin.addCommand({
+    id: "ns-copy-capacity",
+    name: "Copy slide capacity",
+    checkCallback: (checking) => {
+      if (!document.body.classList.contains("native-slides-mode")) return false;
+      if (!checking) void copyCapacityPrompt(plugin.app);
+      return true;
+    },
   });
   // Toggle Slides mode — the immersive card view (deck notes only)
   plugin.addCommand({
