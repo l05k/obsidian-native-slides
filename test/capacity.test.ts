@@ -90,4 +90,21 @@ describe("formatCapacity", () => {
     expect(prompt).toContain("bullet: -");
     expect(prompt).toContain("code: -");
   });
+
+  it("introduces the plugin context before the geometry", () => {
+    const en = formatCapacity(base, computeCapacity(base), "en");
+    expect(en.indexOf('Native Slides"')).toBeLessThan(en.indexOf("Geometry: screen"));
+    expect(en).toContain("deck:");
+    expect(en).toContain("Create next slide");
+    const zh = formatCapacity(base, computeCapacity(base), "zh");
+    expect(zh.indexOf("Native Slides")).toBeLessThan(zh.indexOf("几何：屏幕"));
+    expect(zh).toContain("Create new slide");
+  });
+
+  it("states the usage pattern in the tail note", () => {
+    const en = formatCapacity(base, computeCapacity(base), "en");
+    expect(en).toContain("make slides/PPT notes");
+    const zh = formatCapacity(base, computeCapacity(base), "zh");
+    expect(zh).toContain("制作 slides/PPT 笔记");
+  });
 });

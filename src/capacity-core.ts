@@ -99,6 +99,31 @@ function boxStr(kind: string, box: { fontSize: number; lineHeight: number } | nu
   return `${kind}: ${fmt(box.lineHeight)}px/line (font ${fmt(box.fontSize)}px)`;
 }
 
+/** How Native Slides works — the context an agent needs before generating */
+function enContext(): string[] {
+  return [
+    `This note belongs to a deck used by the Obsidian plugin "Native Slides". The plugin turns markdown notes into slides: a deck is an ordered chain of notes, each note is ONE slide shown as an immersive, one screen = one card view (each slide always starts at the top of its note).`,
+    ``,
+    `How to build a slides deck:`,
+    `- A slide is an ordinary markdown note in the vault; the only reserved frontmatter property is deck — one link to the NEXT slide (e.g. deck: ["[[slide-2]]"], or deck: [] for the last slide). The chain order is the presentation order; page numbers are auto-computed.`,
+    `- Create a new deck with the command "Create new slide" (fresh note, deck: []). Add pages with "Create next slide" — it wires the deck links automatically (the current note's deck link is pointed at the new note, the new note gets the old target).`,
+    `- Content is written in plain markdown and rendered on the card in the note's language when possible. Keep every slide within one screen — the capacity numbers below are the fit budget (they already subtract the slides bar and the card title).`,
+    `- The user's request comes first: follow what the user asked for ("for material X make a slides deck"), using the plugin's conventions above as the form, not as the content.`,
+  ];
+}
+
+function zhContext(): string[] {
+  return [
+    `本笔记属于 Obsidian 插件 "Native Slides" 的 deck 笔记。该插件把 markdown 笔记变成幻灯片：一个 deck 就是一组有序链接的笔记，每篇笔记就是一张幻灯片，以"一屏一卡"的沉浸式卡片视图展示（每张幻灯片都从笔记开头开始）。`,
+    ``,
+    `如何构建幻灯片 deck：`,
+    `- 幻灯片就是库里的普通 markdown 笔记；唯一保留的 frontmatter 属性是 deck——指向下一张的链接（如 deck: ["[[slide-2]]"]，最后一张写 deck: []）。链的顺序即放映顺序，页号自动计算。`,
+    `- 用命令 "Create new slide" 新建一套 deck（新建笔记，deck: []）；用 "Create next slide" 继续加页——它会自动接通链（当前笔记的 deck 链接指向新页，新页继承原来的下一张）。`,
+    `- 内容用纯 markdown 编写，在卡片上渲染；尽量使用用户当前的语言措辞。每张幻灯片必须放入一屏——下面的容量数字就是可用预算（已经扣掉 slides 栏与卡片标题）。`,
+    `- 以用户的实际需求为先：用户要什么（如"基于某材料制作 slides 笔记"）就做什么，插件的约定只是形式，不是内容。`,
+  ];
+}
+
 function enPrompt(m: SlideMetrics, c: CapacityResult, note: string): string {
   const bar =
     m.bar.visible || m.bar.height > 0
@@ -116,6 +141,8 @@ function enPrompt(m: SlideMetrics, c: CapacityResult, note: string): string {
   ].join("; ");
   return [
     `Slide capacity — one screen, no scrolling. Generated from the live Slides layout of this note; every number is measured/branch-derived at the current UI scale.`,
+    ``,
+    ...enContext(),
     ``,
     `Geometry: screen ${m.viewport.width}×${m.viewport.height}px; text area ${m.text.width}×${m.text.height}px. ${bar} ${title}`,
     ``,
@@ -151,6 +178,8 @@ function zhPrompt(m: SlideMetrics, c: CapacityResult, note: string): string {
   return [
     `幻灯片容量 —— 一屏，不滚动。基于当前笔记的实时 Slides 布局生成；所有数字按当前 UI 比例实测/推算。`,
     ``,
+    ...zhContext(),
+    ``,
     `几何：屏幕 ${m.viewport.width}×${m.viewport.height}px；文字区 ${m.text.width}×${m.text.height}px。${bar} ${title}`,
     ``,
     `文字参数（正文 ${fmt(m.body.fontSize)}px）：`,
@@ -177,7 +206,7 @@ function zhPrompt(m: SlideMetrics, c: CapacityResult, note: string): string {
 export function formatCapacity(m: SlideMetrics, c: CapacityResult, locale: "zh" | "en"): string {
   const note =
     locale === "zh"
-      ? "要求：生成的内容必须放在当前这一屏内，不要滚动；用上面的几何与行高数字核算总高度（正文行数 × 行高 + 标题预留 + 块间间距 ≤ 文字区高度）。"
-      : "Requirement: the generated content must fit this one screen — no scrolling. Check the total height with the numbers above (lines × line-height + title reserve + inter-block spacing ≤ text area height).";
+      ? "用法：用户会提供材料并说「基于该材料制作 slides/PPT 笔记」；此时按上文约定创建 deck —— 先了解材料并给出提纲/规划，再逐页生成笔记；每个卡片（笔记）内放恰到好处的内容，不要超出容量。要求：生成的内容必须放在当前这一屏内，不滚动；用上面的几何与行高数字核算总高度（正文行数 × 行高 + 标题预留 + 块间间距 ≤ 文字区高度）。"
+      : "Usage: the user will provide material and ask to make slides/PPT notes for it; in that case create a deck per the conventions above — review the material and outline the structure first, then generate each slide note; keep each card's content just within capacity. Requirement: the generated content must fit this one screen — no scrolling. Check the total height with the numbers above (lines × line-height + title reserve + inter-block spacing ≤ text area height).";
   return locale === "zh" ? zhPrompt(m, c, note) : enPrompt(m, c, note);
 }
