@@ -353,13 +353,28 @@ body.native-slides-mode
    the line/paragraph text is never affected, so headings or text
    near images can never be centered by accident. Embeds
    (![[img]]) are wrapped in an inline .internal-embed span, so the
-   container is made a centered block too. CodeMirror's internal
-   zero-width <img class="cm-widgetBuffer"> placeholders are
-   excluded: blockifying one (it appears at a line start whenever
-   Obsidian marks the line foldable — e.g. when the next line is
-   deeply indented) makes it generate its own empty line box,
-   reported as the first line suddenly gaining extra top padding
-   (#88). */
+   container is made a centered block too — the embed becomes its own
+   line block, letting text around it flow above/below it rather than
+   squeezing into its sides. CodeMirror's internal zero-width
+   <img class="cm-widgetBuffer"> placeholders are excluded:
+   blockifying one (it appears at a line start whenever Obsidian
+   marks the line foldable — e.g. when the next line is deeply
+   indented) makes it generate its own empty line box, reported as
+   the first line suddenly gaining extra top padding (#88).
+   The img inside a blockified embed is made block too: an inline
+   img would stretch its parent box by a line-height strut (~9px)
+   even when no text is around — the 'reserved' band a standalone
+   image line never needs. The embed's image-wrapper (Obsidian wraps
+   the img in an inline-flex .image-wrapper) is blockified for the
+   same reason: an inline-flex wrapper keeps an inline line box in
+   the embed even with a block img inside, re-adding the strut.
+   (.internal-embed.media-embed is used for these two to avoid a new
+   :has() — every image embed carries both classes.)
+   With these block, a solo image line is exactly as tall as the
+   image; the only rows a mixed text line adds are the text's own —
+   a gap appears only on the side where text actually sits
+   (verified: solo 360px, `text ![[img]]` 34.5+360+0, double-embed
+   and sized-embed rows all strut-free). */
 body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
@@ -369,7 +384,19 @@ body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
   .cm-line
-  .internal-embed:has(img) {
+  .internal-embed:has(img),
+body.native-slides-mode
+  .workspace-leaf.mod-active
+  .markdown-source-view.mod-cm6.is-live-preview
+  .cm-line
+  .internal-embed.media-embed
+  img,
+body.native-slides-mode
+  .workspace-leaf.mod-active
+  .markdown-source-view.mod-cm6.is-live-preview
+  .cm-line
+  .internal-embed.media-embed
+  .image-wrapper {
   display: block;
   margin-left: auto;
   margin-right: auto;
