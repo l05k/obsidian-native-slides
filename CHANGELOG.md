@@ -10,7 +10,7 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 ### Added
 
-- **Copy slide capacity** command: measures the live Slides layout of the active note and copies an AI-ready capacity report to the clipboard — the screen and text-area dimensions (slides bar and card title reserves are subtracted, so the numbers always describe exactly the one screen you are looking at), the line box of each element type (H1/H2/H3, body, bullet, code, first image — measured on the current note, or derived from the pinned Slides typography when the note has none), how many latin/CJK characters fit per line, and capacity examples (body lines, bullets, H1 + bullets). The message follows the Obsidian UI language (Chinese when the app is Chinese, otherwise English). Run it inside Slides mode (#44).
+- **Copy native slide skill for AI agent** command: measures the live Slides layout of the active note and copies an AI-ready capacity report to the clipboard — the screen and text-area dimensions (slides bar and card title reserves are subtracted, so the numbers always describe exactly the one screen you are looking at), the line box of each element type (H1/H2/H3, body, bullet, code, first image — measured on the current note, or derived from the pinned Slides typography when the note has none), how many latin/CJK characters fit per line, and capacity examples (body lines, bullets, H1 + bullets). The message follows the Obsidian UI language (Chinese when the app is Chinese, otherwise English). Run it inside Slides mode (#44).
 
 ### Changed
 
