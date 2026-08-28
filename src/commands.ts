@@ -74,7 +74,7 @@ export function registerCommands(plugin: NativeSlidesPlugin): void {
   // Copy a one-screen capacity report of the current Slides layout
   plugin.addCommand({
     id: "ns-copy-slide-skill",
-    name: "Copy slide layout info for AI agent",
+    name: "Copy AI agent prompt",
     checkCallback: (checking) => {
       if (!document.body.classList.contains("native-slides-mode")) return false;
       if (!checking) void copyCapacityPrompt(plugin.app);
