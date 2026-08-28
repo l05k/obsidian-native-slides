@@ -274,6 +274,14 @@ export default class NativeSlidesPlugin extends Plugin {
     }
     this.slidesMode = true;
     this.refresh();
+    // Pin the scroller to the top before any frame renders: the view-state
+    // change above may restore it to the saved cursor line without firing a
+    // scroll event afterwards, so the capture-phase reset below would never
+    // run and a long note would open mid-document.
+    for (const el of view?.contentEl.querySelectorAll<HTMLElement>(".cm-scroller") ?? []) {
+      if (el.scrollTop !== 0) el.scrollTop = 0;
+      if (el.scrollLeft !== 0) el.scrollLeft = 0;
+    }
   }
 
   /** Exit Slides mode: restore the view mode recorded at entry */
