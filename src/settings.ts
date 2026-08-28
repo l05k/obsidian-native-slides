@@ -25,6 +25,11 @@ export class NativeSlidesSettingTab extends PluginSettingTab {
         },
       },
       {
+        name: "Block image embeds",
+        desc: "Render image embeds in Slides mode as centered card blocks, exactly as tall as the image (no reserved text-height bands around a standalone image). Turn off to keep Obsidian's native inline flow: text flows beside small images and wraps when the row runs out of width.",
+        control: { key: "imageLayout", type: "toggle" },
+      },
+      {
         name: "Show slides bar",
         desc: "Master toggle for the entire slides bar at the bottom of the window",
         control: { key: "showSlidesBar", type: "toggle" },
@@ -119,6 +124,19 @@ export class NativeSlidesSettingTab extends PluginSettingTab {
           this.plugin.refresh();
         });
       });
+
+    new Setting(containerEl)
+      .setName("Block image embeds")
+      .setDesc(
+        "Render image embeds in Slides mode as centered card blocks, exactly as tall as the image (no reserved text-height bands around a standalone image). Turn off to keep Obsidian's native inline flow: text flows beside small images and wraps when the row runs out of width.",
+      )
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.imageLayout).onChange(async (value) => {
+          this.plugin.settings.imageLayout = value;
+          await this.plugin.saveSettings();
+          this.plugin.refresh();
+        }),
+      );
 
     new Setting(containerEl)
       .setName("Show slides bar")
