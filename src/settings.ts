@@ -25,8 +25,8 @@ export class NativeSlidesSettingTab extends PluginSettingTab {
         },
       },
       {
-        name: "Block image embeds",
-        desc: "Render image embeds in Slides mode as centered card blocks, exactly as tall as the image (no reserved text-height bands around a standalone image). Turn off to keep Obsidian's native inline flow: text flows beside small images and wraps when the row runs out of width.",
+        name: "Center images",
+        desc: "Images render centered on the slide as a card block exactly as tall as the picture. Turn off for Obsidian's usual behavior: images stay inline with the text (a small image and its caption sit on the same row).",
         control: { key: "imageLayout", type: "toggle" },
       },
       {
@@ -126,9 +126,9 @@ export class NativeSlidesSettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-      .setName("Block image embeds")
+      .setName("Center images")
       .setDesc(
-        "Render image embeds in Slides mode as centered card blocks, exactly as tall as the image (no reserved text-height bands around a standalone image). Turn off to keep Obsidian's native inline flow: text flows beside small images and wraps when the row runs out of width.",
+        "Images render centered on the slide as a card block exactly as tall as the picture. Turn off for Obsidian's usual behavior: images stay inline with the text (a small image and its caption sit on the same row).",
       )
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.imageLayout).onChange(async (value) => {
