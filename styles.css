@@ -348,28 +348,50 @@ body.native-slides-mode
   line-height: 1.5;
 }
 
-/* ── 7c. Images: standalone image lines are centered ──
-   Only the img element itself is centered (block + auto margins) —
-   the line/paragraph text is never affected, so headings or text
-   near images can never be centered by accident. Embeds
-   (![[img]]) are wrapped in an inline .internal-embed span, so the
-   container is made a centered block too. CodeMirror's internal
-   zero-width <img class="cm-widgetBuffer"> placeholders are
-   excluded: blockifying one (it appears at a line start whenever
-   Obsidian marks the line foldable — e.g. when the next line is
-   deeply indented) makes it generate its own empty line box,
-   reported as the first line suddenly gaining extra top padding
-   (#88). */
-body.native-slides-mode
+/* ── 7c. Images: centered block layout for embeds (setting-gated) ──
+   Gated on `native-slides-block-images` — the "Block image embeds"
+   setting (default on) toggles it; with the setting off, the group
+   never matches and images keep Obsidian's native inline flow (text
+   flows beside a small image, wraps when the row runs out of width —
+   exactly like Live Preview outside Slides mode), so this group is the
+   only place an image's Slides layout lives.
+
+   The block Look: embed containers are centered blocks (old rule:
+   block + auto margins). A blockified embed's img is blockified too,
+   and Obsidian's inline-flex image-wrapper is blockified — an inline
+   img/wrapper would keep a line-height strut inside the embed (the
+   embed box ~9px taller than the image even with no text around),
+   i.e. the "reserved text-height band" a standalone image line never
+   needs. With all three block, a solo image line is exactly as tall
+   as the image and centered; a mixed text line stacks its text rows
+   above/below the image block (the text's own rows are the only
+   added height — no strut bands). CodeMirror's zero-width
+   <img class="cm-widgetBuffer"> placeholders stay excluded from the
+   centering rule (blockifying one forces an empty full-height line
+   box wherever Obsidian marks the line foldable — #88; they're taken
+   out of flow by 7d). */
+body.native-slides-mode.native-slides-block-images
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
   .cm-line:has(> img:not(.cm-widgetBuffer))
   img:not(.cm-widgetBuffer),
-body.native-slides-mode
+body.native-slides-mode.native-slides-block-images
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
   .cm-line
-  .internal-embed:has(img) {
+  .internal-embed:has(img),
+body.native-slides-mode.native-slides-block-images
+  .workspace-leaf.mod-active
+  .markdown-source-view.mod-cm6.is-live-preview
+  .cm-line
+  .internal-embed.media-embed
+  img,
+body.native-slides-mode.native-slides-block-images
+  .workspace-leaf.mod-active
+  .markdown-source-view.mod-cm6.is-live-preview
+  .cm-line
+  .internal-embed.media-embed
+  .image-wrapper {
   display: block;
   margin-left: auto;
   margin-right: auto;

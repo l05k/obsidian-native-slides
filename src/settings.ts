@@ -25,6 +25,11 @@ export class NativeSlidesSettingTab extends PluginSettingTab {
         },
       },
       {
+        name: "Center images",
+        desc: "Images render centered on the slide as a card block exactly as tall as the picture. Turn off for Obsidian's usual behavior: images stay inline with the text (a small image and its caption sit on the same row).",
+        control: { key: "imageLayout", type: "toggle" },
+      },
+      {
         name: "Show slides bar",
         desc: "Master toggle for the entire slides bar at the bottom of the window",
         control: { key: "showSlidesBar", type: "toggle" },
@@ -119,6 +124,19 @@ export class NativeSlidesSettingTab extends PluginSettingTab {
           this.plugin.refresh();
         });
       });
+
+    new Setting(containerEl)
+      .setName("Center images")
+      .setDesc(
+        "Images render centered on the slide as a card block exactly as tall as the picture. Turn off for Obsidian's usual behavior: images stay inline with the text (a small image and its caption sit on the same row).",
+      )
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.imageLayout).onChange(async (value) => {
+          this.plugin.settings.imageLayout = value;
+          await this.plugin.saveSettings();
+          this.plugin.refresh();
+        }),
+      );
 
     new Setting(containerEl)
       .setName("Show slides bar")

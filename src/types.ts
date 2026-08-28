@@ -40,6 +40,12 @@ export interface NativeSlidesSettings {
   barPropertyWidths: string;
   /** Ask for confirmation before deleting slides from the panel (default on) */
   confirmDeleteSlides: boolean;
+  /**
+   * Block image embeds as centered card blocks (default on). When off,
+   * images keep Obsidian's native inline flow — text flows around/beside
+   * them exactly like Live Preview outside Slides mode.
+   */
+  imageLayout: boolean;
 }
 
 export const DEFAULT_SETTINGS: NativeSlidesSettings = {
@@ -55,6 +61,7 @@ export const DEFAULT_SETTINGS: NativeSlidesSettings = {
   barProperties: "",
   barPropertyWidths: "",
   confirmDeleteSlides: true,
+  imageLayout: true,
 };
 
 /** Reserved frontmatter key driving deck navigation (never rendered as a chip) */

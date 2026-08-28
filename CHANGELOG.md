@@ -16,6 +16,8 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 - **No more phantom top padding on foldable lines**: a long first line whose next line starts with deep indentation no longer gains a spurious empty row above it in Slides mode. Root cause: CodeMirror's internal zero-width `cm-widgetBuffer` placeholder (inserted when Obsidian marks the line foldable) was caught by the standalone-image centering rule and pushed the text down by a full line box; buffers are now excluded from that rule and taken out of the inline flow (#88).
 
+- **Image layout is now a setting** (`Center images`, default on): images render centered on the slide as a card block exactly as tall as the picture — the embed's img and Obsidian's inline-flex `.image-wrapper` are blockified inside a blockified embed, so no line-height strut (≈9px) stretches a standalone image line; text rows are the only added height. Turning the setting off restores Obsidian's native inline flow: images stay inline with the text (a small image and its caption sit on the same row), wrapping only when the row runs out of width. Pure CSS + one body class (`native-slides-block-images`) — no JavaScript tagging, no re-render certification (the standalone-image centering previously survived via JS-tagged lines and their re-render machinery; that whole mechanism is gone, and the bug it existed to fix is gone with it). The `cm-widgetBuffer` fix (#88) stays on always.
+
 ## [1.0.2] - 2026-08-24
 
 ### Changed

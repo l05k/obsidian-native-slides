@@ -139,6 +139,7 @@ export default class NativeSlidesPlugin extends Plugin {
     this.bar = null;
     document.body.classList.remove("native-slides-mode");
     document.body.classList.remove("native-slides-pointer-hidden");
+    document.body.classList.remove("native-slides-block-images");
     this.removeThemeClasses();
   }
 
@@ -206,6 +207,18 @@ export default class NativeSlidesPlugin extends Plugin {
    */
   private syncPointerClass(slides: boolean): void {
     document.body.classList.toggle("native-slides-pointer-hidden", slides && this.pointerHidden);
+  }
+
+  /**
+   * Keep the `native-slides-block-images` body class in sync with the
+   * `imageLayout` setting — styles.css's image-layout rules hook off it.
+   * The class is only meaningful in Slides mode.
+   */
+  private syncImageLayoutClass(slides: boolean): void {
+    document.body.classList.toggle(
+      "native-slides-block-images",
+      slides && this.settings.imageLayout,
+    );
   }
 
   /**
@@ -382,6 +395,7 @@ export default class NativeSlidesPlugin extends Plugin {
     document.body.classList.toggle("native-slides-mode", slides);
     if (!slides) this.pointerHidden = false; // leaving Slides restores the pointer
     this.syncPointerClass(slides);
+    this.syncImageLayoutClass(slides);
     this.updateInlineTitle(slides);
 
     const barVisible = slides && this.settings.showSlidesBar && !this.settings.barHidden;
