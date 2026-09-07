@@ -26,7 +26,7 @@
   - 点 slides 栏 ◀ ▶ 按钮翻页，或用 **上一页 / 下一页** 命令（默认快捷键 `Cmd/Ctrl+Shift+←/→`，可在 **设置 → 快捷键** 重新绑定）。在原生模式按下也会自动进入 Slides 并翻页。两个箭头始终显示；无法移动的那一个（第一页的 ◀、最后一页的 ▶）为浅灰色禁用态。
   - **Create Next Slide 命令**（仅 deck 笔记可用）：在当前笔记之后创建一张新幻灯片——新文件命名为 `<当前名>-next`（重名自动追加 `-2`、`-3`），`deck` 链接自动改写，新笔记以编辑模式打开，可直接输入内容。若当前笔记的 `deck` 链接指向不存在的笔记，则直接创建那个声明的笔记（顺带消除 ⚠ 警告）。
   - **Create New Slide 命令**（不属于任何 deck 的笔记可用）：**开启一套全新 deck**——新建一个笔记（`untitled-slides`，重名自动追加序号）作为第一页，frontmatter 为 `deck: []`；执行命令时所在的笔记保持原样不动。空白标签页也能用（新笔记落在 Obsidian 的"新笔记默认位置"）。之后在 deck 内用 Create Next Slide 继续加页。
-  - **Make This Note the First Slide 命令**（不属于任何 deck 的笔记可用）：把当前笔记提升为一套**全新 deck 的第一页**——内容、标题与位置原样保留，仅在 frontmatter 写入 `deck: []`（单页 deck）。适合"先写长文（讲义、项目笔记），再想演示"的场景：执行后自动进入 Slides 模式，效果立即可见。若笔记已属于某个 deck，命令不生效并给出提示。
+  - **Initialize Slides with This Note 命令**（不属于任何 deck 的笔记可用）：把当前笔记提升为一套**全新 deck 的第一页**——内容、标题与位置原样保留，仅在 frontmatter 写入 `deck: []`（单页 deck）。适合"先写长文（讲义、项目笔记），再想演示"的场景：执行后自动进入 Slides 模式，效果立即可见。该命令只在尚未属于任何 deck 的笔记上出现在命令面板中，绝不会在 deck 笔记上误导性出现。
 
 - **演示时没有闪烁光标**：点一下 slides 栏即可让编辑器失焦——讲解时不再有闪烁的输入光标；点回任意幻灯片内容即可继续编辑。**Toggle Mouse Pointer** 命令（`Mod+Shift+M`）更进一步：全窗口隐藏鼠标指针并顺带失焦；再执行一次恢复，退出 Slides 模式也会自动恢复。
 - **可配置 slides 栏属性**：选择哪些 frontmatter 属性显示在 slides 栏中以及显示顺序。设置 → Bar properties 接受逗号分隔的列表（如 `series, level, date`）；每个值占据等宽列，列之间的分隔条可拖拽调整宽度（宽度跨会话持久化）。留空 = 不显示属性列。缺失的属性会被静默跳过。属性列排版与页号一致（均随 bar 高度缩放）：属性列为灰色弱化显示，页号保持醒目。
@@ -35,7 +35,7 @@
 - **Copy AI agent prompt 命令**（仅在 Slides 模式下）：把一份适合给 AI 用的说明复制到剪贴板——先介绍插件机制（一屏一卡；`deck` 链属性；Create new/next slide 如何接链），再给出实时布局实测：真实文字区（已扣掉 slides 栏与卡片标题）、一屏能放多少行正文/每行多少拉丁字符或汉字、各元素类型（H1/H2/H3、正文、列表项、代码行、第一张图）的行高（优先实测当前笔记，缺失类型按 Slides 固定排版变量推算），以及容量示例："20 行正文"、"H1 + 19 个列表项"等。文案跟随 Obsidian 界面语言——用它向 AI 索要幻灯片：把你的需求（如"基于某材料制作 slides 笔记"）写在前面，再把这份说明粘贴在中间。
 - **设置页**：可选择样式模板、配置 bar properties，可开关 ◀ ▶ 按钮、页号显示与自动进入；Obsidian 1.13.0+ 下各项设置可被设置搜索索引。
 - **断链警告**：`deck` 链接指向不存在的笔记时，slides 栏显示 ⚠ 警告标签，方便作者发现笔误（该链只会终止或排除，不会报错）。
-- **命令**：_Toggle Slides Mode_（`Mod+Shift+E`）、_Previous Page / Next Page_（`Mod+Shift+←/→`）、_Create Next Slide_（`Mod+Shift+N`）、_Create New Slide_、_Make This Note the First Slide_、_Copy AI Agent Prompt_、_Show Slides Panel_、_Toggle Mouse Pointer_（`Mod+Shift+M`）、_Toggle Slides Bar_——都可在 _设置 → 快捷键_ 重新绑定。
+- **命令**：_Toggle Slides Mode_（`Mod+Shift+E`）、_Previous Page / Next Page_（`Mod+Shift+←/→`）、_Create Next Slide_（`Mod+Shift+N`）、_Create New Slide_、_Initialize Slides with This Note_、_Copy AI Agent Prompt_、_Show Slides Panel_、_Toggle Mouse Pointer_（`Mod+Shift+M`）、_Toggle Slides Bar_——都可在 _设置 → 快捷键_ 重新绑定。命令**随上下文显隐**：deck 导航类（_Previous Page / Next Page_、_Create Next Slide_）与 _Toggle Slides Mode_ 只在 deck 笔记上出现，_Initialize Slides with This Note_ 只在尚未属于 deck 的笔记上出现，Slides 模式专属命令（_Toggle Slides Bar_、_Toggle Mouse Pointer_）只在 Slides 模式内出现。
 
 ## Slides 面板（侧边栏）
 
@@ -59,57 +59,10 @@ v1.0.0 起不再有概览页——**slides 面板**接管"纵览整套 deck"的�
 
 演示套件：`Welcome.md` → `Make it yours.md` → `Grow the Deck.md`。
 
-## 工作原理
+## 文档
 
-| 部分                           | 原理                                                                                                                                                                                       |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 隐藏状态栏（Slides 模式）      | `body.native-slides-mode .status-bar { display: none }`——原生模式保留 Obsidian 默认状态栏                                                                                                  |
-| 沉浸布局（Slides 模式）        | `body.native-slides-mode` 隐藏丝带/侧边栏/tab 栏；slides 栏高度对齐 tab bar 实测高度（`--native-slides-tabbar-height`）                                                                    |
-| 隐藏笔记内属性面板             | `.markdown-source-view.mod-cm6.is-live-preview .metadata-container { display: none }`——属性改由 slides 栏展示                                                                              |
-| 套件解析                       | `computeDeck()` 读取每页唯一的 next 链接 → 经 `deck` 反向索引回溯到链头 → 向前遍历整条链（有防环保护）→ 返回完整链 + 当前索引                                                              |
-| 页号                           | 链中的位置，从 1 开始（链头 = 第 1 页）；不需要存储 `page-number`                                                                                                                          |
-| PPT 翻页                       | `navigate()` 沿链步进，用 `workspace.openLinkText` 打开；从原生模式触发时会先进入 Slides 模式                                                                                              |
-| Slides 进入/退出               | `enterSlides()` 记录当前视图状态并强制切到 Live Preview；`exitSlides()` 精确还原该视图状态（Source / Live Preview / Reading）                                                              |
-| Create Next Slide              | `planCreateNext()`（纯逻辑核心）算出新文件名、新笔记的 `deck` 链接与改写方案；命令用 `vault.create` + `fileManager.processFrontMatter` 执行，并在编辑模式打开新笔记。仅 deck 笔记可用      |
-| Create New Slide               | `planCreateNew()`（纯逻辑核心）为新 deck 第一页命名（`untitled-slides`，防重名）；在"新笔记默认位置"以 `deck: []` 创建，其余一概不动。空白标签页也可用                                     |
-| Make This Note the First Slide | `planMakeFirstSlide()`（纯逻辑核心）以 `deckService.isMember` 把关；命令用 `fileManager.processFrontMatter` 写入 `deck: []`（其余属性原样），等 metadataCache 落盘后再自动进入 Slides 模式 |
-| 设置                           | 声明式设置 API（Obsidian ≥ 1.13.0，可被设置搜索索引）+ 传统 `PluginSettingTab` 回退；`loadData/saveData` 持久化开关；快捷键走 Obsidian 原生命令系统                                        |
-
-## 开发
-
-插件用 TypeScript 编写。你不需要会 TS——用自然语言描述想改的功能即可，代码会更新并重新编译。
-手动构建：
-
-在仓库根目录执行：
-
-```sh
-npm ci             # 仅首次需要（下载 esbuild 等）
-npm run build      # 编译 main.ts → main.js（开发版：含 debug 命令）
-npm run build:release  # 发布版：压缩并移除 debug 命令
-npm run check      # 可选：TypeScript 类型检查（tsc --noEmit）
-npm run test       # 可选：vitest 单元测试
-npm run lint       # 可选：ESLint
-npm run format:check  # 可选：Prettier
-```
-
-### 开发循环（重建 + 重载）
-
-先重建，再手动重载：
-
-```sh
-npm run dev        # 监听 main.ts，变更时自动重建 main.js
-```
-
-编辑 `main.ts` 后，在 Obsidian 里重载插件：按 `Cmd/Ctrl+P` 打开命令面板，搜索 **Reload app without saving** 并执行（该命令默认没有绑定快捷键）。或者，在 _设置 → 第三方插件_ 里关闭再开启 **Native Slides**。
-
-## 开发者
-
-排版测量工具以**仅开发版**命令的形式提供，发布构建中不包含。
-
-- **开发构建**（`npm run build` / `npm run dev`）会注册 `Debug: Dump Typography Styles` 命令：在**编辑与阅读两种视图**各采样一次当前笔记、计算差异，并写入 vault 根目录的 `.native-slides-debug.json`（无需手动复制控制台输出）。在开启 Slides 模式的 deck 笔记上运行；`example-vault/` 里五个 `typography-sample-*.md` 是它的固定一页采样夹具——请勿改名或删除。
-- **发布构建**（`npm run build:release`）会压缩 `main.js`，并通过 `--define:DEV_MODE=false` + tree-shaking 彻底移除 debug 命令及其支撑代码。发布后执行 `npm run build` 即可恢复开发版产物。
-
-源码已拆分到 `src/` 模块（`types`、`mode`、`deck-service`、`panel`、`bar`、`commands`、`settings`、`debug`、`deck`、`createNext`、`deleteSlides`），`main.ts` 仅作编排入口。
+- **[设计原则与工作原理](docs/design-zh.md)**（[English](docs/design.md)）——指导每项改动的四大设计原则，以及实现机制：Slides 模式如何隐藏界面元素、解析 deck 链、计算页号，create-* 命令的机制等。
+- **[开发](docs/development-zh.md)**（[English](docs/development.md)）——构建插件（npm 脚本）、带 Obsidian 重载的开发循环、仅开发版的排版调试工具，以及 `src/` 模块结构。
 
 ## 已知限制
 
