@@ -7,14 +7,18 @@ import { Notice } from "obsidian";
 
 /** Register every command; the debug command is dev-build only. */
 export function registerCommands(plugin: NativeSlidesPlugin): void {
-  // Toggle the slides bar (within Slides mode)
+  // Toggle the slides bar — only meaningful inside Slides mode, so a
+  // checkCallback keeps it out of the palette everywhere else
   plugin.addCommand({
     id: "ns-toggle-bar",
     name: "Toggle slides bar",
-    callback: async () => {
-      plugin.settings.barHidden = !plugin.settings.barHidden;
-      await plugin.saveSettings();
-      plugin.refresh();
+    checkCallback: (checking) => {
+      if (!document.body.classList.contains("native-slides-mode")) return false;
+      if (!checking) {
+        plugin.settings.barHidden = !plugin.settings.barHidden;
+        void plugin.saveSettings().then(() => plugin.refresh());
+      }
+      return true;
     },
   });
   // Show the slides sidebar panel (deck slide list)
@@ -34,18 +38,31 @@ export function registerCommands(plugin: NativeSlidesPlugin): void {
       return true;
     },
   });
-  // Previous / next page (deck navigation; entering Slides mode as needed)
+  // Previous / next page — deck navigation (entering Slides mode as
+  // needed). checkCallback keeps them out of the palette on non-deck notes,
+  // where they have nothing to flip; their default hotkeys then no longer
+  // shadow the editor's select-to-line shortcuts on plain notes either.
   plugin.addCommand({
     id: "ns-prev",
     name: "Previous page",
     hotkeys: [{ modifiers: ["Mod", "Shift"], key: "ArrowLeft" }],
-    callback: () => plugin.navigate("prev"),
+    checkCallback: (checking) => {
+      const file = plugin.app.workspace.getActiveFile();
+      if (!file || !plugin.deckService.isMember(file)) return false;
+      if (!checking) void plugin.navigate("prev");
+      return true;
+    },
   });
   plugin.addCommand({
     id: "ns-next",
     name: "Next page",
     hotkeys: [{ modifiers: ["Mod", "Shift"], key: "ArrowRight" }],
-    callback: () => plugin.navigate("next"),
+    checkCallback: (checking) => {
+      const file = plugin.app.workspace.getActiveFile();
+      if (!file || !plugin.deckService.isMember(file)) return false;
+      if (!checking) void plugin.navigate("next");
+      return true;
+    },
   });
   // Create Next Slide — new slide after the current one (deck notes only)
   plugin.addCommand({
@@ -63,14 +80,43 @@ export function registerCommands(plugin: NativeSlidesPlugin): void {
       return true;
     },
   });
-  // Create New Slide — a brand-new deck's first page (non-deck notes only;
-  // also works from a blank tab — lands in the default new-note location)
+  // Create New Slide — a brand-new deck's first page. Hidden on deck notes
+  // (the deck grows via Create Next Slide instead); still works from a
+  // blank tab — lands in the default new-note location.
   plugin.addCommand({
     id: "ns-create-new",
     name: "Create new slide",
     // No default hotkey: Mod+Shift+N belongs to Create next slide — two
     // commands sharing one default hotkey trips Obsidian's conflict UI.
-    callback: () => void plugin.deckService.executeCreateNew(plugin.deckService.planCreateNew()),
+    checkCallback: (checking) => {
+      const file = plugin.app.workspace.getActiveFile();
+      if (file && plugin.deckService.isMember(file)) return false;
+      if (!checking) void plugin.deckService.executeCreateNew(plugin.deckService.planCreateNew());
+      return true;
+    },
+  });
+  // Initialize slides with this note — promote the active (plain) note into
+  // the head of a brand-new deck: it gains `deck: []` and keeps its
+  // content, title and location, then Slides mode auto-enters. checkCallback
+  // shows it only on notes that are NOT already part of a deck, so it never
+  // appears on deck/slides notes where it would be misleading. Conversion is
+  // a single frontmatter write (no confirmation dialog).
+  plugin.addCommand({
+    id: "ns-make-first-slide",
+    name: "Initialize slides with this note",
+    checkCallback: (checking) => {
+      const file = plugin.app.workspace.getActiveFile();
+      if (!file || plugin.deckService.isMember(file)) return false;
+      if (!checking) {
+        void (async () => {
+          const converted = await plugin.deckService.makeFirstSlide(file);
+          if (!converted) return; // defensive — the check above already passed
+          new Notice("Native slides: made this note the first slide of a new deck");
+          await plugin.enterSlidesForActive();
+        })();
+      }
+      return true;
+    },
   });
   // Copy a one-screen capacity report of the current Slides layout
   plugin.addCommand({

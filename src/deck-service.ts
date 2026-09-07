@@ -2,6 +2,7 @@ import { App, Notice, TFile } from "obsidian";
 import {
   planCreateNew as planNew,
   planCreateNext as plan,
+  planMakeFirstSlide as planFirst,
   type CreateNextResult,
 } from "./createNext";
 import { computeDeck, extractLinks, extractRawLinks, type DeckInfo } from "./deck";
@@ -113,6 +114,51 @@ export class DeckService {
       plan,
       dirPrefix(this.app.fileManager.getNewFileParent(sourcePath)?.path),
     );
+  }
+
+  /**
+   * Promote the active note into the head of a brand-new deck: add `deck: []`
+   * to its frontmatter — content, title, location and every other property
+   * stay untouched. Notes that already belong to a deck are left alone.
+   * Returns true when the note was converted (the caller may then auto-enter
+   * Slides mode), false when it was already a deck member.
+   */
+  async makeFirstSlide(file: TFile): Promise<boolean> {
+    if (planFirst({ alreadyDeck: this.isMember(file) }) === null) return false;
+    await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+      fm[DECK_KEY] = [];
+    });
+    // Obsidian indexes a saved file asynchronously; the command's auto-enter
+    // reads the cache, so hand back only once the new `deck` is visible.
+    await this.waitForCachedDeck(file);
+    return true;
+  }
+
+  /**
+   * Wait until the metadata cache reflects the note's `deck` property
+   * (best effort — resolves on the property appearing, or after `timeoutMs`).
+   */
+  private async waitForCachedDeck(file: TFile, timeoutMs = 2000): Promise<void> {
+    if (this.hasDeckInCache(file)) return;
+    await new Promise<void>((resolve) => {
+      const ref = this.app.metadataCache.on("changed", (changed: TFile) => {
+        if (changed.path === file.path && this.hasDeckInCache(file)) {
+          this.app.metadataCache.offref(ref);
+          window.clearTimeout(timer);
+          resolve();
+        }
+      });
+      const timer = window.setTimeout(() => {
+        this.app.metadataCache.offref(ref);
+        resolve();
+      }, timeoutMs);
+    });
+  }
+
+  /** Whether the metadata cache already shows a `deck` property on the note */
+  private hasDeckInCache(file: TFile): boolean {
+    const fm = frontmatterOf(this.app, file);
+    return fm !== null && DECK_KEY in fm;
   }
 
   /** Apply a plan: create the note, rewire `deck` properties, optionally open it */
