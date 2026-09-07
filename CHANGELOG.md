@@ -8,6 +8,10 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 ## [Unreleased]
 
+### Added
+
+- **Make This Note the First Slide** command: promotes the active note into the head of a brand-new deck — its content, title and location stay put, and `deck: []` is written onto its frontmatter (a single-slide deck). Notes that already belong to a deck are left untouched with a Notice. After conversion Slides mode auto-enters so the result is immediately visible (#98).
+
 ### Fixed
 
 - **Copy AI agent prompt is always visible in the command palette**: the command was registered with a `checkCallback` that returned `false` outside Slides mode, which hides a command from the palette (palette only lists commands whose check returns `true`) — it only appeared in the hotkeys settings. It now uses a plain callback: always listed, and shows a Notice ("enter Slides mode first") when invoked outside Slides mode.

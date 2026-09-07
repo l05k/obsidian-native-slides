@@ -72,6 +72,28 @@ export function registerCommands(plugin: NativeSlidesPlugin): void {
     // commands sharing one default hotkey trips Obsidian's conflict UI.
     callback: () => void plugin.deckService.executeCreateNew(plugin.deckService.planCreateNew()),
   });
+  // Make This Note the First Slide — promote the active (plain) note into
+  // the head of a brand-new deck: it gains `deck: []` and keeps its
+  // content, title and location. A plain callback (not checkCallback) so
+  // the command stays visible in the palette even when the active note is
+  // already in a deck — that case no-ops with a Notice instead. Conversion
+  // is a single frontmatter write (no confirmation dialog), then Slides
+  // mode auto-enters so the result is immediately visible.
+  plugin.addCommand({
+    id: "ns-make-first-slide",
+    name: "Make this note the first slide",
+    callback: async () => {
+      const file = plugin.app.workspace.getActiveFile();
+      if (!file) return; // nothing to convert (blank tab)
+      const converted = await plugin.deckService.makeFirstSlide(file);
+      if (!converted) {
+        new Notice("Native slides: this note already belongs to a deck");
+        return;
+      }
+      new Notice("Native slides: made this note the first slide of a new deck");
+      await plugin.enterSlidesForActive();
+    },
+  });
   // Copy a one-screen capacity report of the current Slides layout
   plugin.addCommand({
     id: "ns-copy-slide-skill",
