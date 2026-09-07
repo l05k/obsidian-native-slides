@@ -16,6 +16,9 @@
  *     current note).
  * planCreateNew plans a brand-new deck's first page (a fresh note that is
  * not part of any deck yet — `deck: []`, no rewrites anywhere).
+ * planMakeFirstSlide plans the inverse: promoting an existing plain note
+ * into the head of a brand-new deck (`deck: []` written onto the note
+ * itself, nothing created or rewritten).
  */
 
 import { extractLinkText } from "./deck";
@@ -109,6 +112,28 @@ export function planCreateNew(input: { existingNames: Set<string> }): CreateNext
     newDeckLinks: [],
     rewrites: [],
   };
+}
+
+/** A note promoted into the head of a brand-new deck */
+export interface MakeFirstSlidePlan {
+  /** Raw `deck` link texts for the note's frontmatter (always empty — a single-slide deck) */
+  deck: string[];
+}
+
+/**
+ * Plan a "Make this note the first slide" run — promote the active note
+ * into the head of a brand-new deck: its content, title and location stay
+ * untouched, and the frontmatter gains `deck: []` (a single-slide deck,
+ * the standard "last slide" / solo marker). No rewrites anywhere — later
+ * pages are added with Create Next Slide from inside the deck.
+ *
+ * Notes that already belong to a deck (hold a `deck` property, or are
+ * declared as another slide's next) are NOT touched: the plan is null and
+ * the command no-ops with a Notice.
+ */
+export function planMakeFirstSlide(input: { alreadyDeck: boolean }): MakeFirstSlidePlan | null {
+  if (input.alreadyDeck) return null;
+  return { deck: [] };
 }
 
 /** A name usable as a vault note name: no path separators, non-empty */

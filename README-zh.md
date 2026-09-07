@@ -26,6 +26,7 @@
   - 点 slides 栏 ◀ ▶ 按钮翻页，或用 **上一页 / 下一页** 命令（默认快捷键 `Cmd/Ctrl+Shift+←/→`，可在 **设置 → 快捷键** 重新绑定）。在原生模式按下也会自动进入 Slides 并翻页。两个箭头始终显示；无法移动的那一个（第一页的 ◀、最后一页的 ▶）为浅灰色禁用态。
   - **Create Next Slide 命令**（仅 deck 笔记可用）：在当前笔记之后创建一张新幻灯片——新文件命名为 `<当前名>-next`（重名自动追加 `-2`、`-3`），`deck` 链接自动改写，新笔记以编辑模式打开，可直接输入内容。若当前笔记的 `deck` 链接指向不存在的笔记，则直接创建那个声明的笔记（顺带消除 ⚠ 警告）。
   - **Create New Slide 命令**（不属于任何 deck 的笔记可用）：**开启一套全新 deck**——新建一个笔记（`untitled-slides`，重名自动追加序号）作为第一页，frontmatter 为 `deck: []`；执行命令时所在的笔记保持原样不动。空白标签页也能用（新笔记落在 Obsidian 的"新笔记默认位置"）。之后在 deck 内用 Create Next Slide 继续加页。
+  - **Initialize Slides with This Note 命令**（不属于任何 deck 的笔记可用）：把当前笔记提升为一套**全新 deck 的第一页**——内容、标题与位置原样保留，仅在 frontmatter 写入 `deck: []`（单页 deck）。适合"先写长文（讲义、项目笔记），再想演示"的场景：执行后自动进入 Slides 模式，效果立即可见。该命令只在尚未属于任何 deck 的笔记上出现在命令面板中，绝不会在 deck 笔记上误导性出现。
 
 - **演示时没有闪烁光标**：点一下 slides 栏即可让编辑器失焦——讲解时不再有闪烁的输入光标；点回任意幻灯片内容即可继续编辑。**Toggle Mouse Pointer** 命令（`Mod+Shift+M`）更进一步：全窗口隐藏鼠标指针并顺带失焦；再执行一次恢复，退出 Slides 模式也会自动恢复。
 - **可配置 slides 栏属性**：选择哪些 frontmatter 属性显示在 slides 栏中以及显示顺序。设置 → Bar properties 接受逗号分隔的列表（如 `series, level, date`）；每个值占据等宽列，列之间的分隔条可拖拽调整宽度（宽度跨会话持久化）。留空 = 不显示属性列。缺失的属性会被静默跳过。属性列排版与页号一致（均随 bar 高度缩放）：属性列为灰色弱化显示，页号保持醒目。
@@ -34,7 +35,7 @@
 - **Copy AI agent prompt 命令**（仅在 Slides 模式下）：把一份适合给 AI 用的说明复制到剪贴板——先介绍插件机制（一屏一卡；`deck` 链属性；Create new/next slide 如何接链），再给出实时布局实测：真实文字区（已扣掉 slides 栏与卡片标题）、一屏能放多少行正文/每行多少拉丁字符或汉字、各元素类型（H1/H2/H3、正文、列表项、代码行、第一张图）的行高（优先实测当前笔记，缺失类型按 Slides 固定排版变量推算），以及容量示例："20 行正文"、"H1 + 19 个列表项"等。文案跟随 Obsidian 界面语言——用它向 AI 索要幻灯片：把你的需求（如"基于某材料制作 slides 笔记"）写在前面，再把这份说明粘贴在中间。
 - **设置页**：可选择样式模板、配置 bar properties，可开关 ◀ ▶ 按钮、页号显示与自动进入；Obsidian 1.13.0+ 下各项设置可被设置搜索索引。
 - **断链警告**：`deck` 链接指向不存在的笔记时，slides 栏显示 ⚠ 警告标签，方便作者发现笔误（该链只会终止或排除，不会报错）。
-- **命令**：_Toggle Slides Mode_（`Mod+Shift+E`）、_Previous Page / Next Page_（`Mod+Shift+←/→`）、_Create Next Slide_（`Mod+Shift+N`）、_Create New Slide_、_Copy AI Agent Prompt_、_Show Slides Panel_、_Toggle Mouse Pointer_（`Mod+Shift+M`）、_Toggle Slides Bar_——都可在 _设置 → 快捷键_ 重新绑定。
+- **命令**：_Toggle Slides Mode_（`Mod+Shift+E`）、_Previous Page / Next Page_（`Mod+Shift+←/→`）、_Create Next Slide_（`Mod+Shift+N`）、_Create New Slide_、_Initialize Slides with This Note_、_Copy AI Agent Prompt_、_Show Slides Panel_、_Toggle Mouse Pointer_（`Mod+Shift+M`）、_Toggle Slides Bar_——都可在 _设置 → 快捷键_ 重新绑定。命令**随上下文显隐**：deck 导航类（_Previous Page / Next Page_、_Create Next Slide_）与 _Toggle Slides Mode_ 只在 deck 笔记上出现，_Initialize Slides with This Note_ 只在尚未属于 deck 的笔记上出现，Slides 模式专属命令（_Toggle Slides Bar_、_Toggle Mouse Pointer_）只在 Slides 模式内出现。
 
 ## Slides 面板（侧边栏）
 
@@ -69,7 +70,7 @@ v1.0.0 起不再有概览页——**slides 面板**接管"纵览整套 deck"的�
 - Slides 模式仅作用于 **deck 笔记**（带 `deck` 属性的笔记）；其它笔记保持完全原生。
 - 属性来源是 **frontmatter**（笔记开头的 `---` YAML 块）；正文中的 `key:: value` 内联属性暂不读取。
 - `deck` 是**保留属性名**；`position` 键同样保留且不在 slides 栏显示（可留给其它工具使用，不会挤占 slides 栏）。
-- 默认快捷键会占用编辑模式下"选择到行首/行尾"的按键；不需要翻页快捷键可在 设置 → 快捷键 中移除。
+- _Previous Page / Next Page_ 的默认快捷键会占用编辑模式下"选择到行首/行尾"的按键，但**仅在 deck 笔记打开时**；普通笔记上不再干扰（这两个命令只在 deck 笔记上生效）。不需要翻页的话，可在 设置 → 快捷键 中移除。
 - YAML 里链接建议**加引号**（`deck: ["[[slide-2]]"]`）——不加引号 `[[...]]` 会被 YAML 解析成嵌套数组（插件能兼容，但规范写法更稳）。
 - 套件链不能有环；某条链接失效只会终止（或排除）该链，不会报错。
 

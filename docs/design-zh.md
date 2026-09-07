@@ -46,15 +46,16 @@
 
 README 中功能背后的具体机制：
 
-| 部分                      | 原理                                                                                                                                                                                  |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 隐藏状态栏（Slides 模式） | `body.native-slides-mode .status-bar { display: none }`——原生模式保留 Obsidian 默认状态栏                                                                                             |
-| 沉浸布局（Slides 模式）   | `body.native-slides-mode` 隐藏丝带/侧边栏/tab 栏；slides 栏高度对齐 tab bar 实测高度（`--native-slides-tabbar-height`）                                                               |
-| 隐藏笔记内属性面板        | `.markdown-source-view.mod-cm6.is-live-preview .metadata-container { display: none }`——属性改由 slides 栏展示                                                                         |
-| 套件解析                  | `computeDeck()` 读取每页唯一的 next 链接 → 经 `deck` 反向索引回溯到链头 → 向前遍历整条链（有防环保护）→ 返回完整链 + 当前索引                                                         |
-| 页号                      | 链中的位置，从 1 开始（链头 = 第 1 页）；不需要存储 `page-number`                                                                                                                     |
-| PPT 翻页                  | `navigate()` 沿链步进，用 `workspace.openLinkText` 打开；从原生模式触发时会先进入 Slides 模式                                                                                         |
-| Slides 进入/退出          | `enterSlides()` 记录当前视图状态并强制切到 Live Preview；`exitSlides()` 精确还原该视图状态（Source / Live Preview / Reading）                                                         |
-| Create Next Slide         | `planCreateNext()`（纯逻辑核心）算出新文件名、新笔记的 `deck` 链接与改写方案；命令用 `vault.create` + `fileManager.processFrontMatter` 执行，并在编辑模式打开新笔记。仅 deck 笔记可用 |
-| Create New Slide          | `planCreateNew()`（纯逻辑核心）为新 deck 第一页命名（`untitled-slides`，防重名）；在"新笔记默认位置"以 `deck: []` 创建，其余一概不动。空白标签页也可用                                |
-| 设置                      | 声明式设置 API（Obsidian ≥ 1.13.0，可被设置搜索索引）+ 传统 `PluginSettingTab` 回退；`loadData/saveData` 持久化开关；快捷键走 Obsidian 原生命令系统                                   |
+| 部分                             | 原理                                                                                                                                                                                       |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 隐藏状态栏（Slides 模式）        | `body.native-slides-mode .status-bar { display: none }`——原生模式保留 Obsidian 默认状态栏                                                                                                  |
+| 沉浸布局（Slides 模式）          | `body.native-slides-mode` 隐藏丝带/侧边栏/tab 栏；slides 栏高度对齐 tab bar 实测高度（`--native-slides-tabbar-height`）                                                                    |
+| 隐藏笔记内属性面板               | `.markdown-source-view.mod-cm6.is-live-preview .metadata-container { display: none }`——属性改由 slides 栏展示                                                                              |
+| 套件解析                         | `computeDeck()` 读取每页唯一的 next 链接 → 经 `deck` 反向索引回溯到链头 → 向前遍历整条链（有防环保护）→ 返回完整链 + 当前索引                                                              |
+| 页号                             | 链中的位置，从 1 开始（链头 = 第 1 页）；不需要存储 `page-number`                                                                                                                          |
+| PPT 翻页                         | `navigate()` 沿链步进，用 `workspace.openLinkText` 打开；从原生模式触发时会先进入 Slides 模式                                                                                              |
+| Slides 进入/退出                 | `enterSlides()` 记录当前视图状态并强制切到 Live Preview；`exitSlides()` 精确还原该视图状态（Source / Live Preview / Reading）                                                              |
+| Create Next Slide                | `planCreateNext()`（纯逻辑核心）算出新文件名、新笔记的 `deck` 链接与改写方案；命令用 `vault.create` + `fileManager.processFrontMatter` 执行，并在编辑模式打开新笔记。仅 deck 笔记可用      |
+| Create New Slide                 | `planCreateNew()`（纯逻辑核心）为新 deck 第一页命名（`untitled-slides`，防重名）；在"新笔记默认位置"以 `deck: []` 创建，其余一概不动。不属于任何 deck 的笔记、空白标签页可用               |
+| Initialize slides with this note | `planMakeFirstSlide()`（纯逻辑核心）以 `deckService.isMember` 把关；命令用 `fileManager.processFrontMatter` 写入 `deck: []`（其余属性原样），等 metadataCache 落盘后再自动进入 Slides 模式 |
+| 设置                             | 声明式设置 API（Obsidian ≥ 1.13.0，可被设置搜索索引）+ 传统 `PluginSettingTab` 回退；`loadData/saveData` 持久化开关；快捷键走 Obsidian 原生命令系统                                        |

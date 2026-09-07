@@ -8,6 +8,11 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 ## [Unreleased]
 
+### Added
+
+- **Initialize Slides with This Note** command: promotes the active note into the head of a brand-new deck — its content, title and location stay put, and `deck: []` is written onto its frontmatter (a single-slide deck). The command only appears in the command palette for notes that are not yet part of a deck (never misleadingly on deck notes), converts without a confirmation dialog, and auto-enters Slides mode afterwards (#98).
+- **Context-aware command visibility**: deck-navigation commands (_Previous Page / Next Page_, _Create Next Slide_) and _Toggle Slides Mode_ now appear in the command palette only on deck notes; _Initialize Slides with This Note_ only on notes not yet in a deck; _Toggle Slides Bar_ only inside Slides mode. Commands that can't apply no longer clutter the palette, and the _Previous/Next Page_ default hotkeys stop shadowing the editor's select-to-line shortcuts on plain notes (#98).
+
 ### Changed
 
 - **README is now a clean release page, docs moved to `docs/`**: the implementation internals previously inlined in the README (the "How it works" mechanism table) move into `docs/design.md` (+ `docs/design-zh.md`), and the developer-facing build / dev-loop / debug-tooling sections move into a new `docs/development.md` (+ `docs/development-zh.md`). The README (EN/zh) now keeps only the user-facing tour — features, slides panel, example vault, getting started, a short Documentation index — plus known limitations, license and credits (#100).

@@ -306,6 +306,19 @@ export default class NativeSlidesPlugin extends Plugin {
     else void this.enterSlides();
   }
 
+  /**
+   * Auto-enter Slides mode for the active note once it has become a deck
+   * note — used after a command promotes a plain note into a deck (e.g.
+   * "Make this note the first slide"). No-op while Slides mode is already
+   * active or the active note is not (yet) a deck note.
+   */
+  async enterSlidesForActive(): Promise<void> {
+    if (this.slidesMode) return;
+    const file = this.app.workspace.getActiveFile();
+    if (!file || !this.isDeckNote(file)) return;
+    await this.enterSlides();
+  }
+
   /** Reveal the slides sidebar panel, creating it in the right sidebar if needed */
   async activateSlidesPanel(): Promise<void> {
     const existing = this.app.workspace.getLeavesOfType(SLIDES_PANEL_VIEW);

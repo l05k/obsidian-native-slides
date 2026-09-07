@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { planCreateNew, planCreateNext } from "../src/createNext";
+import { planCreateNew, planCreateNext, planMakeFirstSlide } from "../src/createNext";
 
 const noNames = new Set<string>();
 
@@ -130,5 +130,15 @@ describe("planCreateNew (brand-new deck's first page)", () => {
       existingNames: new Set(["untitled-slides", "untitled-slides-2"]),
     });
     expect(plan.newName).toBe("untitled-slides-3");
+  });
+});
+
+describe("planMakeFirstSlide (promote a plain note into a deck's head)", () => {
+  it("plans deck: [] for a plain note — nothing else changes", () => {
+    expect(planMakeFirstSlide({ alreadyDeck: false })).toEqual({ deck: [] });
+  });
+
+  it("refuses a note that already belongs to a deck (no-op)", () => {
+    expect(planMakeFirstSlide({ alreadyDeck: true })).toBeNull();
   });
 });
