@@ -3,6 +3,7 @@ import { copyCapacityPrompt } from "./capacity";
 import { registerDebugCommand } from "./debug";
 import { frontmatterOf } from "./mode";
 import { DECK_KEY } from "./types";
+import { Notice } from "obsidian";
 
 /** Register every command; the debug command is dev-build only. */
 export function registerCommands(plugin: NativeSlidesPlugin): void {
@@ -75,10 +76,16 @@ export function registerCommands(plugin: NativeSlidesPlugin): void {
   plugin.addCommand({
     id: "ns-copy-slide-skill",
     name: "Copy AI agent prompt",
-    checkCallback: (checking) => {
-      if (!document.body.classList.contains("native-slides-mode")) return false;
-      if (!checking) void copyCapacityPrompt(plugin.app);
-      return true;
+    callback: async () => {
+      // checkCallback is not used: it would hide the command from the
+      // command palette outside Slides mode (palette only shows commands
+      // whose checkCallback returns true). Keep the command always visible
+      // and explain the required mode when invoked too early.
+      if (!document.body.classList.contains("native-slides-mode")) {
+        new Notice("Native slides: enter Slides mode first (Mod+Shift+E on a deck note)");
+        return;
+      }
+      await copyCapacityPrompt(plugin.app);
     },
   });
   // Toggle Slides mode — the immersive card view (deck notes only)

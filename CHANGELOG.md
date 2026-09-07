@@ -8,6 +8,10 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 ## [Unreleased]
 
+### Fixed
+
+- **Copy AI agent prompt is always visible in the command palette**: the command was registered with a `checkCallback` that returned `false` outside Slides mode, which hides a command from the palette (palette only lists commands whose check returns `true`) — it only appeared in the hotkeys settings. It now uses a plain callback: always listed, and shows a Notice ("enter Slides mode first") when invoked outside Slides mode.
+
 ## [1.0.3] - 2026-08-28
 
 ### Added
