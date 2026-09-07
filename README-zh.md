@@ -58,56 +58,10 @@ v1.0.0 起不再有概览页——**slides 面板**接管"纵览整套 deck"的�
 
 演示套件：`Welcome.md` → `Make it yours.md` → `Grow the Deck.md`。
 
-## 工作原理
+## 文档
 
-| 部分                      | 原理                                                                                                                                                                                  |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 隐藏状态栏（Slides 模式） | `body.native-slides-mode .status-bar { display: none }`——原生模式保留 Obsidian 默认状态栏                                                                                             |
-| 沉浸布局（Slides 模式）   | `body.native-slides-mode` 隐藏丝带/侧边栏/tab 栏；slides 栏高度对齐 tab bar 实测高度（`--native-slides-tabbar-height`）                                                               |
-| 隐藏笔记内属性面板        | `.markdown-source-view.mod-cm6.is-live-preview .metadata-container { display: none }`——属性改由 slides 栏展示                                                                         |
-| 套件解析                  | `computeDeck()` 读取每页唯一的 next 链接 → 经 `deck` 反向索引回溯到链头 → 向前遍历整条链（有防环保护）→ 返回完整链 + 当前索引                                                         |
-| 页号                      | 链中的位置，从 1 开始（链头 = 第 1 页）；不需要存储 `page-number`                                                                                                                     |
-| PPT 翻页                  | `navigate()` 沿链步进，用 `workspace.openLinkText` 打开；从原生模式触发时会先进入 Slides 模式                                                                                         |
-| Slides 进入/退出          | `enterSlides()` 记录当前视图状态并强制切到 Live Preview；`exitSlides()` 精确还原该视图状态（Source / Live Preview / Reading）                                                         |
-| Create Next Slide         | `planCreateNext()`（纯逻辑核心）算出新文件名、新笔记的 `deck` 链接与改写方案；命令用 `vault.create` + `fileManager.processFrontMatter` 执行，并在编辑模式打开新笔记。仅 deck 笔记可用 |
-| Create New Slide          | `planCreateNew()`（纯逻辑核心）为新 deck 第一页命名（`untitled-slides`，防重名）；在"新笔记默认位置"以 `deck: []` 创建，其余一概不动。空白标签页也可用                                |
-| 设置                      | 声明式设置 API（Obsidian ≥ 1.13.0，可被设置搜索索引）+ 传统 `PluginSettingTab` 回退；`loadData/saveData` 持久化开关；快捷键走 Obsidian 原生命令系统                                   |
-
-## 开发
-
-插件用 TypeScript 编写。你不需要会 TS——用自然语言描述想改的功能即可，代码会更新并重新编译。
-手动构建：
-
-在仓库根目录执行：
-
-```sh
-npm ci             # 仅首次需要（下载 esbuild 等）
-npm run build      # 编译 main.ts → main.js（开发版：含 debug 命令）
-npm run build:release  # 发布版：压缩并移除 debug 命令
-npm run check      # 可选：TypeScript 类型检查（tsc --noEmit）
-npm run test       # 可选：vitest 单元测试
-npm run lint       # 可选：ESLint
-npm run format:check  # 可选：Prettier
-```
-
-### 开发循环（重建 + 重载）
-
-先重建，再手动重载：
-
-```sh
-npm run dev        # 监听 main.ts，变更时自动重建 main.js
-```
-
-编辑 `main.ts` 后，在 Obsidian 里重载插件：按 `Cmd/Ctrl+P` 打开命令面板，搜索 **Reload app without saving** 并执行（该命令默认没有绑定快捷键）。或者，在 _设置 → 第三方插件_ 里关闭再开启 **Native Slides**。
-
-## 开发者
-
-排版测量工具以**仅开发版**命令的形式提供，发布构建中不包含。
-
-- **开发构建**（`npm run build` / `npm run dev`）会注册 `Debug: Dump Typography Styles` 命令：在**编辑与阅读两种视图**各采样一次当前笔记、计算差异，并写入 vault 根目录的 `.native-slides-debug.json`（无需手动复制控制台输出）。在开启 Slides 模式的 deck 笔记上运行；`example-vault/` 里五个 `typography-sample-*.md` 是它的固定一页采样夹具——请勿改名或删除。
-- **发布构建**（`npm run build:release`）会压缩 `main.js`，并通过 `--define:DEV_MODE=false` + tree-shaking 彻底移除 debug 命令及其支撑代码。发布后执行 `npm run build` 即可恢复开发版产物。
-
-源码已拆分到 `src/` 模块（`types`、`mode`、`deck-service`、`panel`、`bar`、`commands`、`settings`、`debug`、`deck`、`createNext`、`deleteSlides`），`main.ts` 仅作编排入口。
+- **[设计原则与工作原理](docs/design-zh.md)**（[English](docs/design.md)）——指导每项改动的四大设计原则，以及实现机制：Slides 模式如何隐藏界面元素、解析 deck 链、计算页号，create-* 命令的机制等。
+- **[开发](docs/development-zh.md)**（[English](docs/development.md)）——构建插件（npm 脚本）、带 Obsidian 重载的开发循环、仅开发版的排版调试工具，以及 `src/` 模块结构。
 
 ## 已知限制
 

@@ -59,55 +59,10 @@ Open `Welcome.md` and press `Cmd/Ctrl+Shift+E` to enter Slides mode — the slid
 
 Demo deck: `Welcome.md` → `Make it yours.md` → `Grow the Deck.md`.
 
-## How it works
+## Documentation
 
-| Piece                             | Mechanism                                                                                                                                                                                                                                    |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Hide the status bar (Slides mode) | `body.native-slides-mode .status-bar { display: none }` — native modes keep Obsidian's default status bar                                                                                                                                    |
-| Immersive layout (Slides mode)    | `body.native-slides-mode` hides the ribbon / sidebars / tab bar; the slides bar takes the tab bar's measured height (`--native-slides-tabbar-height`)                                                                                        |
-| Hide in-note properties           | `.markdown-source-view.mod-cm6.is-live-preview .metadata-container { display: none }` — properties live in the slides bar instead                                                                                                            |
-| Deck resolution                   | `computeDeck()` reads each slide's single next link → walks backward via a reverse `deck`-link index to the chain head → walks the chain forward (cycle-guarded) → returns the chain + current index                                         |
-| Page number                       | position in the chain, 1-based (head slide = page 1); no stored `page-number` property                                                                                                                                                       |
-| PPT navigation                    | `navigate()` steps along the chain and opens via `workspace.openLinkText`; it enters Slides mode first when invoked from a native mode                                                                                                       |
-| Slides enter / exit               | `enterSlides()` records the current view state and forces the Live Preview; `exitSlides()` restores that exact view state (Source / Live Preview / Reading)                                                                                  |
-| Create Next Slide                 | `planCreateNext()` (pure core) computes the new file name, the new note's `deck` links and the rewrites; the command applies them via `vault.create` + `fileManager.processFrontMatter` and opens the new note in edit mode. Deck notes only |
-| Create New Slide                  | `planCreateNew()` (pure core) names a fresh first-page note (`untitled-slides`, collision-aware); created with `deck: []` in the default new-note location — nothing else is touched. Available everywhere, blank tab included               |
-| Settings                          | Declarative settings API (Obsidian ≥ 1.13.0, searchable in Settings) with a classic `PluginSettingTab` fallback; `loadData/saveData` persist the toggles; hotkeys use Obsidian's native command system                                       |
-
-## Development
-
-The plugin is written in TypeScript. You don't need to know TS to ask for changes — describe what you want in natural language and the code will be updated and rebuilt. To build manually:
-
-Run the commands from the repository root:
-
-```sh
-npm ci             # first time only (downloads esbuild etc.)
-npm run build      # compiles main.ts → main.js (dev build: debug command included)
-npm run build:release  # publish build: minified, debug command excluded
-npm run check      # optional: TypeScript type-check (tsc --noEmit)
-npm run test       # optional: vitest unit tests
-npm run lint       # optional: ESLint
-npm run format:check  # optional: Prettier
-```
-
-### Dev loop (rebuild + reload)
-
-Rebuild on change, then reload manually:
-
-```sh
-npm run dev        # watch main.ts, rebuild main.js on change
-```
-
-After editing `main.ts`, reload the plugin in Obsidian: open the command palette with `Cmd/Ctrl+P`, search for **Reload app without saving**, and run it (it has no default hotkey). Alternatively, disable/re-enable **Native Slides** under _Settings → Community plugins_.
-
-## For developers
-
-The typography-measurement tooling ships as a **dev-only** command and is excluded from release builds.
-
-- **Dev build** (`npm run build` / `npm run dev`) registers the `Debug: Dump Typography Styles` command: it samples the current note in **both** edit and reading views, computes an edit-vs-reading diff, and writes `.native-slides-debug.json` to the vault root (no manual console copy/paste). Run it on a deck note with Slides mode on; the five `typography-sample-*.md` notes in `example-vault/` are its fixed one-page fixtures — do not rename or remove them.
-- **Release build** (`npm run build:release`) minifies `main.js` and drops the debug command (and its supporting code) entirely via `--define:DEV_MODE=false` + tree-shaking. Run `npm run build` afterwards to restore the dev artifact.
-
-The source is split into `src/` modules (`types`, `mode`, `deck-service`, `panel`, `bar`, `commands`, `settings`, `debug`, `deck`, `createNext`, `deleteSlides`) with `main.ts` as the orchestration entry point.
+- **[Design principles & how it works](docs/design.md)** ([简体中文](docs/design-zh.md)) — the four design principles that guide every change, and the implementation mechanics: how Slides mode hides the chrome, resolves the deck chain, computes page numbers, and the create-* commands.
+- **[Development](docs/development.md)** ([简体中文](docs/development-zh.md)) — building the plugin (npm scripts), the dev loop with Obsidian reload, the dev-only typography debug tooling, and the `src/` module layout.
 
 ## Known limitations
 

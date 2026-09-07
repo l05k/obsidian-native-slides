@@ -49,3 +49,20 @@ has them. Demo notes keep this footprint to the bare minimum (no decorative
   refresh; acceptable because `metadataCache` is in-memory and decks are small.
   Per principle 4, a memoized chain cache is deliberately deferred until profiling
   shows a real need.
+
+## How it works
+
+The concrete mechanisms behind the features in the README:
+
+| Piece                             | Mechanism                                                                                                                                                                                                                                    |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hide the status bar (Slides mode) | `body.native-slides-mode .status-bar { display: none }` — native modes keep Obsidian's default status bar                                                                                                                                    |
+| Immersive layout (Slides mode)    | `body.native-slides-mode` hides the ribbon / sidebars / tab bar; the slides bar takes the tab bar's measured height (`--native-slides-tabbar-height`)                                                                                        |
+| Hide in-note properties           | `.markdown-source-view.mod-cm6.is-live-preview .metadata-container { display: none }` — properties live in the slides bar instead                                                                                                            |
+| Deck resolution                   | `computeDeck()` reads each slide's single next link → walks backward via a reverse `deck`-link index to the chain head → walks the chain forward (cycle-guarded) → returns the chain + current index                                         |
+| Page number                       | position in the chain, 1-based (head slide = page 1); no stored `page-number` property                                                                                                                                                       |
+| PPT navigation                    | `navigate()` steps along the chain and opens via `workspace.openLinkText`; it enters Slides mode first when invoked from a native mode                                                                                                       |
+| Slides enter / exit               | `enterSlides()` records the current view state and forces the Live Preview; `exitSlides()` restores that exact view state (Source / Live Preview / Reading)                                                                                  |
+| Create Next Slide                 | `planCreateNext()` (pure core) computes the new file name, the new note's `deck` links and the rewrites; the command applies them via `vault.create` + `fileManager.processFrontMatter` and opens the new note in edit mode. Deck notes only |
+| Create New Slide                  | `planCreateNew()` (pure core) names a fresh first-page note (`untitled-slides`, collision-aware); created with `deck: []` in the default new-note location — nothing else is touched. Available everywhere, blank tab included               |
+| Settings                          | Declarative settings API (Obsidian ≥ 1.13.0, searchable in Settings) with a classic `PluginSettingTab` fallback; `loadData/saveData` persist the toggles; hotkeys use Obsidian's native command system                                       |

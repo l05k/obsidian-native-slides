@@ -8,6 +8,10 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 ## [Unreleased]
 
+### Changed
+
+- **README is now a clean release page, docs moved to `docs/`**: the implementation internals previously inlined in the README (the "How it works" mechanism table) move into `docs/design.md` (+ `docs/design-zh.md`), and the developer-facing build / dev-loop / debug-tooling sections move into a new `docs/development.md` (+ `docs/development-zh.md`). The README (EN/zh) now keeps only the user-facing tour — features, slides panel, example vault, getting started, a short Documentation index — plus known limitations, license and credits (#100).
+
 ### Fixed
 
 - **Copy AI agent prompt is always visible in the command palette**: the command was registered with a `checkCallback` that returned `false` outside Slides mode, which hides a command from the palette (palette only lists commands whose check returns `true`) — it only appeared in the hotkeys settings. It now uses a plain callback: always listed, and shows a Notice ("enter Slides mode first") when invoked outside Slides mode.
