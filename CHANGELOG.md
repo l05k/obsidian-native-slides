@@ -8,6 +8,8 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-09-07
+
 ### Added
 
 - **Initialize Slides with This Note** command: promotes the active note into the head of a brand-new deck — its content, title and location stay put, and `deck: []` is written onto its frontmatter (a single-slide deck). The command only appears in the command palette for notes that are not yet part of a deck (never misleadingly on deck notes), converts without a confirmation dialog, and auto-enters Slides mode afterwards (#98).
