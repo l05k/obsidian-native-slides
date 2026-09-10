@@ -19,14 +19,18 @@ An agent never reviews its own work, and no longer waits for a human to merge it
 5. **Re-verify** — `npm run check` / `test` / `lint` / `format:check` / `build`, `git diff --exit-code -- main.js`, then `gh pr checks <pr> --watch` until CI is green.
 6. **Merge or stop** — `gh pr merge <pr> --squash`, then delete the branches separately (see the harness note below). If a blocker is still open after two rounds, stop, leave the PR open, and hand it to the human with the findings; never merge over an open blocker.
 
-**Merge gate — the `protect-main` ruleset on the default branch:**
+**Merge gate — the `protect-main` ruleset on the default branch** (snapshot verified 2026-09-10; re-check with `gh api repos/<owner>/<repo>/rulesets`):
 
-- A pull request is **required**: no direct pushes to `main`, no force-push, no branch deletion.
+- A pull request is **required**: no direct pushes to `main`, no force-push, and no deletion of `main`.
 - **Squash is the only allowed merge method**, and history must stay linear.
-- **No approving review is required** — the review loop plus green CI _is_ the gate, which is what lets the authoring agent merge its own PR.
+- **No approving review is required** for agent-authored PRs — the review loop plus green CI _is_ the gate, which is what lets the authoring agent merge its own PR. Human contributions keep the maintainer-review rule in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 - CI is **not** a required status check either, so nothing technically stops a merge while it is still running: wait for `gh pr checks <pr> --watch` yourself, every time.
+- The owner repository role also carries a pull-request bypass actor (`bypass_mode: pull_request`); it does not bind the agent and changes nothing in the loop.
 
-**Harness note — do not use `--delete-branch`:** the permission policy of this checkout blocks `gh pr merge --delete-branch` (it deletes the local branch). Merge with a plain `--squash`, then clean up in two steps: the remote branch with `gh api -X DELETE repos/<owner>/<repo>/git/refs/heads/<branch>` (or `git push origin --delete <branch>`), and the local one with `git switch main` → `git pull origin main` → `git branch -d <branch>` → `git fetch --prune`.
+**Harness note — do not use `--delete-branch`:** `gh pr merge --delete-branch` is refused before `gh` runs by a global `PreToolUse` guard, `~/.pi/scripts/rm-protect.py` (wired in `~/.pi/agent/settings.json` for the `bash` tool) — not by repository policy. The guard's `-delete\b` pattern matches the substring inside `--delete-branch` (and inside `origin --delete`) and denies the command when it resolves to a protected path (anything outside `~/notebase`); nothing is deleted, locally or remotely. The guard strips quoted spans before matching, so it trips on an unquoted `--delete-branch` / `origin --delete` token — and on a heredoc body, which is not quote-stripped: that is exactly how a commit message written as a heredoc gets refused. Pass the message as a file instead (`git commit -F <path>`). Merge with a plain `--squash`, then clean up in two steps, local first:
+
+1. **Local branch, before any `git fetch --prune`** — the tracking ref is what keeps `git branch -d` working after a squash merge: `git switch main` → `git pull origin main` → `git branch -d <branch>`. If `-d` still reports "not fully merged", stop and ask the human: the fallback `git branch -D` is denied by the permission policy.
+2. **Remote branch** — this repository does not delete branches on merge, so the step is required: `gh api -X DELETE repos/<owner>/<repo>/git/refs/heads/<branch>`, then `git fetch --prune`. `git push origin --delete <branch>` is no alternative: the same guard matches `origin --delete`.
 
 **Precondition:** `code-review` resolves its spec source through `docs/agents/issue-tracker.md`. While that file is missing, the reviewer runs the Spec axis against the PR description and the commits, says so in its findings, and tells the human to run `/setup-matt-pocock-skills` once to record this repository's tracker.
 
