@@ -70,7 +70,7 @@ Then run the review loop (step 4) straight away — by default no PR waits for a
 
 ### 4. Review loop: a Herdr subagent runs `code-review-herdr` (one round)
 
-The authoring agent never reviews its own work. A **round** is one review plus the fixes it produces, and there is exactly **one** of them; after it, the authoring agent merges the PR itself with **squash**. Mechanics: [../herdr-subagent/SKILL.md](../herdr-subagent/SKILL.md) (spawning the pane and driving the agent), [../code-review-herdr/SKILL.md](../code-review-herdr/SKILL.md) (the review itself and its per-axis panes). Three vendored skills still route a `/code-review` step (`ask-matt`, `implement`, `tdd`); in this repository those pointers resolve to `code-review-herdr`, because the vendored skill's parallel sub-agents assume a tool Pi does not have. Three vendored skills still route a `/code-review` step (`ask-matt`, `implement`, `tdd`); in this repository those pointers resolve to `code-review-herdr`, because the vendored skill's parallel sub-agents assume a tool Pi does not have.
+The authoring agent never reviews its own work. A **round** is one review plus the fixes it produces, and there is exactly **one** of them; after it, the authoring agent merges the PR itself with **squash**. Mechanics: [../herdr-subagent/SKILL.md](../herdr-subagent/SKILL.md) (spawning the pane and driving the agent), [../code-review-herdr/SKILL.md](../code-review-herdr/SKILL.md) (the review itself and its per-axis panes). Three vendored skills still route a `/code-review` step (`ask-matt`, `implement`, `tdd`); in this repository those pointers resolve to `code-review-herdr`, because the vendored skill's parallel sub-agents assume a tool Pi does not have.
 
 **Precondition — `docs/agents/issue-tracker.md`.** The `code-review-herdr` skill resolves its spec source through that file. While it is missing, the reviewer runs the Spec axis against the PR description and the commit messages instead, says so in its findings, and reports that the human must run `/setup-matt-pocock-skills` once. **Axis panes:** `code-review-herdr` spawns the Standards and Spec axes as two Herdr panes of its own (through `herdr-subagent`) and closes them once their reports are collected. Only outside Herdr, or when pane creation fails, does it run the two axes sequentially and say so — either way the findings stay separate per axis, never merged or re-ranked.
 
@@ -87,7 +87,7 @@ The authoring agent never reviews its own work. A **round** is one review plus t
    herdr agent prompt review-pr-<n> "<self-contained review task>" --wait --timeout 1800000
    ```
 
-3. **Publish the findings** — comment on the PR, labelled with the round number:
+3. **Publish the findings** — comment on the PR, labelled `review round 1`:
 
    ```sh
    gh pr comment <pr> --body-file <findings>.md
@@ -97,10 +97,10 @@ The authoring agent never reviews its own work. A **round** is one review plus t
 
    ```sh
    herdr agent prompt review-pr-<n> "Fix the blockers you reported: <list>. Touch nothing else." --wait --timeout 600000
-   git add -A && git commit -m "fix: address review round <n>" && git push
+   git add -A && git commit -m "fix: address review round 1" && git push
    ```
 
-5. **Re-verify** — the same checks as step 2, plus CI, then comment the round's outcome on the PR:
+5. **Re-verify** — the same checks as step 2 (before opening a PR), plus CI, then comment the round's outcome on the PR:
 
    ```sh
    npm run check && npm run test && npm run lint && npm run format:check && npm run build

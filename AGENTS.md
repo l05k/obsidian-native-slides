@@ -14,9 +14,9 @@ An agent never reviews its own work, and no longer waits for a human to merge it
 
 1. **Spawn a reviewer** in a Herdr pane — sibling pane, repository root, no focus change, agent kind `pi`, synchronous — following [.agents/skills/herdr-subagent/SKILL.md](.agents/skills/herdr-subagent/SKILL.md).
 2. **Review** — prompt that subagent to run this repository's [`code-review-herdr`](.agents/skills/code-review-herdr/SKILL.md) skill over the PR, with the `origin/main` merge-base as the fixed point. It is the fork that spawns each axis in its own Herdr pane; the vendored `code-review` assumes a native sub-agent tool Pi does not have, so it is not what Rule 2 uses. Require file:line + severity, **blockers separated from nits**, and a Markdown artifact to read back.
-3. **Publish** — post the findings as a PR comment (`gh pr comment <pr> --body-file …`), labelled with the round number.
+3. **Publish** — post the findings as a PR comment (`gh pr comment <pr> --body-file …`), labelled `review round 1`.
 4. **Fix in that same subagent** — send the blockers back into the pane; never fix the findings yourself in the main session, and never let two agents write the tree at once. The subagent edits the working tree and reports its diff; **the orchestrating agent stays the only git writer** and commits/pushes that diff.
-5. **Re-verify** — `npm run check` / `test` / `lint` / `format:check` / `build`, `git diff --exit-code -- main.js`, then `gh pr checks <pr> --watch` until CI is green.
+5. **Re-verify** — `npm run check` / `test` / `lint` / `format:check` / `build`, `git diff --exit-code -- main.js`, then `gh pr checks <pr> --watch` until CI is green, then comment the round's outcome on the PR — findings, fixes and verdict.
 6. **Merge or stop** — `gh pr merge <pr> --squash`; branch deletion is handed to the user (see the harness note below). If a blocker is still open after the fixes, stop, leave the PR open, and hand it to the human with the findings; never merge over an open blocker. There is no second review: the fixes are covered by step 5 and by the round's PR comment, so a blocker found inside a fix means the PR goes to the human, not around the loop again.
 
 **Merge gate — the `protect-main` ruleset on the default branch** (snapshot verified 2026-09-10; re-check with `gh api repos/<owner>/<repo>/rulesets`):

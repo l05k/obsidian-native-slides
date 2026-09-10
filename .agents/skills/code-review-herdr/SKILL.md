@@ -102,7 +102,7 @@ The **Spec** brief must include:
 - The path, or the fetched contents, of the spec.
 - The task: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Quote the spec line for each finding. Under 400 words."
 
-Both briefs must also state the constraints: **read-only** (no edits, no staging, no commits, no pushes, no merges, no `npx skills` writes), write the full findings to `/tmp/code-review-<id>-r<round>-<axis>.md` (`<round>` is the round number this workflow gives the review — `1` under Rule 2's single-round loop; the path stays keyed per round so a re-run can never satisfy step 4.5 with an older file), and reply with only that path plus a one-line verdict. If step 2 decided the Spec axis skips, no Spec pane exists (4.2) and you note the skip in the final report.
+Both briefs must also state the constraints: **read-only** (no edits, no staging, no commits, no pushes, no merges, no `npx skills` writes), write the full findings to `/tmp/code-review-<id>-r<round>-<axis>.md` (`<round>` is the round number the calling workflow gives the review; the path is keyed per round, so under a single-round workflow a re-run writes the same path — step 4.5's non-empty, mtime-after-the-prompt check is what keeps a leftover file from satisfying it), and reply with only that path plus a one-line verdict. If step 2 decided the Spec axis skips, no Spec pane exists (4.2) and you note the skip in the final report.
 
 ```sh
 # Submit both prompts WITHOUT --wait: each call returns as soon as it is accepted,
