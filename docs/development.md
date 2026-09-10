@@ -69,13 +69,13 @@ a plan, implement test-first, review a branch, run a debugging loop or hand a
 session off. They are plain Markdown you own and may edit.
 
 - **Repo-owned skills** — `dev-workflow` (the mandatory workflow of
-  [Rule 1](../AGENTS.md) and [Rule 2](../AGENTS.md)), `herdr-subagent` (the
-  Herdr pane/subagent mechanics Rule 2 uses) and `code-review-herdr` (this
-  repository's fork of the vendored `code-review`: same two-axis method, but each
-  axis runs in its own Herdr pane, which is what Pi needs — it has no native
-  sub-agent tool — and those panes are closed once their reports are collected).
-  Ours: edit freely; they stay Prettier-formatted (ESLint skips the whole
-  `.agents/skills/` tree).
+  [Rule 1](../AGENTS.md), [Rule 2](../AGENTS.md) and [Rule 4](../AGENTS.md)),
+  `herdr-subagent` (the Herdr pane/subagent mechanics Rule 2 uses) and
+  `code-review-herdr` (this repository's fork of the vendored `code-review`: same
+  two-axis method, but each axis runs in its own Herdr pane, which is what Pi
+  needs — it has no native sub-agent tool — and those panes are closed once their
+  reports are collected). Ours: edit freely; they stay Prettier-formatted (ESLint
+  skips the whole `.agents/skills/` tree).
 - **The vendored 25** — the `engineering` + `productivity` skills from
   [mattpocock/skills](https://github.com/mattpocock/skills), i.e. the sets listed
   at [aihero.dev/skills](https://www.aihero.dev/skills). The experimental

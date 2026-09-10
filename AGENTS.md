@@ -60,11 +60,11 @@ Every behavioural check runs against the repository's own **`example-vault/`** �
 
 ## Rule 4 — Releases: the maintainer merges, the agent tags
 
-A release is a Rule 1 PR that bumps the version, plus one step only the agent performs: **tagging**. The maintainer reviews and merges the release PR (the agent never self-merges it), and once it has landed the agent syncs `main` and pushes the lightweight tag itself — `git tag <version> && git push origin <version>` — which triggers [`.github/workflows/release.yml`](.github/workflows/release.yml) (checks → `build:release` → provenance attestation → the GitHub release with `main.js` / `manifest.json` / `styles.css` and the CHANGELOG notes). Then the agent verifies that chain, including that the published `main.js` is byte-identical to a local `build:release` of the same tree.
+A release is a Rule 1 PR that bumps the version, plus one step only the agent performs: **tagging**. The release PR is the **one PR type the agent does not self-merge** — Rule 2's review loop still runs on it, but the maintainer reviews and merges it. Once it has landed the agent syncs `main`, pushes the tag itself (`git tag <version> && git push origin <version>`) and verifies the published chain, which ends where humans take over: the platform's review and the community-store listing.
 
-**Tag `main`'s commit, never the release branch.** Sync (`git switch main` → `git pull origin main`) before tagging and confirm `git rev-parse <version>^{commit}` equals `git rev-parse main`: tagging from the release branch tip puts the tag on a commit outside `main`, and the tag has to be re-pointed afterwards (release `1.0.5` shipped this way once — the tree, and so the artifacts, were identical, but `git describe` and `git log <version>` showed the branch commits).
-
-Creating a tag is the agent's; **deleting** one is not — like branches, that stays with the user (see the harness note under Rule 2).
+- **Tag `main`'s commit, never the release branch tip.** Sync (`git switch main` → `git pull origin main`) and check `git rev-parse <version>^{commit}` equals `git rev-parse main`. Squash-only history means that commit is the release commit, not a merge commit; release `1.0.5` was cut from the branch tip once and had to be re-pointed ([§6](.agents/skills/dev-workflow/SKILL.md#6-releasing-the-maintainer-merges-the-agent-tags)).
+- **Creating and re-pointing a tag is the agent's; deleting one is the user's** — exactly like branches, and `git tag -d`, `git push --delete` and `git push origin :<ref>` are in the refused set of the harness note under Rule 2.
+- **Verifying is part of the job**, not a courtesy: the Release workflow's conclusion, the release's assets and Latest marker, the published `manifest.json`, and the published `main.js` byte-identical to a local `build:release` of the same tree. A merged GitHub release is **not** the end of a release — see §6 steps 5 and 7.
 
 **Full instructions:** [.agents/skills/dev-workflow/SKILL.md](.agents/skills/dev-workflow/SKILL.md#6-releasing-the-maintainer-merges-the-agent-tags)
 
