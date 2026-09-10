@@ -1,6 +1,6 @@
 ---
 name: dev-workflow
-description: Mandatory development workflow for this repository — single checkout, one branch at a time, merge latest main before PR, CLI-first, one independent Herdr-subagent code review round before squash-merging, reload-based preview loop, sync after merge (the user deletes the branch).
+description: Mandatory development workflow for this repository — single checkout, one branch at a time, merge latest main before PR, CLI-first, one independent Herdr-subagent code review round before squash-merging, reload-based preview loop, and a post-merge cleanup that deletes the local branch and leaves the remote one to the user.
 ---
 
 # Development Workflow (Rules 1, 2 and 4)
@@ -110,7 +110,7 @@ The authoring agent never reviews its own work. A **round** is one review plus t
    gh pr checks <pr> --watch
    ```
 
-6. **Merge or stop** — merge only once no blocker is open. The `protect-main` ruleset requires a PR, allows **squash only** (linear history), and requires **no approving review** — for agent-authored PRs the loop plus green CI is the whole gate — but CI is not a required status check, so waiting for it is your job. Plain `--squash` only; then sync (`git switch main` → `git pull origin main`) and hand the branch deletion to the user — nothing about a branch is yours to remove ([§5](#5-after-the-pr-is-merged-the-branch-deletion-is-the-users)).
+6. **Merge or stop** — merge only once no blocker is open. The `protect-main` ruleset requires a PR, allows **squash only** (linear history), and requires **no approving review** — for agent-authored PRs the loop plus green CI is the whole gate — but CI is not a required status check, so waiting for it is your job. Plain `--squash` only; then clean up: sync, delete the **local** branch, and leave the remote one to the user ([§5](#5-after-the-pr-is-merged-local-delete-then-sync)).
 
    ```sh
    gh pr merge <pr> --squash
@@ -130,16 +130,16 @@ git branch -d <branch>    # non-force, and before anything prunes
 git pull origin main      # sync to the latest main
 ```
 
-**Order matters.** Delete the local branch first, while its upstream ref still exists. After a squash merge the branch's commits are not ancestors of `main`, so `git branch -d` can only pass through its other test — a merge-base check against `origin/<branch>` — and that ref is exactly what a prune removes. Expect this on every squash-merged branch:
+**Order matters.** Delete the local branch first, while its upstream ref still exists. A squash-merged branch's commits are not ancestors of `main`, so for that case `git branch -d` can only pass through its other test — a merge-base check against `origin/<branch>` — and that ref is exactly what a prune removes. (Had the branch been a real ancestor of `main`, no tracking ref would be needed; the ordering rule is about the squash case, which is every PR here.) Expect this on every squash-merged branch:
 
 ```
 warning: deleting branch 'x' that has been merged to
          'refs/remotes/origin/x', but not yet merged to HEAD
 ```
 
-It is a **warning**, not an error (the delete succeeds, exit 0), and it names the ref that allowed it. Deleting the branch on GitHub does **not** remove the local remote-tracking ref; only a prune does. So **never prune before the local delete** — prune first and `-d` refuses with "not fully merged", leaving only `-D`, which is refused for the agent. A bare `git fetch origin` prunes when `fetch.prune` (or `remote.<name>.prune`) is set, and a bare fetch is part of this workflow's own step 2; a refspec-scoped fetch (`git fetch origin main`, `git pull origin main`) prunes only what its refspec covers. If the user already deleted the remote branch and something pruned the tracking ref, stop and ask them to finish with `-D`.
+It is a **warning**, not an error (the delete succeeds, exit 0), and it names the ref that allowed it. Deleting the branch on GitHub does **not** remove the local remote-tracking ref; only a prune does. So **never prune before the local delete** — prune first and `-d` refuses with "not fully merged", leaving only `-D`, which is refused for the agent. A bare `git fetch origin` prunes when `fetch.prune` (or `remote.<name>.prune`) is set — it is unset in this checkout today, so the hazard is conditional rather than live — and a bare fetch is part of this workflow's own step 2; a refspec-scoped fetch (`git fetch origin main`, `git pull origin main`) prunes only what its refspec covers. If `-d` reports "not fully merged", check **why** before asking anyone: `git log origin/<branch>..<branch>` shows unpushed commits, and in that case the `-D` a human would reach for discards work — report the commits instead of just the error.
 
-The guard allows exactly this one form — `git branch -d` / `git branch --delete` — and refuses the rest before they run: `git branch -D`/`-f`, `git tag -d`, `git tag --delete`, `git push -d`, `git push --delete`, `git push origin :<branch>`, `gh pr merge --delete-branch`. There is no authorization path in the hook, whose deny text invites 先取得用户明确授权 ("first obtain the user's explicit authorization", a translation of the guard's Chinese) even though no retry can pass. Never attempt a refused form and never route around it — and do not ask for permission for the whitelisted `-d`, it is a normal step.
+The guard allows the non-force local form — `git branch -d <name>` / `git branch --delete <name>` — and denies the ones that would lose or move a ref: `git branch -D`, clustered `-fd`/`-rd`, `git tag -d`, `git tag --delete`, `git push -d`, `git push --delete`, `git push origin :<branch>`, `gh pr merge --delete-branch`. There is no authorization path in the hook, whose deny text invites 先取得用户明确授权 ("first obtain the user's explicit authorization", a translation of the guard's Chinese) even though no retry can pass. It is not airtight, which is why this is a **policy** and not a deduction from what happens to be blocked: `git branch -f`, `git branch -d -r origin/<branch>`, `git push --prune`, `git update-ref -d` and a command hidden inside `$(…)` all pass it. Never attempt a refused form and never route around the refusal — and do not ask for permission for the whitelisted non-force `-d`, it is a normal step.
 
 **Remote branches are the user's.** `gh api -X DELETE repos/<owner>/<repo>/git/refs/heads/<branch>` is the one form the hook does not classify as a ref deletion and would therefore run; it stays off-limits by standing instruction — do not run it and do not hand it over as a step. Say which remote branches are still there and let them delete those.
 
@@ -200,6 +200,6 @@ gh api -X PATCH repos/<owner>/<repo>/git/refs/tags/<version> \
   -f sha=<main-sha> -F force=true                                                 # remote
 ```
 
-`git push --force` cannot be used (the permission system denies `git push*--force*`), which is why the remote half goes through the API. Re-pointing a tag re-triggers CI and Release — expect **two runs for the same tag name**, the later one superseding the earlier; they rebuild from the identical tree and republish byte-identical assets, so the release stays valid. Verify it afterwards and say so. Re-pointing is the agent's to do (it is not a deletion); **deleting** a tag is not: `git tag -d`, `git push --delete`, `git push origin :<ref>` and `gh pr merge --delete-branch` are all in the refused set and belong to the user, exactly like branch deletion (§5).
+`git push --force` cannot be used (the permission system denies `git push*--force*`), which is why the remote half goes through the API. Re-pointing a tag re-triggers CI and Release — expect **two runs for the same tag name**, the later one superseding the earlier; they rebuild from the identical tree and republish byte-identical assets, so the release stays valid. Verify it afterwards and say so. Re-pointing is the agent's to do (it is not a deletion); **deleting** a tag is not: `git tag -d`, `git push --delete`, `git push origin :<ref>` and `gh pr merge --delete-branch` are in the refused set and belong to the user. That is stricter than branches, where the agent deletes the local half and the user only the remote one (§5).
 
 **7. The release is not finished at the GitHub release.** Obsidian's platform review picks the GitHub release up on its own schedule, and the community-store listing is a **human** step in the [community.obsidian.md](https://community.obsidian.md) console — say clearly which of the two is still open rather than reporting the release as shipped. If the tag does not trigger a workflow run at all (it has happened), an empty commit (`git commit --allow-empty`) on `main` is the maintainer's documented nudge.
