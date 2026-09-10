@@ -56,9 +56,12 @@ session off. They are plain Markdown you own and may edit.
 - **The vendored 25** — the `engineering` + `productivity` skills from
   [mattpocock/skills](https://github.com/mattpocock/skills), i.e. the sets listed
   at [aihero.dev/skills](https://www.aihero.dev/skills). The experimental
-  `in-progress` / `general` skills are deliberately left out.
-- **Versions are pinned** by `skills-lock.json` (source repo, path and content
-  hash per skill), so a reinstall is reproducible.
+  `in-progress` / `misc` skills are deliberately left out.
+- **Drift is detectable** through `skills-lock.json` (source repo, path and
+  content hash per skill), which `npx skills update` — and
+  `npx skills experimental_install` — check the installed folders against. No
+  commit `ref` is recorded, so a reinstall still resolves the upstream default
+  branch: the lock detects drift, it does not pin a commit.
 - **Third-party content stays unformatted**: `.prettierignore` excludes
   `.agents/skills/*` (re-including the two repo-owned skills) — never reformat
   the vendored files, so updates stay diffable.
@@ -66,10 +69,15 @@ session off. They are plain Markdown you own and may edit.
 Manage them with the skills CLI, from the repository root:
 
 ```sh
-npx skills@latest list                                            # what is installed
-npx skills@latest add mattpocock/skills -a pi -y -s <skill-names> # add skills
-npx skills@latest update                                          # re-sync from the lock file
+npx skills@latest list                                                   # what is installed
+npx skills@latest add mattpocock/skills -a universal -y -s <skill-names> # add skills
+npx skills@latest update                                                 # refresh them, detecting drift
 ```
+
+`-a universal` is the target that writes the canonical `.agents/skills/`; a
+single-agent target such as `-a pi` copies the skills into that agent's own
+gitignored directory (`.pi/skills/`) instead. A successful `add` prints
+`→ ./.agents/skills/<name>`.
 
 > **Caution:** the CLI owns this directory. A scoped `npx skills remove` — and
 > especially `remove --all` — would delete the repo-owned `dev-workflow` and

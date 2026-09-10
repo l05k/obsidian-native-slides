@@ -10,7 +10,7 @@ Every change must follow the **branch → PR → CI → review loop → merge �
 
 ## Rule 2 — Every PR is reviewed by a Herdr subagent, then merged (max 2 rounds)
 
-An agent never reviews its own work, and no longer waits for a human to merge it: the review loop below replaces the human merge gate. A **round** is one review plus the fixes it produces; after **at most two rounds**, with CI green and the local checks passing, the authoring agent merges its own PR with **squash**.
+An agent never reviews its own work, and no longer waits for a human to merge it: the review loop below replaces the human merge gate. A **round** is one review plus the fixes it produces; after **at most two rounds**, with CI green and the local checks passing, the authoring agent merges its own PR with **squash**. A human may always take over the review instead — if the user asks to hold a PR for human review, hold it.
 
 1. **Spawn a reviewer** in a Herdr pane — sibling pane, repository root, no focus change, agent kind `pi`, synchronous — following [.agents/skills/herdr-subagent/SKILL.md](.agents/skills/herdr-subagent/SKILL.md).
 2. **Review** — prompt that subagent to run Matt's [`code-review`](.agents/skills/code-review/SKILL.md) skill over the PR, with the `origin/main` merge-base as the fixed point. Require file:line + severity, **blockers separated from nits**, and a Markdown artifact to read back.
@@ -19,8 +19,12 @@ An agent never reviews its own work, and no longer waits for a human to merge it
 5. **Re-verify** — `npm run check` / `test` / `lint` / `format:check` / `build`, `git diff --exit-code -- main.js`, then `gh pr checks <pr> --watch` until CI is green.
 6. **Merge or stop** — `gh pr merge <pr> --squash --delete-branch`. If a blocker is still open after two rounds, stop, leave the PR open, and hand it to the human with the findings; never merge over an open blocker.
 
+**Precondition:** `code-review` resolves its spec source through `docs/agents/issue-tracker.md`. While that file is missing, the reviewer runs the Spec axis against the PR description and the commits, says so in its findings, and tells the human to run `/setup-matt-pocock-skills` once to record this repository's tracker.
+
+**Axis fallback:** `code-review` normally runs its Standards and Spec axes as parallel sub-agents. When the reviewer pane has no task/sub-agent tool, run the two axes sequentially and keep the findings separate per axis — never merged or re-ranked.
+
 **Full instructions:** [.agents/skills/dev-workflow/SKILL.md](.agents/skills/dev-workflow/SKILL.md#4-review-loop-a-herdr-subagent-runs-code-review-max-2-rounds)
 
 ## Agent skills
 
-`.agents/skills/` holds both the repository's own skills — `dev-workflow` (Rule 1) and `herdr-subagent` (Rule 2 mechanics) — and the 25 published [mattpocock/skills](https://github.com/mattpocock/skills) (grilling a plan, test-first implementation, code review, debugging loops, handoffs). Read the matching `SKILL.md` before starting that kind of work instead of improvising a process. Layout, update commands and the pinned `skills-lock.json` are documented in [docs/development.md](docs/development.md#agent-skills).
+`.agents/skills/` holds both the repository's own skills — `dev-workflow` (Rules 1 and 2) and `herdr-subagent` (the Herdr mechanics Rule 2 uses) — and the 25 published [mattpocock/skills](https://github.com/mattpocock/skills) (grilling a plan, test-first implementation, code review, debugging loops, handoffs). Read the matching `SKILL.md` before starting that kind of work instead of improvising a process. Layout, update commands and the `skills-lock.json` drift check are documented in [docs/development.md](docs/development.md#agent-skills).

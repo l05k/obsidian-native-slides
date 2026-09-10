@@ -161,5 +161,10 @@ vite.config.ts.timestamp-*
 **/.obsidian/themes/
 .npm-cache/
 
+# Agent-specific skill dirs the skills CLI may create here; .agents/skills/ is the canonical, committed directory
+.pi/
+.claude/
+.codex/
+
 # macOS
 .DS_Store

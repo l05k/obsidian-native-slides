@@ -46,18 +46,24 @@ npm run dev        # 监听 main.ts，变更时自动重建 main.js
   是指向它的**软链接**，绝不复制——单一来源。
 - **随仓库带入的 25 个**——来自 [mattpocock/skills](https://github.com/mattpocock/skills) 的
   `engineering` + `productivity`，即 [aihero.dev/skills](https://www.aihero.dev/skills) 列出的两套。
-  实验性的 `in-progress` / `general` skill 有意不装。
-- **版本已锁定**：`skills-lock.json` 记录了每个 skill 的来源仓库、路径与内容哈希，重装可复现。
+  实验性的 `in-progress` / `misc` skill 有意不装。
+- **可检测漂移**：`skills-lock.json` 记录了每个 skill 的来源仓库、路径与内容哈希，
+  `npx skills update` / `npx skills experimental_install` 会据此核对已安装目录。由于没有
+  记录 commit `ref`，重装仍会解析上游默认分支——它检测漂移，而非锁定提交。
 - **第三方内容不参与格式化**：`.prettierignore` 排除了 `.agents/skills/*`（并重新纳入那两个
   仓库自有的 skill）——切勿重新格式化带入的文件，这样以后更新仍然可 diff。
 
 在仓库根目录用 skills CLI 管理：
 
 ```sh
-npx skills@latest list                                            # 查看已安装
-npx skills@latest add mattpocock/skills -a pi -y -s <skill-names> # 安装 skill
-npx skills@latest update                                          # 按锁文件重新同步
+npx skills@latest list                                                    # 查看已安装
+npx skills@latest add mattpocock/skills -a universal -y -s <skill-names>  # 安装 skill
+npx skills@latest update                                                  # 刷新，检测漂移
 ```
+
+`-a universal` 才是写入规范目录 `.agents/skills/` 的目标；像 `-a pi` 这样的单 agent 目标
+会把 skill 复制到该 agent 自己的（已被 gitignore 的）目录 `.pi/skills/`。安装成功会输出
+`→ ./.agents/skills/<name>`。
 
 > **注意**：该目录由 CLI 管理。限定范围的 `npx skills remove`——尤其是 `remove --all`——
 > 会连仓库自有的 `dev-workflow` 与 `herdr-subagent` 一起删掉。它们已提交进版本库，

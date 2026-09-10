@@ -11,6 +11,7 @@ export default tseslint.config(
       ".npm-cache/**",
       "package-lock.json",
       "demo-shots/**",
+      ".agents/skills/**", // vendored third-party skills; repo-owned skills stay Prettier-checked
     ],
   },
   js.configs.recommended,

@@ -3,9 +3,9 @@ name: dev-workflow
 description: Mandatory development workflow for this repository — single checkout, one branch at a time, merge latest main before PR, CLI-first, an independent Herdr-subagent code review (max 2 rounds) before squash-merging, reload-based preview loop, cleanup after merge.
 ---
 
-# Development Workflow (Rule 1)
+# Development Workflow (Rules 1 & 2)
 
-This skill is the full specification of **Rule 1** in [AGENTS.md](../../AGENTS.md). Every change to this repository MUST follow it. **Never commit directly to `main`.**
+This skill is the full specification of **Rule 1** and of the review loop in **Rule 2** in [AGENTS.md](../../../AGENTS.md). Every change to this repository MUST follow it. **Never commit directly to `main`.**
 
 ## Principles
 
@@ -71,6 +71,8 @@ Then run the review loop (step 4) straight away — by default no PR waits for a
 ### 4. Review loop: a Herdr subagent runs `code-review` (max 2 rounds)
 
 The authoring agent never reviews its own work. A **round** is one review plus the fixes it produces; after **at most two rounds**, the authoring agent merges the PR itself with **squash**. Mechanics: [../herdr-subagent/SKILL.md](../herdr-subagent/SKILL.md) (spawning the pane and driving the agent), [../code-review/SKILL.md](../code-review/SKILL.md) (the review itself).
+
+**Precondition — `docs/agents/issue-tracker.md`.** The `code-review` skill resolves its spec source through that file. While it is missing, the reviewer runs the Spec axis against the PR description and the commit messages instead, says so in its findings, and reports that the human must run `/setup-matt-pocock-skills` once. **Axis fallback:** `code-review` normally runs its Standards and Spec axes as parallel sub-agents; with no task/sub-agent tool in the reviewer pane, run the two axes sequentially and keep the findings separate per axis — never merged or re-ranked.
 
 1. **Spawn the reviewer** — sibling pane in the current tab, repository root, no focus change, kind `pi`, synchronous:
 
