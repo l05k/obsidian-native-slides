@@ -3,9 +3,9 @@ name: dev-workflow
 description: Mandatory development workflow for this repository — single checkout, one branch at a time, merge latest main before PR, CLI-first, one independent Herdr-subagent code review round before squash-merging, reload-based preview loop, sync after merge (the user deletes the branch).
 ---
 
-# Development Workflow (Rules 1 & 2)
+# Development Workflow (Rules 1, 2 and 4)
 
-This skill is the full specification of **Rule 1** and of the review loop in **Rule 2** in [AGENTS.md](../../../AGENTS.md). Every change to this repository MUST follow it. **Never commit directly to `main`.**
+This skill is the full specification of **Rule 1**, of the review loop in **Rule 2** and of the release procedure in **Rule 4** in [AGENTS.md](../../../AGENTS.md). Every change to this repository MUST follow it. **Never commit directly to `main`.**
 
 ## Principles
 
@@ -151,3 +151,64 @@ It is a **warning**, not an error (the delete succeeds, exit 0), and it names th
 **Never prune on the user's behalf before they have run their local `git branch -d`.** A bare `git fetch origin` prunes when `fetch.prune` — or `remote.<name>.prune` — is set, and a bare fetch is part of this workflow's own step 2, so it can drop `origin/<branch>` long before they get to it and turn their `-d` into a `-D`. A refspec-scoped fetch (`git fetch origin main`, `git pull origin main`) prunes only what its refspec covers, so the sync above is safe.
 
 The guard's other half governs merge and commit text: for delete intent a delete verb in command position or a whole-word `-delete`/`--delete` is refused when the command resolves to a protected path, and because the guard tokenizes the command, quotes change nothing for it; a heredoc body is ordinary shell text, so a command-shaped body line is refused unless the body is itself inside quotes — write such a commit message to a file and use `git commit -F <path>`. Details: the `AGENTS.md` harness note.
+
+### 6. Releasing (the maintainer merges, the agent tags)
+
+A release is a Rule 1 PR that bumps the version, plus one step only the agent performs: **the tag**. The maintainer reviews and merges the release PR — the agent never self-merges it — and after it lands the agent syncs, tags and verifies.
+
+**1. Bump every version site** (all five; `1.0.5` did this):
+
+| Site                | Change                                                                                                                          |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `CHANGELOG.md`      | a fresh empty `## [Unreleased]` above `## [X.Y.Z] - <date>` (`date +%F`), so the existing entries become that version's section |
+| `manifest.json`     | `"version": "X.Y.Z"`                                                                                                            |
+| `package.json`      | `"version": "X.Y.Z"`                                                                                                            |
+| `versions.json`     | `"X.Y.Z": "<minAppVersion>"` — the value must equal `manifest.json`'s `minAppVersion`                                           |
+| `package-lock.json` | the root `version` and `packages[""].version` — `npm install --package-lock-only` does exactly those two and nothing else       |
+
+Patch vs minor: read `[Unreleased]`. Only `### Fixed` (a bug-fix issue) → patch; anything `### Added`/`### Changed` a user would notice → minor. Agent tooling and docs changes do not appear in the CHANGELOG at all.
+
+**2. Verify before opening the PR**
+
+- the five sites agree, and `versions.json[version]` equals `minAppVersion`;
+- `[Unreleased]` is genuinely empty and the new section is dated correctly;
+- **Prettier first, then `npm run build`** (`npm run format` / `format:check`, then build) so the committed dev `main.js` is not left stale — a version bump alone leaves `main.js` byte-identical, which is expected;
+- the **five** checks: `check` / `test` / `lint` / `format:check` / `build`, plus `git diff --exit-code -- main.js`;
+- simulate the workflow's own notes extraction, because a mistyped tag or heading fails the release job — the same `awk` program, with the tag substituted: `awk -v ver=X.Y.Z '/^## \[/ { if (found) exit; if ($0 ~ "\\[" ver "\\]") { found=1; next } } found { print }' CHANGELOG.md` must print the section. The `awk` alone exits 0 with empty output, so the workflow's real gate is the `[ ! -s release-notes.md ]` check right after it — an empty extraction is what fails the job;
+- `npm run build:release` succeeds, run **from the repository root** (then `npm run build` to restore the dev bundle, and confirm `git diff --exit-code -- main.js`). An out-of-repo `--outfile` produces a different bundle, because the inline sourcemap's `sources` are written relative to the output directory.
+
+**3. PR and hand it over** — branch → PR → the maintainer reviews and merges. Say explicitly in the PR body that this is the step you are leaving to them; do not self-merge a release PR, and do not tag before it is merged. (This is Rule 2's one exception: the review loop still runs, the merge does not.)
+
+**4. Tag `main`'s commit — not the release branch tip**
+
+```sh
+git switch main && git pull origin main
+git tag <version> && git push origin <version>
+```
+
+The convention is a **lightweight** tag (`git tag <version>`, no `-a`, no `v` prefix) pushed on the commit at `main`'s tip — squash merging makes that the release commit, and this history has exactly one merge commit (`9db23e2`, untagged). Older tags are not all examples of it (`1.0.0` is annotated; `0.1.1` sits on a commit no branch contains), so this is the rule for new tags. Check it rather than assuming:
+
+```sh
+test "$(git rev-parse <version>^{commit})" = "$(git rev-parse main)" && echo "tag is on main"
+```
+
+Tagging from the release branch tip puts the tag on a commit outside `main` (release `1.0.5` shipped that way once): the trees happened to match, so the artifacts were identical, but `git log <version>` showed branch commits instead of the release commit, and plain `git describe` ignores lightweight tags anyway (it needs `--tags`), so the tag had to be re-pointed. Pushing the tag triggers [`.github/workflows/release.yml`](../../../.github/workflows/release.yml), which runs the checks, `build:release`, the provenance attestation and the release itself (three assets plus the CHANGELOG notes).
+
+**5. Verify the chain, don't assume it**
+
+- `gh run list` / `gh run watch <run-id>` — the Release workflow (checks → `build:release` → attestation → create release) must be `success`;
+- `gh release view <version>` — three assets (`main.js`, `manifest.json`, `styles.css`), and `gh api repos/<owner>/<repo>/releases/latest` reports this version;
+- download the published `manifest.json` and check its `version`;
+- **prove the published bundle matches the source**: download the release's `main.js` and compare its `sha256` with a local `npm run build:release` run from the same tree — they are byte-identical, because the workflow builds from the tag and esbuild is deterministic for one lockfile. Report the hash, and **restore the dev bundle afterwards** (`npm run build`, then `git diff --exit-code -- main.js`): the comparison leaves the tracked `main.js` as the minified release artifact, which is exactly the stale state step 2 exists to prevent.
+
+**6. If the tag landed in the wrong place**, re-point it (the tree and artifacts do not change):
+
+```sh
+git tag -f <version> <main-sha>                                                   # local
+gh api -X PATCH repos/<owner>/<repo>/git/refs/tags/<version> \
+  -f sha=<main-sha> -F force=true                                                 # remote
+```
+
+`git push --force` cannot be used (the permission system denies `git push*--force*`), which is why the remote half goes through the API. Re-pointing a tag re-triggers CI and Release — expect **two runs for the same tag name**, the later one superseding the earlier; they rebuild from the identical tree and republish byte-identical assets, so the release stays valid. Verify it afterwards and say so. Re-pointing is the agent's to do (it is not a deletion); **deleting** a tag is not: `git tag -d`, `git push --delete`, `git push origin :<ref>` and `gh pr merge --delete-branch` are all in the refused set and belong to the user, exactly like branch deletion (§5).
+
+**7. The release is not finished at the GitHub release.** Obsidian's platform review picks the GitHub release up on its own schedule, and the community-store listing is a **human** step in the [community.obsidian.md](https://community.obsidian.md) console — say clearly which of the two is still open rather than reporting the release as shipped. If the tag does not trigger a workflow run at all (it has happened), an empty commit (`git commit --allow-empty`) on `main` is the maintainer's documented nudge.

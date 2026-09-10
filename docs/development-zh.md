@@ -58,7 +58,7 @@ npm run dev        # 监听 main.ts，变更时自动重建 main.js
 （Pi、Claude Code、Codex、Copilot……）都可以用来拷问方案、测试先行地实现、评审分支、跑调试
 循环或交接会话。它们就是普通的 Markdown 文件，归你所有、可以自由修改。
 
-- **仓库自有的 skill**——`dev-workflow`（[Rule 1](../AGENTS.md) / [Rule 2](../AGENTS.md) 的强制
+- **仓库自有的 skill**——`dev-workflow`（[Rule 1](../AGENTS.md) / [Rule 2](../AGENTS.md) / [Rule 4](../AGENTS.md) 的强制
   工作流）、`herdr-subagent`（Rule 2 所用的 Herdr 窗格/子代理操作手册）与 `code-review-herdr`
   （本仓库对 vendored `code-review` 的 fork：两轴方法相同，但每条轴都在自己的 Herdr 窗格里
   运行——Pi 没有原生 subagent 工具，这正是它需要的——报告收齐后这些窗格会被关闭）。
