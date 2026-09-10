@@ -153,8 +153,8 @@ vite.config.ts.timestamp-*
 **/.obsidian/app.json
 **/.obsidian/hotkeys.json
 **/.obsidian/plugins/*/data.json
-# Third-party plugins keep per-machine state next to the vault config too
-**/.obsidian/image-converter-*.json
+# image-converter keeps per-machine alignment state beside the vault config
+**/.obsidian/image-converter-image-alignments.json
 # The example vault ships its look & demo settings so a fresh clone
 # opens exactly as documented (font size 23, plugin demo configuration)
 !example-vault/.obsidian/appearance.json
@@ -169,11 +169,9 @@ vite.config.ts.timestamp-*
 .claude/
 .codex/
 
-# This checkout's local working files (scratch docs, screenshot captures) — not repository content.
-# They are the ones that used to fail a local `npm run format:check`, which Prettier also filters
-# through this file. Use `git add -f` if one of them is ever meant to be committed.
-HANDOFF.md
-demo-shots/
+# Local scratch of this checkout only (drafts, screen captures); `git add -f` to commit one
+/HANDOFF.md
+/demo-shots/
 
 # macOS
 .DS_Store

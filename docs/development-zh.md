@@ -57,7 +57,9 @@ npm run dev        # 监听 main.ts，变更时自动重建 main.js
   **改写**这些哈希——因此上游变更会以 `skills-lock.json` 的 diff 呈现，而 `.agents/skills/`
   下的本地改动会被静默覆盖。由于没有记录 commit `ref`，重装会解析上游默认分支。
 - **第三方内容不参与格式化**：`.prettierignore` 排除了 `.agents/skills/*`（并重新纳入那三个
-  仓库自有的 skill）——切勿重新格式化带入的文件，这样以后更新仍然可 diff。
+  仓库自有的 skill）——切勿重新格式化带入的文件，这样以后更新仍然可 diff。Prettier 同时也会读取
+  `.gitignore`，因此被它忽略的内容（本检出的本地草稿文件、Obsidian 的每机状态文件）同样会被
+  `npm run format:check` 跳过。
 
 在仓库根目录用 skills CLI 管理：
 

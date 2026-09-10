@@ -73,7 +73,9 @@ session off. They are plain Markdown you own and may edit.
   so a reinstall resolves the upstream default branch.
 - **Third-party content stays unformatted**: `.prettierignore` excludes
   `.agents/skills/*` (re-including the three repo-owned skills) — never reformat
-  the vendored files, so updates stay diffable.
+  the vendored files, so updates stay diffable. Prettier consults `.gitignore`
+  too, so anything ignored there (this checkout's local scratch files, per-machine
+  Obsidian state) is skipped by `npm run format:check` as well.
 
 Manage them with the skills CLI, from the repository root:
 
