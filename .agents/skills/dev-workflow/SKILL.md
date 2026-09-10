@@ -1,6 +1,6 @@
 ---
 name: dev-workflow
-description: Mandatory development workflow for this repository — single checkout, one branch at a time, merge latest main before PR, CLI-first, one independent Herdr-subagent code review round before squash-merging, reload-based preview loop, cleanup after merge.
+description: Mandatory development workflow for this repository — single checkout, one branch at a time, merge latest main before PR, CLI-first, one independent Herdr-subagent code review round before squash-merging, reload-based preview loop, sync after merge (the user deletes the branch).
 ---
 
 # Development Workflow (Rules 1 & 2)
@@ -110,7 +110,7 @@ The authoring agent never reviews its own work. A **round** is one review plus t
    gh pr checks <pr> --watch
    ```
 
-6. **Merge or stop** — merge only once no blocker is open. The `protect-main` ruleset requires a PR, allows **squash only** (linear history), and requires **no approving review** — for agent-authored PRs the loop plus green CI is the whole gate — but CI is not a required status check, so waiting for it is your job. Plain `--squash` only; nothing about branch deletion is yours beyond the local half (see §5).
+6. **Merge or stop** — merge only once no blocker is open. The `protect-main` ruleset requires a PR, allows **squash only** (linear history), and requires **no approving review** — for agent-authored PRs the loop plus green CI is the whole gate — but CI is not a required status check, so waiting for it is your job. Plain `--squash` only; then sync (`git switch main` → `git pull origin main`) and hand the branch deletion to the user — nothing about a branch is yours to remove ([§5](#5-after-the-pr-is-merged-the-branch-deletion-is-the-users)).
 
    ```sh
    gh pr merge <pr> --squash
@@ -120,17 +120,34 @@ The authoring agent never reviews its own work. A **round** is one review plus t
    - **A blocker still open after the fixes**: stop, leave the PR open, report the findings to the human. Never merge over an open blocker, and never start another review round to re-litigate it.
    - Report the round (findings + fixes + verdict) in the final summary and in the PR comment, and leave the reviewer pane open for inspection unless the user asks to close it.
 
-### 5. After the PR is merged: clean up and sync
+### 5. After the PR is merged: the branch deletion is the user's
 
-The agent cleans up **locally only**: the remote branch belongs to the user, who deletes it on their own schedule. `gh api -X DELETE repos/<owner>/<repo>/git/refs/heads/<branch>` would technically run — the environment guard attaches no ref intent to that REST form — and that is exactly why this is a standing instruction rather than a deduction from what happens to be blocked: do not run it, and do not hand it to the user as a step. Everything else in this section is refused outright by the guard (`git branch -d/-D`, `git branch --delete`, `git tag -d`, `git tag --delete`, `git push -d`, `git push --delete`, `git push origin :<branch>`, `gh pr merge --delete-branch`), with no authorization path in the hook — its deny text invites 先取得用户明确授权 ("first obtain the user's explicit authorization", a translation of the guard's Chinese), but no authorized retry can ever pass, so never attempt one and never route around it.
+The agent syncs; the user deletes. Nothing about a branch is the agent's to remove — not the remote one, and not the local one either, because the guard refuses `git branch -d` just as hard as `gh pr merge --delete-branch`:
 
 ```sh
 git switch main
-git branch -d <branch>    # before any prune: after a squash merge, origin/<branch> is the only
-                          # reason `-d` passes, and `git fetch --prune` removes that ref
-git pull origin main      # sync to the latest main
+git pull origin main      # sync to the latest main; leave the branch alone
 ```
 
-Delete the local branch **first**, while its upstream ref still exists: after a squash merge the branch's commits are not ancestors of `main`, so `git branch -d` succeeds only through the upstream check against `origin/<branch>`, and that ref is exactly what `--prune` removes. Doing it in this order makes the delete independent of the user's own `fetch.prune` setting and of _when_ they delete the remote branch. If `-d` reports "not fully merged" — they already deleted and pruned it — stop and ask them: `-D` is part of the same refused set, so only they can run it.
+Every git/gh deletion form is refused outright by the guard (`git branch -d/-D`, `git branch --delete`, `git tag -d`, `git tag --delete`, `git push -d`, `git push --delete`, `git push origin :<branch>`, `gh pr merge --delete-branch`), with no authorization path in the hook — its deny text invites 先取得用户明确授权 ("first obtain the user's explicit authorization", a translation of the guard's Chinese), but no authorized retry can ever pass, so never attempt one and never route around it. `gh api -X DELETE repos/<owner>/<repo>/git/refs/heads/<branch>` is the one form the hook does not classify as a ref deletion; it stays off-limits **by standing instruction** anyway, because the user deletes branches themselves — do not run it and do not hand it over as a step.
+
+**What to hand the user** (their commands, in this order):
+
+```sh
+git switch main && git pull origin main
+git branch -d <branch>                                            # local — before anything prunes
+git fetch --prune                                                 # only after the local delete
+```
+
+**Why that order, and what their warning means.** After a squash merge the PR branch's commits are not ancestors of `main`, so `git branch -d` can only pass through its other test: a merge-base check against the branch's upstream, `origin/<branch>`. Hence this, for every squash-merged branch while that tracking ref exists:
+
+```
+warning: deleting branch 'x' that has been merged to
+         'refs/remotes/origin/x', but not yet merged to HEAD
+```
+
+It is a **warning**, not an error (the delete succeeds, exit 0), and it names the ref that allowed it. Deleting the branch on GitHub does **not** remove the local remote-tracking ref — only a prune does — so that ref is what lets `-d` pass, and the order cannot be inverted: prune first and `-d` refuses with "not fully merged", leaving only `-D`, which skips the safety check and is itself in the refused set.
+
+**Never prune on the user's behalf before they have run their local `git branch -d`.** A bare `git fetch origin` prunes when `fetch.prune` — or `remote.<name>.prune` — is set, and a bare fetch is part of this workflow's own step 2, so it can drop `origin/<branch>` long before they get to it and turn their `-d` into a `-D`. A refspec-scoped fetch (`git fetch origin main`, `git pull origin main`) prunes only what its refspec covers, so the sync above is safe.
 
 The guard's other half governs merge and commit text: for delete intent a delete verb in command position or a whole-word `-delete`/`--delete` is refused when the command resolves to a protected path, and because the guard tokenizes the command, quotes change nothing for it; a heredoc body is ordinary shell text, so a command-shaped body line is refused unless the body is itself inside quotes — write such a commit message to a file and use `git commit -F <path>`. Details: the `AGENTS.md` harness note.
