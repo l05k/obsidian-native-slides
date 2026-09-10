@@ -1,0 +1,4 @@
+interface:
+  display_name: "Herdr Subagent"
+  short_description: "Start and coordinate a configurable Herdr subagent"
+  default_prompt: "Use $herdr-subagent to start a pi subagent in Herdr with the requested task."

@@ -2,9 +2,10 @@
 
 **English** | [简体中文](development-zh.md)
 
-The developer-facing documentation — building the plugin, the dev loop, and
-the dev-only debug tooling. The user-facing README stays a clean release page
-by design; anything a plugin author or contributor needs lives here.
+The developer-facing documentation — building the plugin, the dev loop, the
+dev-only debug tooling, and the AI agent skills in `.agents/skills/`. The
+user-facing README stays a clean release page by design; anything a plugin
+author or contributor needs lives here.
 
 ## Building
 
@@ -36,6 +37,58 @@ After editing `main.ts`, reload the plugin in Obsidian: open the command
 palette with `Cmd/Ctrl+P`, search for **Reload app without saving**, and run
 it (it has no default hotkey). Alternatively, disable/re-enable **Native
 Slides** under _Settings → Community plugins_.
+
+## Agent skills
+
+`.agents/skills/` is the repository's skill home, and it holds two kinds of
+things, so any agent working here (Pi, Claude Code, Codex, Copilot, …) can grill
+a plan, implement test-first, review a branch, run a debugging loop or hand a
+session off. They are plain Markdown you own and may edit.
+
+- **Repo-owned skills** — `dev-workflow` (the mandatory workflow of
+  [Rule 1](../AGENTS.md) and [Rule 2](../AGENTS.md)) and `herdr-subagent` (the
+  Herdr pane/subagent mechanics Rule 2 uses). Ours: edit freely; they stay
+  Prettier-formatted (ESLint skips the whole `.agents/skills/` tree).
+- **Canonical location**: `.agents/skills/<name>/SKILL.md`. Agents that share the
+  canonical directory (Pi, Amp, Codex, Copilot, …) discover it as-is; an
+  agent-specific directory (`.claude/skills`, `.cursor/skills`, …) is a
+  **symlink** into it, never a copy. Those dirs are local CLI artefacts and are
+  gitignored — the committed `.agents/skills/` copy is the one source of truth.
+- **The vendored 25** — the `engineering` + `productivity` skills from
+  [mattpocock/skills](https://github.com/mattpocock/skills), i.e. the sets listed
+  at [aihero.dev/skills](https://www.aihero.dev/skills). The experimental
+  `in-progress` / `misc` skills are deliberately left out.
+- **The lock is an audit trail, not a pin** — `skills-lock.json` records the
+  source repo, path and content hash per skill. `npx skills update` and
+  `npx skills experimental_install` re-download and **rewrite** those hashes, so
+  upstream changes surface as a `skills-lock.json` diff, while local edits under
+  `.agents/skills/` are overwritten without warning. No commit `ref` is recorded,
+  so a reinstall resolves the upstream default branch.
+- **Third-party content stays unformatted**: `.prettierignore` excludes
+  `.agents/skills/*` (re-including the two repo-owned skills) — never reformat
+  the vendored files, so updates stay diffable.
+
+Manage them with the skills CLI, from the repository root:
+
+```sh
+npx skills@latest list                                                   # what is installed
+npx skills@latest add mattpocock/skills -a universal -y -s <skill-names> # add skills
+npx skills@latest update                                                 # refresh them, detecting drift
+```
+
+`-a universal` is the target that writes the canonical `.agents/skills/`; a
+single-agent target such as `-a pi` copies the skills into that agent's own
+gitignored directory (`.pi/skills/`) instead. A successful `add` prints
+`→ ./.agents/skills/<name>`.
+
+> **Caution:** the CLI owns this directory. A scoped `npx skills remove` — and
+> especially `remove --all` — would delete the repo-owned `dev-workflow` and
+> `herdr-subagent` too. They are committed, so `git checkout -- .agents/skills`
+> restores them, but never run those commands blindly.
+
+After a first install, run the `/setup-matt-pocock-skills` skill once: it records
+this repository's issue tracker, triage labels and doc layout for the skills that
+need them.
 
 ## Typography debug tooling (dev-only)
 

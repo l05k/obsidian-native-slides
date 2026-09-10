@@ -3,3 +3,6 @@ package-lock.json
 node_modules
 .npm-cache
 example-vault/
+.agents/skills/*
+!.agents/skills/dev-workflow/
+!.agents/skills/herdr-subagent/

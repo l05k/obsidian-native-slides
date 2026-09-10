@@ -50,7 +50,7 @@ Thanks for your interest in contributing! This guide explains how to set up, bui
 1. **Branch from `main`**: `git checkout -b feat/your-feature`.
 2. **Open a PR** against `main` early — even if it's a draft — so we can discuss the approach.
 3. **CI must pass**: the `build` workflow runs `npm run check`, `npm test`, `npm run lint`, `npm run format:check`. Fix any failures before requesting review.
-4. **Review and merge**: a maintainer will review and merge. Please don't merge your own PRs or rebase `main` into your branch unless asked.
+4. **Review and merge**: a maintainer reviews and merges human contributions — please don't merge your own PRs. Agent-driven work follows the mandatory review loop in [AGENTS.md](AGENTS.md) (Rule 2): an independent review by a Herdr subagent, at most two rounds, after which the authoring agent may squash-merge its own PR once CI is green. Either way, don't rebase `main` into your branch unless asked.
 
 ## Reporting issues
 
