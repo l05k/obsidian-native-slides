@@ -40,16 +40,18 @@ npm run dev        # 监听 main.ts，变更时自动重建 main.js
 
 - **仓库自有的 skill**——`dev-workflow`（[Rule 1](../AGENTS.md) / [Rule 2](../AGENTS.md) 的强制
   工作流）与 `herdr-subagent`（Rule 2 所用的 Herdr 窗格/子代理操作手册）。这两个是我们的：随意
-  修改，且仍受 Prettier / ESLint 约束。
+  修改，且仍受 Prettier 约束（ESLint 会跳过整个 `.agents/skills/`）。
 - **规范位置**：`.agents/skills/<name>/SKILL.md`。共享规范目录的 agent（Pi、Amp、Codex、
   Copilot……）直接发现它；某个 agent 专属的目录（`.claude/skills`、`.cursor/skills`……）
-  是指向它的**软链接**，绝不复制——单一来源。
+  是指向它的**软链接**，绝不复制。这些目录是本地生成的 CLI 产物、已被 gitignore——
+  已提交的 `.agents/skills/` 才是唯一来源。
 - **随仓库带入的 25 个**——来自 [mattpocock/skills](https://github.com/mattpocock/skills) 的
   `engineering` + `productivity`，即 [aihero.dev/skills](https://www.aihero.dev/skills) 列出的两套。
   实验性的 `in-progress` / `misc` skill 有意不装。
-- **可检测漂移**：`skills-lock.json` 记录了每个 skill 的来源仓库、路径与内容哈希，
-  `npx skills update` / `npx skills experimental_install` 会据此核对已安装目录。由于没有
-  记录 commit `ref`，重装仍会解析上游默认分支——它检测漂移，而非锁定提交。
+- **锁文件是审计记录，不是版本锁定**——`skills-lock.json` 记录每个 skill 的来源仓库、
+  路径与内容哈希。`npx skills update` / `npx skills experimental_install` 会在重新下载后
+  **改写**这些哈希——因此上游变更会以 `skills-lock.json` 的 diff 呈现，而 `.agents/skills/`
+  下的本地改动会被静默覆盖。由于没有记录 commit `ref`，重装会解析上游默认分支。
 - **第三方内容不参与格式化**：`.prettierignore` 排除了 `.agents/skills/*`（并重新纳入那两个
   仓库自有的 skill）——切勿重新格式化带入的文件，这样以后更新仍然可 diff。
 

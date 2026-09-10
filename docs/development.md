@@ -47,21 +47,23 @@ session off. They are plain Markdown you own and may edit.
 
 - **Repo-owned skills** — `dev-workflow` (the mandatory workflow of
   [Rule 1](../AGENTS.md) and [Rule 2](../AGENTS.md)) and `herdr-subagent` (the
-  Herdr pane/subagent mechanics Rule 2 uses). Ours: edit freely, and they stay
-  under Prettier / ESLint.
+  Herdr pane/subagent mechanics Rule 2 uses). Ours: edit freely; they stay
+  Prettier-formatted (ESLint skips the whole `.agents/skills/` tree).
 - **Canonical location**: `.agents/skills/<name>/SKILL.md`. Agents that share the
   canonical directory (Pi, Amp, Codex, Copilot, …) discover it as-is; an
   agent-specific directory (`.claude/skills`, `.cursor/skills`, …) is a
-  **symlink** into it, never a copy — one source of truth.
+  **symlink** into it, never a copy. Those dirs are local CLI artefacts and are
+  gitignored — the committed `.agents/skills/` copy is the one source of truth.
 - **The vendored 25** — the `engineering` + `productivity` skills from
   [mattpocock/skills](https://github.com/mattpocock/skills), i.e. the sets listed
   at [aihero.dev/skills](https://www.aihero.dev/skills). The experimental
   `in-progress` / `misc` skills are deliberately left out.
-- **Drift is detectable** through `skills-lock.json` (source repo, path and
-  content hash per skill), which `npx skills update` — and
-  `npx skills experimental_install` — check the installed folders against. No
-  commit `ref` is recorded, so a reinstall still resolves the upstream default
-  branch: the lock detects drift, it does not pin a commit.
+- **The lock is an audit trail, not a pin** — `skills-lock.json` records the
+  source repo, path and content hash per skill. `npx skills update` and
+  `npx skills experimental_install` re-download and **rewrite** those hashes, so
+  upstream changes surface as a `skills-lock.json` diff, while local edits under
+  `.agents/skills/` are overwritten without warning. No commit `ref` is recorded,
+  so a reinstall resolves the upstream default branch.
 - **Third-party content stays unformatted**: `.prettierignore` excludes
   `.agents/skills/*` (re-including the two repo-owned skills) — never reformat
   the vendored files, so updates stay diffable.
