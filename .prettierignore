@@ -6,3 +6,4 @@ example-vault/
 .agents/skills/*
 !.agents/skills/dev-workflow/
 !.agents/skills/herdr-subagent/
+!.agents/skills/code-review-herdr/

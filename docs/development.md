@@ -46,18 +46,25 @@ a plan, implement test-first, review a branch, run a debugging loop or hand a
 session off. They are plain Markdown you own and may edit.
 
 - **Repo-owned skills** — `dev-workflow` (the mandatory workflow of
-  [Rule 1](../AGENTS.md) and [Rule 2](../AGENTS.md)) and `herdr-subagent` (the
-  Herdr pane/subagent mechanics Rule 2 uses). Ours: edit freely; they stay
-  Prettier-formatted (ESLint skips the whole `.agents/skills/` tree).
+  [Rule 1](../AGENTS.md) and [Rule 2](../AGENTS.md)), `herdr-subagent` (the
+  Herdr pane/subagent mechanics Rule 2 uses) and `code-review-herdr` (this
+  repository's fork of the vendored `code-review`: same two-axis method, but each
+  axis runs in its own Herdr pane, which is what Pi needs — it has no native
+  sub-agent tool — and those panes are closed once their reports are collected).
+  Ours: edit freely; they stay Prettier-formatted (ESLint skips the whole
+  `.agents/skills/` tree).
+- **The vendored 25** — the `engineering` + `productivity` skills from
+  [mattpocock/skills](https://github.com/mattpocock/skills), i.e. the sets listed
+  at [aihero.dev/skills](https://www.aihero.dev/skills). The experimental
+  `in-progress` / `misc` skills are deliberately left out. The vendored
+  `code-review` keeps its upstream text (so `npx skills update` can still refresh
+  it) and is **not** what Rule 2 uses: `code-review-herdr` is the fork that runs.
+  Port upstream fixes into the fork by hand when it changes.
 - **Canonical location**: `.agents/skills/<name>/SKILL.md`. Agents that share the
   canonical directory (Pi, Amp, Codex, Copilot, …) discover it as-is; an
   agent-specific directory (`.claude/skills`, `.cursor/skills`, …) is a
   **symlink** into it, never a copy. Those dirs are local CLI artefacts and are
   gitignored — the committed `.agents/skills/` copy is the one source of truth.
-- **The vendored 25** — the `engineering` + `productivity` skills from
-  [mattpocock/skills](https://github.com/mattpocock/skills), i.e. the sets listed
-  at [aihero.dev/skills](https://www.aihero.dev/skills). The experimental
-  `in-progress` / `misc` skills are deliberately left out.
 - **The lock is an audit trail, not a pin** — `skills-lock.json` records the
   source repo, path and content hash per skill. `npx skills update` and
   `npx skills experimental_install` re-download and **rewrite** those hashes, so
@@ -65,7 +72,7 @@ session off. They are plain Markdown you own and may edit.
   `.agents/skills/` are overwritten without warning. No commit `ref` is recorded,
   so a reinstall resolves the upstream default branch.
 - **Third-party content stays unformatted**: `.prettierignore` excludes
-  `.agents/skills/*` (re-including the two repo-owned skills) — never reformat
+  `.agents/skills/*` (re-including the three repo-owned skills) — never reformat
   the vendored files, so updates stay diffable.
 
 Manage them with the skills CLI, from the repository root:
@@ -73,7 +80,7 @@ Manage them with the skills CLI, from the repository root:
 ```sh
 npx skills@latest list                                                   # what is installed
 npx skills@latest add mattpocock/skills -a universal -y -s <skill-names> # add skills
-npx skills@latest update                                                 # refresh them, detecting drift
+npx skills@latest update                                                 # refresh from the lock's sources
 ```
 
 `-a universal` is the target that writes the canonical `.agents/skills/`; a
