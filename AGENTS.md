@@ -58,6 +58,16 @@ Every behavioural check runs against the repository's own **`example-vault/`** �
 
 **Full instructions:** [docs/development.md#testing-in-the-example-vault](docs/development.md#testing-in-the-example-vault)
 
+## Rule 4 — Releases: the maintainer merges, the agent tags
+
+A release is a Rule 1 PR that bumps the version, plus one step only the agent performs: **tagging**. The maintainer reviews and merges the release PR (the agent never self-merges it), and once it has landed the agent syncs `main` and pushes the lightweight tag itself — `git tag <version> && git push origin <version>` — which triggers [`.github/workflows/release.yml`](.github/workflows/release.yml) (checks → `build:release` → provenance attestation → the GitHub release with `main.js` / `manifest.json` / `styles.css` and the CHANGELOG notes). Then the agent verifies that chain, including that the published `main.js` is byte-identical to a local `build:release` of the same tree.
+
+**Tag `main`'s commit, never the release branch.** Sync (`git switch main` → `git pull origin main`) before tagging and confirm `git rev-parse <version>^{commit}` equals `git rev-parse main`: tagging from the release branch tip puts the tag on a commit outside `main`, and the tag has to be re-pointed afterwards (release `1.0.5` shipped this way once — the tree, and so the artifacts, were identical, but `git describe` and `git log <version>` showed the branch commits).
+
+Creating a tag is the agent's; **deleting** one is not — like branches, that stays with the user (see the harness note under Rule 2).
+
+**Full instructions:** [.agents/skills/dev-workflow/SKILL.md](.agents/skills/dev-workflow/SKILL.md#6-releasing-the-maintainer-merges-the-agent-tags)
+
 ## Agent skills
 
-`.agents/skills/` holds both the repository's own skills — `dev-workflow` (Rules 1 and 2), `herdr-subagent` (the Herdr mechanics Rule 2 uses) and `code-review-herdr` (this repository's fork of the vendored `code-review`, adapted to run each review axis in its own Herdr pane) — and the 25 published [mattpocock/skills](https://github.com/mattpocock/skills) (grilling a plan, test-first implementation, code review, debugging loops, handoffs). Read the matching `SKILL.md` before starting that kind of work instead of improvising a process. Layout, update commands and the `skills-lock.json` hash trail are documented in [docs/development.md](docs/development.md#agent-skills).
+`.agents/skills/` holds both the repository's own skills — `dev-workflow` (Rules 1, 2 and 4), `herdr-subagent` (the Herdr mechanics Rule 2 uses) and `code-review-herdr` (this repository's fork of the vendored `code-review`, adapted to run each review axis in its own Herdr pane) — and the 25 published [mattpocock/skills](https://github.com/mattpocock/skills) (grilling a plan, test-first implementation, code review, debugging loops, handoffs). Read the matching `SKILL.md` before starting that kind of work instead of improvising a process. Layout, update commands and the `skills-lock.json` hash trail are documented in [docs/development.md](docs/development.md#agent-skills).
