@@ -70,7 +70,7 @@ Then run the review loop (step 4) straight away — by default no PR waits for a
 
 ### 4. Review loop: a Herdr subagent runs `code-review-herdr` (max 2 rounds)
 
-The authoring agent never reviews its own work. A **round** is one review plus the fixes it produces; after **at most two rounds**, the authoring agent merges the PR itself with **squash**. Mechanics: [../herdr-subagent/SKILL.md](../herdr-subagent/SKILL.md) (spawning the pane and driving the agent), [../code-review-herdr/SKILL.md](../code-review-herdr/SKILL.md) (the review itself and its per-axis panes).
+The authoring agent never reviews its own work. A **round** is one review plus the fixes it produces; after **at most two rounds**, the authoring agent merges the PR itself with **squash**. Mechanics: [../herdr-subagent/SKILL.md](../herdr-subagent/SKILL.md) (spawning the pane and driving the agent), [../code-review-herdr/SKILL.md](../code-review-herdr/SKILL.md) (the review itself and its per-axis panes). Three vendored skills still route a `/code-review` step (`ask-matt`, `implement`, `tdd`); in this repository those pointers resolve to `code-review-herdr`, because the vendored skill's parallel sub-agents assume a tool Pi does not have.
 
 **Precondition — `docs/agents/issue-tracker.md`.** The `code-review-herdr` skill resolves its spec source through that file. While it is missing, the reviewer runs the Spec axis against the PR description and the commit messages instead, says so in its findings, and reports that the human must run `/setup-matt-pocock-skills` once. **Axis panes:** `code-review-herdr` spawns the Standards and Spec axes as two Herdr panes of its own (through `herdr-subagent`) and closes them once their reports are collected. Only outside Herdr, or when pane creation fails, does it run the two axes sequentially and say so — either way the findings stay separate per axis, never merged or re-ranked.
 
@@ -81,10 +81,10 @@ The authoring agent never reviews its own work. A **round** is one review plus t
    herdr agent start review-pr-<n> --kind pi --pane <pane-id>
    ```
 
-2. **Review round** — prompt it to run the `code-review-herdr` skill over this PR with the `origin/main` merge-base as the fixed point. Require file:line + severity, **blockers separated from nits**, and the full findings written to a Markdown file so you can read them back:
+2. **Review round** — prompt it to run the `code-review-herdr` skill over this PR with the `origin/main` merge-base as the fixed point. Require file:line + severity, **blockers separated from nits**, and the full findings written to a Markdown file so you can read them back. Give it a budget larger than the axes': the reviewer waits for both axis panes, each with its own 600 s wait, so its own timeout has to exceed theirs:
 
    ```sh
-   herdr agent prompt review-pr-<n> "<self-contained review task>" --wait --timeout 600000
+   herdr agent prompt review-pr-<n> "<self-contained review task>" --wait --timeout 1800000
    ```
 
 3. **Publish the findings** — comment on the PR, labelled with the round number:
