@@ -17,7 +17,16 @@ An agent never reviews its own work, and no longer waits for a human to merge it
 3. **Publish** — post the findings as a PR comment (`gh pr comment <pr> --body-file …`), labelled with the round number.
 4. **Fix in that same subagent** — send the blockers back into the pane; never fix the findings yourself in the main session, and never let two agents write the tree at once. The subagent edits the working tree and reports its diff; **the orchestrating agent stays the only git writer** and commits/pushes that diff.
 5. **Re-verify** — `npm run check` / `test` / `lint` / `format:check` / `build`, `git diff --exit-code -- main.js`, then `gh pr checks <pr> --watch` until CI is green.
-6. **Merge or stop** — `gh pr merge <pr> --squash --delete-branch`. If a blocker is still open after two rounds, stop, leave the PR open, and hand it to the human with the findings; never merge over an open blocker.
+6. **Merge or stop** — `gh pr merge <pr> --squash`, then delete the branches separately (see the harness note below). If a blocker is still open after two rounds, stop, leave the PR open, and hand it to the human with the findings; never merge over an open blocker.
+
+**Merge gate — the `protect-main` ruleset on the default branch:**
+
+- A pull request is **required**: no direct pushes to `main`, no force-push, no branch deletion.
+- **Squash is the only allowed merge method**, and history must stay linear.
+- **No approving review is required** — the review loop plus green CI _is_ the gate, which is what lets the authoring agent merge its own PR.
+- CI is **not** a required status check either, so nothing technically stops a merge while it is still running: wait for `gh pr checks <pr> --watch` yourself, every time.
+
+**Harness note — do not use `--delete-branch`:** the permission policy of this checkout blocks `gh pr merge --delete-branch` (it deletes the local branch). Merge with a plain `--squash`, then clean up in two steps: the remote branch with `gh api -X DELETE repos/<owner>/<repo>/git/refs/heads/<branch>` (or `git push origin --delete <branch>`), and the local one with `git switch main` → `git pull origin main` → `git branch -d <branch>` → `git fetch --prune`.
 
 **Precondition:** `code-review` resolves its spec source through `docs/agents/issue-tracker.md`. While that file is missing, the reviewer runs the Spec axis against the PR description and the commits, says so in its findings, and tells the human to run `/setup-matt-pocock-skills` once to record this repository's tracker.
 

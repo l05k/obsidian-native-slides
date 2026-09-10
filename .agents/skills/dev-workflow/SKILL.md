@@ -108,10 +108,11 @@ The authoring agent never reviews its own work. A **round** is one review plus t
    gh pr checks <pr> --watch
    ```
 
-6. **Merge or stop** — merge only once no blocker is open:
+6. **Merge or stop** — merge only once no blocker is open. The `protect-main` ruleset requires a PR, allows **squash only** (linear history), and requires **no approving review** — the loop plus green CI is the whole gate — but CI is not a required status check, so waiting for it is your job. Plain `--squash` only: `--delete-branch` is blocked by this checkout's permission policy (see step 5).
 
    ```sh
-   gh pr merge <pr> --squash --delete-branch
+   gh pr checks <pr> --watch   # must be green before merging
+   gh pr merge <pr> --squash
    ```
 
    - Run a second round when the first round's fixes need independent verification; two rounds is the ceiling, not a target.
@@ -124,5 +125,12 @@ The authoring agent never reviews its own work. A **round** is one review plus t
 git switch main
 git pull origin main                          # sync to the latest main
 git branch -d feat/my-change                  # delete the local branch
-git fetch --prune                             # drop the remote branch gh deleted
+git fetch --prune                             # drop the remote-tracking ref
+```
+
+`gh pr merge --delete-branch` cannot be used here (the checkout's permission policy blocks it), so delete the remote branch explicitly unless the repository is set to delete it on merge:
+
+```sh
+gh api -X DELETE repos/<owner>/<repo>/git/refs/heads/feat/my-change   # remote branch
+git fetch --prune
 ```
