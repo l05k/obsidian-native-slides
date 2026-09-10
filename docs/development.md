@@ -3,7 +3,7 @@
 **English** | [简体中文](development-zh.md)
 
 The developer-facing documentation — building the plugin, the dev loop, the
-dev-only debug tooling, and the AI agent skills vendored in the repository. The
+dev-only debug tooling, and the AI agent skills in `.agents/skills/`. The
 user-facing README stays a clean release page by design; anything a plugin
 author or contributor needs lives here.
 
@@ -38,25 +38,30 @@ palette with `Cmd/Ctrl+P`, search for **Reload app without saving**, and run
 it (it has no default hotkey). Alternatively, disable/re-enable **Native
 Slides** under _Settings → Community plugins_.
 
-## Agent skills (vendored)
+## Agent skills
 
-The engineering and productivity skills from
-[mattpocock/skills](https://github.com/mattpocock/skills) are vendored into this
-repository, so any agent working here (Pi, Claude Code, Codex, Copilot, …) can
-grill a plan, implement test-first, review a branch, run a debugging loop or
-hand a session off. They are plain Markdown you own and may edit.
+`.agents/skills/` is the repository's skill home, and it holds two kinds of
+things, so any agent working here (Pi, Claude Code, Codex, Copilot, …) can grill
+a plan, implement test-first, review a branch, run a debugging loop or hand a
+session off. They are plain Markdown you own and may edit.
 
+- **Repo-owned skills** — `dev-workflow` (the mandatory workflow of
+  [Rule 1](../AGENTS.md) and [Rule 2](../AGENTS.md)) and `herdr-subagent` (the
+  Herdr pane/subagent mechanics Rule 2 uses). Ours: edit freely, and they stay
+  under Prettier / ESLint.
 - **Canonical location**: `.agents/skills/<name>/SKILL.md`. Agents that share the
   canonical directory (Pi, Amp, Codex, Copilot, …) discover it as-is; an
   agent-specific directory (`.claude/skills`, `.cursor/skills`, …) is a
   **symlink** into it, never a copy — one source of truth.
-- **What is installed**: the 25 published skills — the `engineering` +
-  `productivity` sets listed at [aihero.dev/skills](https://www.aihero.dev/skills).
-  The experimental `in-progress` / `general` skills are deliberately left out.
+- **The vendored 25** — the `engineering` + `productivity` skills from
+  [mattpocock/skills](https://github.com/mattpocock/skills), i.e. the sets listed
+  at [aihero.dev/skills](https://www.aihero.dev/skills). The experimental
+  `in-progress` / `general` skills are deliberately left out.
 - **Versions are pinned** by `skills-lock.json` (source repo, path and content
   hash per skill), so a reinstall is reproducible.
-- **Third-party content**: kept out of Prettier and ESLint via
-  `.prettierignore` — never reformat it, so updates stay diffable.
+- **Third-party content stays unformatted**: `.prettierignore` excludes
+  `.agents/skills/*` (re-including the two repo-owned skills) — never reformat
+  the vendored files, so updates stay diffable.
 
 Manage them with the skills CLI, from the repository root:
 
@@ -65,6 +70,11 @@ npx skills@latest list                                            # what is inst
 npx skills@latest add mattpocock/skills -a pi -y -s <skill-names> # add skills
 npx skills@latest update                                          # re-sync from the lock file
 ```
+
+> **Caution:** the CLI owns this directory. A scoped `npx skills remove` — and
+> especially `remove --all` — would delete the repo-owned `dev-workflow` and
+> `herdr-subagent` too. They are committed, so `git checkout -- .agents/skills`
+> restores them, but never run those commands blindly.
 
 After a first install, run the `/setup-matt-pocock-skills` skill once: it records
 this repository's issue tracker, triage labels and doc layout for the skills that
