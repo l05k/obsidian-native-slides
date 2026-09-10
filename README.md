@@ -63,7 +63,7 @@ Demo deck: `Welcome.md` → `Make it yours.md` → `Grow the Deck.md`.
 ## Documentation
 
 - **[Design principles & how it works](docs/design.md)** ([简体中文](docs/design-zh.md)) — the four design principles that guide every change, and the implementation mechanics: how Slides mode hides the chrome, resolves the deck chain, computes page numbers, and the create-* commands.
-- **[Development](docs/development.md)** ([简体中文](docs/development-zh.md)) — building the plugin (npm scripts), the dev loop with Obsidian reload, the dev-only typography debug tooling, and the `src/` module layout.
+- **[Development](docs/development.md)** ([简体中文](docs/development-zh.md)) — building the plugin (npm scripts), the dev loop with Obsidian reload, the dev-only typography debug tooling, the `src/` module layout, and the vendored AI agent skills (`.agents/skills/`).
 
 ## Known limitations
 
