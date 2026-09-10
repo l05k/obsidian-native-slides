@@ -146,12 +146,15 @@ vite.config.ts.timestamp-*
 # Native Slides debug output (written by the ns-debug-styles command)
 **/.native-slides-debug.json
 **/.obsidian/workspace.json
+**/.obsidian/workspaces.json
 **/.obsidian/workspace-mobile.json
 **/.obsidian/workspace-state.json
 **/.obsidian/appearance.json
 **/.obsidian/app.json
 **/.obsidian/hotkeys.json
 **/.obsidian/plugins/*/data.json
+# image-converter keeps per-machine alignment state beside the vault config
+**/.obsidian/image-converter-image-alignments.json
 # The example vault ships its look & demo settings so a fresh clone
 # opens exactly as documented (font size 23, plugin demo configuration)
 !example-vault/.obsidian/appearance.json
@@ -165,6 +168,10 @@ vite.config.ts.timestamp-*
 .pi/
 .claude/
 .codex/
+
+# Local scratch of this checkout only (drafts, screen captures); `git add -f` to commit one
+/HANDOFF.md
+/demo-shots/
 
 # macOS
 .DS_Store
