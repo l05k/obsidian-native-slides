@@ -62,7 +62,7 @@ v1.0.0 起不再有概览页——**slides 面板**接管"纵览整套 deck"的�
 ## 文档
 
 - **[设计原则与工作原理](docs/design-zh.md)**（[English](docs/design.md)）——指导每项改动的四大设计原则，以及实现机制：Slides 模式如何隐藏界面元素、解析 deck 链、计算页号，create-* 命令的机制等。
-- **[开发](docs/development-zh.md)**（[English](docs/development.md)）——构建插件（npm 脚本）、带 Obsidian 重载的开发循环、仅开发版的排版调试工具、`src/` 模块结构，以及 `.agents/skills/` 里的 AI agent skills（本仓库自己的工作流 skill + 随仓库带入的 mattpocock/skills）。
+- **[开发](docs/development-zh.md)**（[English](docs/development.md)）——构建插件（npm 脚本）、带 Obsidian 重载的开发循环、在 `example-vault/` 中测试（这里唯一允许用作测试的库）、仅开发版的排版调试工具、`src/` 模块结构，以及 `.agents/skills/` 里的 AI agent skills（本仓库自己的工作流 skill + 随仓库带入的 mattpocock/skills）。
 
 ## 已知限制
 

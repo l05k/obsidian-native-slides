@@ -2,10 +2,10 @@
 
 **English** | [简体中文](development-zh.md)
 
-The developer-facing documentation — building the plugin, the dev loop, the
-dev-only debug tooling, and the AI agent skills in `.agents/skills/`. The
-user-facing README stays a clean release page by design; anything a plugin
-author or contributor needs lives here.
+The developer-facing documentation — building the plugin, the dev loop, testing
+in the example vault, the dev-only debug tooling, and the AI agent skills in
+`.agents/skills/`. The user-facing README stays a clean release page by design;
+anything a plugin author or contributor needs lives here.
 
 ## Building
 
@@ -37,6 +37,29 @@ After editing `main.ts`, reload the plugin in Obsidian: open the command
 palette with `Cmd/Ctrl+P`, search for **Reload app without saving**, and run
 it (it has no default hotkey). Alternatively, disable/re-enable **Native
 Slides** under _Settings → Community plugins_.
+
+## Testing in the example vault
+
+**Every behavioural check runs in `example-vault/` — never in another vault.** It ships with this
+repository, its plugin folder holds **symlinks to the repository root** (`main.js`, `manifest.json`,
+`styles.css`), and it therefore always runs the build you just made. Never point an agent, a script
+or a manual test at a vault that holds real notes.
+
+- **Loop**: `npm run build` (or `npm run dev` while editing) → reload the plugin in Obsidian
+  (`Cmd/Ctrl+P` → **Reload app without saving**) → check. See _Dev loop_ above.
+- **Scratch notes**: create them inside `example-vault/` when a check needs them and remove them when
+  you are done — never leave test files behind. The `Probe*.md` / `test.md` / `untitled-slides.md`
+  slides are the maintainer's scratch; leave them as they are.
+- **Fixtures**: `example-vault/tests/typography-*.md` are consumed by the dev-only
+  `Debug: Dump Typography Styles` command (`src/debug.ts` hard-codes five of the names) — do not
+  rename or remove them. The demo deck is `Welcome.md` → `Make it yours.md` → `Grow the Deck.md`;
+  the README's tour depends on those three names and on `demo-image.png`.
+- **Config churn**: Obsidian rewrites the vault's tracked configuration while it runs
+  (`appearance.json`, `community-plugins.json`, `core-plugins.json`). Restore it with
+  `git restore -- example-vault/.obsidian` before switching branches or opening a PR, and re-check
+  `git status` afterwards.
+- **Driving the app** — for example over CDP with `--remote-debugging-port=9222` — is allowed; this
+  rule is what limits which vault it may touch.
 
 ## Agent skills
 
