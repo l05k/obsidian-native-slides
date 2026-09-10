@@ -32,11 +32,11 @@ An agent never reviews its own work, and no longer waits for a human to merge it
 1. **Local branch, before any `git fetch --prune`** — the tracking ref is what keeps `git branch -d` working after a squash merge: `git switch main` → `git pull origin main` → `git branch -d <branch>`. If `-d` still reports "not fully merged", stop and ask the human: the fallback `git branch -D` is denied by the permission policy.
 2. **Remote branch** — this repository does not delete branches on merge, so the step is required: `gh api -X DELETE repos/<owner>/<repo>/git/refs/heads/<branch>`, then `git fetch --prune`. `git push origin --delete <branch>` is no alternative: the same guard matches `origin --delete`.
 
-**Precondition:** `code-review` resolves its spec source through `docs/agents/issue-tracker.md`. While that file is missing, the reviewer runs the Spec axis against the PR description and the commits, says so in its findings, and tells the human to run `/setup-matt-pocock-skills` once to record this repository's tracker.
+**Precondition:** `code-review-herdr` resolves its spec source through `docs/agents/issue-tracker.md`. While that file is missing, the reviewer runs the Spec axis against the PR description and the commits, says so in its findings, and tells the human to run `/setup-matt-pocock-skills` once to record this repository's tracker.
 
 **Axis panes:** `code-review-herdr` runs its Standards and Spec axes as **two Herdr panes of its own** (spawned through `herdr-subagent`, then closed once their reports are collected — that standing instruction is in the skill). Only if the reviewer pane is not inside Herdr, or pane creation fails, does it run the two axes sequentially and say so; either way the findings stay separate per axis — never merged or re-ranked.
 
-**Full instructions:** [.agents/skills/dev-workflow/SKILL.md](.agents/skills/dev-workflow/SKILL.md#4-review-loop-a-herdr-subagent-runs-code-review-max-2-rounds)
+**Full instructions:** [.agents/skills/dev-workflow/SKILL.md](.agents/skills/dev-workflow/SKILL.md#4-review-loop-a-herdr-subagent-runs-code-review-herdr-max-2-rounds)
 
 ## Agent skills
 

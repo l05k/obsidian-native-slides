@@ -1,6 +1,6 @@
 ---
 name: code-review-herdr
-description: "Two-axis review (Standards + Spec) of the changes since a fixed point (commit, branch, tag, merge-base). Each axis runs in its own Herdr pane, because Pi has no native sub-agent tool: this repository fork of the code-review skill from mattpocock/skills spawns them through herdr-subagent and reports the axes unmerged. Prefer it over the vendored code-review, whose parallel sub-agents Pi cannot provide."
+description: 'Two-axis review (Standards + Spec) of the changes since a fixed point (commit, branch, tag, merge-base). Use when the user wants a branch, a PR or work-in-progress reviewed, or asks to "review since X". Each axis runs in its own Herdr pane, because Pi has no native sub-agent tool: this repository fork of the mattpocock/skills code-review spawns them through herdr-subagent and reports the axes unmerged. Prefer it over the vendored code-review.'
 ---
 
 Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
@@ -12,7 +12,7 @@ Both axes run in **separate Herdr panes**, one agent each, so they don't pollute
 
 This is a fork of the vendored [`../code-review/SKILL.md`](../code-review/SKILL.md), which assumes a native parallel-sub-agent tool that Pi does not have. The method is the same; the spawning is Herdr's, through [`../herdr-subagent/SKILL.md`](../herdr-subagent/SKILL.md). Read that skill's SOP if a Herdr command in step 4 fails or behaves differently.
 
-The issue tracker should have been provided to you. If `docs/agents/issue-tracker.md` is missing, tell the user to run `/setup-matt-pocock-skills`.
+The issue tracker should have been provided to you. If `docs/agents/issue-tracker.md` is missing, do **not** block and do **not** silently skip the Spec axis: run it against the PR description and the commit messages instead, say in the report that the spec came from there, and tell the user to run `/setup-matt-pocock-skills` once to record this repository's tracker.
 
 ## Process
 
@@ -31,7 +31,7 @@ Look for the originating spec, in this order:
 1. Issue references in the commit messages (`#123`, `Closes #45`, GitLab `!67`, etc.), fetched via the workflow in `docs/agents/issue-tracker.md`.
 2. A path the user passed as an argument.
 3. A spec file under `docs/`, `specs/`, or `.scratch/` matching the branch name or feature.
-4. If nothing is found, ask the user where the spec is. If they say there isn't one, the **Spec** axis will skip and report "no spec available".
+4. If `docs/agents/issue-tracker.md` is missing, do not ask and do not skip: run the **Spec** axis against the PR description (`gh pr view <pr> --json title,body`) and the commit messages, and say in the report that this is where the spec came from. Only when there is no spec anywhere _and_ no PR description either, ask the user where the spec is; if they say there isn't one, the **Spec** axis skips and reports "no spec available".
 
 ### 3. Identify the standards sources
 
@@ -59,7 +59,7 @@ Each smell reads _what it is_ → _how to fix_; match it against the diff:
 
 ### 4. Spawn one Herdr pane per axis
 
-Pi has no task/sub-agent tool: the two "parallel sub-agents" are two **Herdr panes**, each running its own pi agent, created by you. Pick an `<id>` that identifies this review — the PR number, or the branch / short SHA — because agent names must be distinct lowercase names and an occupied name cannot be reused.
+Pi has no task/sub-agent tool: the two "parallel sub-agents" are two **Herdr panes**, each running its own pi agent, created by you. Pick an `<id>` that identifies this review — the PR number, or a **short sanitised** branch name or short SHA — and keep it to **15 characters or fewer**: Herdr agent names must match `[a-z][a-z0-9_-]{0,31}` and be unique among live agents, and `<id>` is used inside both the agent names (`review-<id>-standards`) and the artifact filenames, so an id that breaks that rule breaks both. The branch `feat/code-review-herdr-skill` is invalid — it contains `/` and is far too long — while `107` or `cr-herdr` work fine.
 
 **4.1 Can you spawn panes?** This works from inside a pane as well as from the top-level session: a pane agent has `HERDR_ENV=1` and its own `HERDR_PANE_ID` (verified 2026-09-10), so nesting is fine.
 
@@ -73,14 +73,18 @@ If that fails, or if `herdr pane split` errors, do **not** silently single-threa
 
 ```sh
 herdr pane split --current --direction right --cwd "$PWD" --no-focus   # read .result.pane.pane_id
-herdr agent start review-<id>-standards --kind pi --pane <pane-id>
+herdr agent start review-<id>-standards --kind pi --pane <standards-pane-id>
+herdr agent get review-<id>-standards                                  # expect .result.agent.interactive_ready: true
 
-herdr pane split --current --direction right --cwd "$PWD" --no-focus   # read .result.pane.pane_id
-herdr agent start review-<id>-spec --kind pi --pane <pane-id>
+herdr pane split --current --direction down --cwd "$PWD" --no-focus    # read .result.pane.pane_id
+herdr agent start review-<id>-spec --kind pi --pane <spec-pane-id>
+herdr agent get review-<id>-spec                                       # expect .result.agent.interactive_ready: true
 ```
 
 - Use `--current` — **your** pane — never the _focused_ pane: the user's focus may sit in another workspace or tab, so "focused" is not yours. Keep `--no-focus` so the human is not yanked around.
+- Split `right` once and `down` once rather than twice in the same direction: your pane is already a right split, and Herdr's own guidance is to avoid repeated same-direction splits, which leave unusably narrow columns or short rows. `--ratio` is the alternative if you prefer.
 - Pass no native pi arguments after `--`: the panes then inherit pi's configured default provider and model.
+- **Verify the agent actually started** before you rely on the pane: check `.result.agent.interactive_ready` from `agent start`, or `herdr agent get review-<id>-<axis>`. If the agent is missing — `agent start` immediately after `pane split` has been seen to fail silently — wait a moment and **retry once**, then re-check. Never prompt a pane that has nothing in it.
 - Record both pane IDs and agent names; step 4.6 closes exactly those panes.
 
 **4.3 Prompt each axis with its own brief.** The **Standards** brief must include:
@@ -95,12 +99,20 @@ The **Spec** brief must include:
 - The path, or the fetched contents, of the spec.
 - The task: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Quote the spec line for each finding. Under 400 words."
 
-Both briefs must also state the constraints: **read-only** (no edits, no staging, no commits, no pushes, no merges, no `npx skills` writes), write the full findings to `/tmp/code-review-<id>-<axis>.md`, and reply with only that path plus a one-line verdict. If the spec is missing, skip the Spec pane and note that in the final report.
+Both briefs must also state the constraints: **read-only** (no edits, no staging, no commits, no pushes, no merges, no `npx skills` writes), write the full findings to `/tmp/code-review-<id>-r<round>-<axis>.md` (`<round>` is this review round — 1 or 2 — because the path is keyed per round, so a later round can never satisfy step 4.5 with an earlier round's file), and reply with only that path plus a one-line verdict. If there is no spec at all, skip the Spec pane and note that in the final report.
 
 ```sh
-herdr agent prompt review-<id>-standards "<standards brief>" --wait --timeout 600000
-herdr agent prompt review-<id>-spec "<spec brief>" --wait --timeout 600000
+# Submit both prompts WITHOUT --wait: each call returns as soon as it is accepted,
+# so the two panes work concurrently instead of the Spec pane idling behind Standards.
+herdr agent prompt review-<id>-standards "<standards brief>"
+herdr agent prompt review-<id>-spec "<spec brief>"
+
+# Wait for both only after both are already running.
+herdr agent wait review-<id>-standards --timeout 600000
+herdr agent wait review-<id>-spec --timeout 600000
 ```
+
+Submitting without `--wait` is what makes the two panes work concurrently: `--wait` blocks until _that_ agent settles, so two `--wait` calls run the axes one after the other. The waiting happens afterwards, once both are running. `herdr agent wait` matches `idle`, `done` or `blocked` unless you pass `--until`.
 
 **4.4 Resolve the returned state.**
 
@@ -109,9 +121,9 @@ herdr agent prompt review-<id>-spec "<spec brief>" --wait --timeout 600000
 - `working` or a timeout: the work may still be running. `herdr agent get <name>`, then `herdr agent wait <name> --timeout 120000`.
 - Unknown state or command error: read the pane (`herdr agent read <name> --source recent-unwrapped --lines 160`) and follow the herdr-subagent troubleshooting path.
 
-**4.5 Collect the two reports.** Read `/tmp/code-review-<id>-standards.md` and `/tmp/code-review-<id>-spec.md` directly and verify they exist. If a pane's answer is unavailable (an agent on the terminal's alternate screen), read its recent output with `herdr agent read <name> --source recent-unwrapped --lines 160`, and if that still isn't the report, ask the agent to write the file.
+**4.5 Collect the two reports.** Read `/tmp/code-review-<id>-r<round>-standards.md` and `/tmp/code-review-<id>-r<round>-spec.md` directly and verify each was written **by this round**: the pane's own reply names that path, and `ls -l` shows a non-empty file with an mtime after you submitted the prompt. A file that exists but predates the prompt is a leftover from an earlier round, not a report — ask the agent to write it. (`rm` and `truncate -s 0` are denied by this harness's permission policy, so `: > <path>` is how to clear a path first.) If a pane's answer is unavailable (because the agent uses the terminal's alternate screen), read its recent output with `herdr agent read <name> --source recent-unwrapped --lines 160`, and if that still isn't the report, ask the agent to write the file.
 
-**4.6 Close the axis panes you created.** This repository's standing instruction is that the axis panes are closed once their reports have been collected — the top-level reviewer pane stays for the human. Close only the two panes you created in 4.2, by the IDs you recorded there, and never any other pane; never stop the Herdr server. Report the IDs you closed. If the user asked to keep them, keep them instead.
+**4.6 Close the axis panes you created.** The delegated SOP closes panes "only when the user requests it" ([`../herdr-subagent/SKILL.md`](../herdr-subagent/SKILL.md)) — this repository's standing instruction _is_ that request: the axis panes are always closed once their reports have been collected, and the top-level reviewer pane stays for the human. Close exactly the panes you created in 4.2 — both of them, or only the Standards pane if the Spec pane was skipped — by the IDs you recorded there, and never any other pane; never stop the Herdr server. Report the IDs you closed. If the user asked to keep them, keep them instead.
 
 ```sh
 herdr pane close <standards-pane-id>
@@ -139,5 +151,6 @@ Every failure falls back or escalates — never silently single-thread, and neve
 
 - **Not inside Herdr, or pane creation fails** → run both axes sequentially in this session, keep them separate per axis in the report, and say the axes ran sequentially and why.
 - **An axis agent is `blocked`** → escalate its question to the user before continuing; a guessed answer invalidates that axis.
-- **A findings file is missing** → read the pane's recent output; if the report still isn't there, ask the agent to write the file.
+- **A findings file is missing, or predates this round** → read the pane's recent output; if the report still isn't there, ask the agent to write the file.
+- **An agent name is invalid or already occupied** → pick another valid `<id>` (a PR number, a short sanitised branch name or short SHA, ≤15 chars) and start a fresh agent with a fresh name. Never reuse the occupied name and never blind-truncate one to fit: the id also appears in the artifact filenames, so a mangled id misplaces the reports.
 - **Closing a pane fails** → report it and leave that pane alone; do not go hunting for other panes to close.

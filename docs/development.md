@@ -89,9 +89,10 @@ gitignored directory (`.pi/skills/`) instead. A successful `add` prints
 `→ ./.agents/skills/<name>`.
 
 > **Caution:** the CLI owns this directory. A scoped `npx skills remove` — and
-> especially `remove --all` — would delete the repo-owned `dev-workflow` and
-> `herdr-subagent` too. They are committed, so `git checkout -- .agents/skills`
-> restores them, but never run those commands blindly.
+> especially `remove --all` — would delete the repo-owned `dev-workflow`,
+> `herdr-subagent` and `code-review-herdr` too. They are committed, so
+> `git checkout -- .agents/skills` restores them, but never run those commands
+> blindly.
 
 After a first install, run the `/setup-matt-pocock-skills` skill once: it records
 this repository's issue tracker, triage labels and doc layout for the skills that

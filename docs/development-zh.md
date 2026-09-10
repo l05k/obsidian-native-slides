@@ -43,15 +43,15 @@ npm run dev        # 监听 main.ts，变更时自动重建 main.js
   （本仓库对 vendored `code-review` 的 fork：两轴方法相同，但每条轴都在自己的 Herdr 窗格里
   运行——Pi 没有原生 subagent 工具，这正是它需要的——报告收齐后这些窗格会被关闭）。
   这三个是我们的：随意修改，且仍受 Prettier 约束（ESLint 会跳过整个 `.agents/skills/`）。
-- **规范位置**：`.agents/skills/<name>/SKILL.md`。共享规范目录的 agent（Pi、Amp、Codex、
-  Copilot……）直接发现它；某个 agent 专属的目录（`.claude/skills`、`.cursor/skills`……）
-  是指向它的**软链接**，绝不复制。这些目录是本地生成的 CLI 产物、已被 gitignore——
-  已提交的 `.agents/skills/` 才是唯一来源。
 - **随仓库带入的 25 个**——来自 [mattpocock/skills](https://github.com/mattpocock/skills) 的
   `engineering` + `productivity`，即 [aihero.dev/skills](https://www.aihero.dev/skills) 列出的两套。
   实验性的 `in-progress` / `misc` skill 有意不装。vendored 的 `code-review` 保持上游原文
   （这样 `npx skills update` 仍可刷新它），而 **Rule 2 用的不是它**：真正跑的是
   `code-review-herdr`。上游有改动时请手工把修复搬进 fork。
+- **规范位置**：`.agents/skills/<name>/SKILL.md`。共享规范目录的 agent（Pi、Amp、Codex、
+  Copilot……）直接发现它；某个 agent 专属的目录（`.claude/skills`、`.cursor/skills`……）
+  是指向它的**软链接**，绝不复制。这些目录是本地生成的 CLI 产物、已被 gitignore——
+  已提交的 `.agents/skills/` 才是唯一来源。
 - **锁文件是审计记录，不是版本锁定**——`skills-lock.json` 记录每个 skill 的来源仓库、
   路径与内容哈希。`npx skills update` / `npx skills experimental_install` 会在重新下载后
   **改写**这些哈希——因此上游变更会以 `skills-lock.json` 的 diff 呈现，而 `.agents/skills/`
@@ -72,8 +72,8 @@ npx skills@latest update                                                  # 按�
 `→ ./.agents/skills/<name>`。
 
 > **注意**：该目录由 CLI 管理。限定范围的 `npx skills remove`——尤其是 `remove --all`——
-> 会连仓库自有的 `dev-workflow` 与 `herdr-subagent` 一起删掉。它们已提交进版本库，
-> `git checkout -- .agents/skills` 可恢复，但切勿盲目执行这些命令。
+> 会连仓库自有的 `dev-workflow`、`herdr-subagent` 与 `code-review-herdr` 一起删掉。它们已提交
+> 进版本库，`git checkout -- .agents/skills` 可恢复，但切勿盲目执行这些命令。
 
 首次安装后，运行一次 `/setup-matt-pocock-skills`：它会为本仓库记录 issue tracker、triage
 标签与文档布局，供需要它们的 skill 使用。
