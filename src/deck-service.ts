@@ -42,6 +42,11 @@ export class DeckService {
     );
   }
 
+  /** Resolved next-slide paths of the note at `path` ([] when none, or the link is broken) */
+  nextLinks(path: string): string[] {
+    return this.linkPaths(path);
+  }
+
   /** Resolve the `deck` property of a note into real note paths (max one) */
   private linkPaths(path: string): string[] {
     const f = this.app.vault.getAbstractFileByPath(path);

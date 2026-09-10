@@ -4,14 +4,16 @@
  * Two rules live here, both free of Obsidian runtime dependencies so they can
  * be unit tested directly (see test/nav.test.ts):
  *
- *   1. A queued press steps from the *previous press's target*, not from the
- *      note the editor happens to show. Without this, every press in a burst
- *      resolves to the same next slide and all but one are swallowed (issue #110).
- *   2. A navigation session stays inside the chain it started in while the note
- *      it is on still belongs to that chain. Re-resolving the deck on every step
- *      lets a shared `deck` link — two slides pointing at the same next slide —
- *      swap the chain under the reader, which moves the page number and sends
- *      `Previous page` somewhere else (issue #110).
+ *   1. A press steps from the *previous press's target*, not from the note the
+ *      editor happens to show. Without this, every press in a burst resolves to
+ *      the same next slide and all but one are swallowed (issue #110).
+ *   2. A session keeps the chain *head* it entered while that head still reaches
+ *      the note in the editor. The head is a hint, not a cached chain: the chain
+ *      is walked live on every resolution, so slides created, deleted or renamed
+ *      meanwhile are honoured (`deckFromHead()`), and a hint that no longer leads
+ *      to the current note is ignored. Re-resolving the head on every step is what
+ *      used to let a shared `deck` link — two slides declaring the same next
+ *      slide — swap the chain under the reader (issue #110).
  */
 
 import type { DeckInfo } from "./deck";
@@ -20,19 +22,20 @@ import type { DeckInfo } from "./deck";
 export type NavIntent = { dir: "prev" | "next" } | { index: number };
 
 /**
- * Deck resolution inside a navigation session. Prefers the chain the session is
- * already walking (`remembered`) as long as `anchorPath` belongs to it, and
- * falls back to a fresh resolution (`compute`) otherwise.
+ * Deck resolution inside a navigation session: walk live from the session's head
+ * hint when it still reaches `anchorPath`, and fall back to a fresh resolution
+ * (`compute`, which finds its own head) otherwise.
  */
 export function sessionDeck(
-  remembered: readonly string[] | null,
+  head: string | null,
   anchorPath: string | null,
+  fromHead: (head: string, path: string) => DeckInfo | null,
   compute: (path: string) => DeckInfo | null,
 ): DeckInfo | null {
   if (!anchorPath) return null;
-  if (remembered) {
-    const index = remembered.indexOf(anchorPath);
-    if (index !== -1) return { chain: [...remembered], index };
+  if (head) {
+    const deck = fromHead(head, anchorPath);
+    if (deck) return deck;
   }
   return compute(anchorPath);
 }
@@ -49,34 +52,71 @@ export function stepTarget(deck: DeckInfo, intent: NavIntent): string | null {
   return deck.chain[index] ?? null;
 }
 
-/**
- * Walk queued intents the way the plugin's queue does, but synchronously: each
- * step anchors on the previous step's target, so N presses advance N slides
- * (up to the end of the chain) instead of collapsing into one. Returns the path
- * the reader ends on plus the slides visited along the way.
- *
- * This is the contract the runtime queue implements with real `await`ed opens;
- * keeping it pure is what makes "a burst of presses" testable.
- */
-export function walkIntents(
-  startPath: string,
-  intents: readonly NavIntent[],
-  compute: (path: string) => DeckInfo | null,
-  remembered: readonly string[] | null = null,
-): { path: string; visited: string[]; chain: string[] | null } {
-  let anchor = startPath;
-  let chain = remembered ? [...remembered] : null;
-  const visited: string[] = [];
+/** What the session needs from the editor, injected so the queue stays testable */
+export interface NavHooks {
+  /** Live deck for `path`, honouring the session's head hint */
+  resolve: (path: string, head: string | null) => DeckInfo | null;
+  /** Open `target` (the promise resolving once the editor switched to it) */
+  open: (target: string, from: string) => Promise<void>;
+  /** The note in the editor, used as the anchor when the session has none */
+  activePath: () => string | null;
+}
 
-  for (const intent of intents) {
-    const deck = sessionDeck(chain, anchor, compute);
-    if (!deck) break;
-    chain = deck.chain;
-    const target = stepTarget(deck, intent);
-    if (!target) continue; // boundary — the press is a no-op, the anchor stays
-    anchor = target;
-    visited.push(target);
+/**
+ * The queue behind prev / next / jump. Presses are applied one awaited open at a
+ * time so a burst advances one slide per press, and each step is anchored on the
+ * previous step's target rather than on the note the editor still shows.
+ */
+export class NavSession {
+  private queue: NavIntent[] = [];
+  private running = false;
+  private pending: string | null = null;
+  private head: string | null = null;
+
+  constructor(private readonly hooks: NavHooks) {}
+
+  /** The chain head this session entered, or null before its first step */
+  get rememberedHead(): string | null {
+    return this.head;
   }
 
-  return { path: anchor, visited, chain };
+  /** Queue a press; the first one starts the drain. Resolves once the queue is empty. */
+  push(intent: NavIntent): Promise<void> {
+    this.queue.push(intent);
+    if (this.running) return this.draining ?? Promise.resolve();
+    this.draining = this.drain().catch((error: unknown) => {
+      console.error("native-slides: navigation failed", error);
+    });
+    return this.draining;
+  }
+
+  /** Resolves when the queue has drained (the promise `push()` returns) */
+  private draining: Promise<void> | null = null;
+
+  private async drain(): Promise<void> {
+    this.running = true;
+    try {
+      while (this.queue.length > 0) {
+        const intent = this.queue.shift();
+        if (!intent) break;
+        const from = this.pending ?? this.hooks.activePath();
+        if (!from) continue; // no note to anchor on — drop the press
+        const deck = this.hooks.resolve(from, this.head);
+        if (!deck) continue; // no longer a deck note — drop the press
+        this.head = deck.chain[0] ?? this.head; // remember the chain walked
+        const target = stepTarget(deck, intent);
+        if (!target) continue; // first/last slide — the press is a no-op
+        this.pending = target;
+        await this.hooks.open(target, from);
+      }
+    } catch (error) {
+      // Presses queued behind a failed open are stale: replaying them later would
+      // move the reader from wherever they end up, not from where they were.
+      this.queue.length = 0;
+      throw error;
+    } finally {
+      this.pending = null; // queue drained: the editor is authoritative again
+      this.running = false;
+    }
+  }
 }

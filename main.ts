@@ -29,8 +29,8 @@ import { MarkdownView, Plugin, TFile } from "obsidian";
 import { createBar, navButton, syncTabBarHeight } from "./src/bar";
 import { registerCommands } from "./src/commands";
 import { DeckService } from "./src/deck-service";
-import { formatValue, type DeckInfo } from "./src/deck";
-import { sessionDeck, stepTarget, type NavIntent } from "./src/nav";
+import { formatValue, deckFromHead, type DeckInfo } from "./src/deck";
+import { NavSession, sessionDeck } from "./src/nav";
 import { activeFrontmatter, currentMode, frontmatterOf, isLivePreview } from "./src/mode";
 import { SlidesPanelView, SLIDES_PANEL_VIEW } from "./src/panel";
 import { NativeSlidesSettingTab } from "./src/settings";
@@ -57,28 +57,22 @@ export default class NativeSlidesPlugin extends Plugin {
   private lastKey = "";
   /** Last measured tab-bar height (px) — cached while the slides bar is hidden */
   private tabBarHeight = 0;
-  /**
-   * Navigation queue: presses are queued and applied one open at a time, so a
-   * burst advances one slide per press instead of collapsing into one open
-   * (issue #110). `navPending` is the target of the step in flight — the next
-   * step anchors on it rather than on the note the editor still shows.
-   */
-  private navQueue: NavIntent[] = [];
-  private navRunning = false;
-  private navPending: string | null = null;
-  /**
-   * The chain the current navigation session is walking. Preferred over a fresh
-   * resolution while the current note belongs to it, so a slide reachable from
-   * two predecessors cannot swap the deck (and its page numbers) mid-navigation
-   * (issue #110).
-   */
-  private navChain: string[] | null = null;
+  /** Queue behind prev / next / jump — see src/nav.ts (issue #110) */
+  private nav!: NavSession;
   /** Whether the mouse pointer is hidden for presenting (session state) */
   pointerHidden = false;
 
   async onload(): Promise<void> {
     await this.loadSettings();
     this.deckService = new DeckService(this.app);
+    this.nav = new NavSession({
+      resolve: (path, head) => this.deckWithHead(path, head),
+      open: async (target, from) => {
+        if (!this.slidesMode) await this.enterSlides();
+        await this.app.workspace.openLinkText(target, from);
+      },
+      activePath: () => this.app.workspace.getActiveFile()?.path ?? null,
+    });
     this.addSettingTab(new NativeSlidesSettingTab(this));
 
     // ── 1. Refresh on "current note / view changed" events ──────────────
@@ -363,66 +357,42 @@ export default class NativeSlidesPlugin extends Plugin {
   // ── PPT navigation ────────────────────────────────────────────────────
 
   /**
-   * Resolve a note's deck, preferring the chain the current navigation session
-   * is already walking. The bar and the slides panel read this too, so the page
-   * number always describes the chain navigation is actually using.
+   * Resolve a note's deck, preferring the chain head the current navigation
+   * session entered (walked live, so edits to the deck are honoured). The bar and
+   * the slides panel read this too, so the page number always describes the chain
+   * navigation is actually using.
    */
   resolveDeck(file: TFile): DeckInfo | null {
-    return sessionDeck(this.navChain, file.path, (path) => {
-      const f = this.app.vault.getAbstractFileByPath(path);
-      return f instanceof TFile ? this.deckService.compute(f) : null;
-    });
+    return this.deckWithHead(file.path, this.nav.rememberedHead);
+  }
+
+  /**
+   * Deck for `path`, walked live from `head` while that head still reaches it and
+   * resolved afresh (arbitrary head) otherwise.
+   */
+  private deckWithHead(path: string, head: string | null): DeckInfo | null {
+    const file = this.app.vault.getAbstractFileByPath(path);
+    if (!(file instanceof TFile)) return null;
+    return sessionDeck(
+      head,
+      path,
+      (h, p) => {
+        const headFile = this.app.vault.getAbstractFileByPath(h);
+        if (!(headFile instanceof TFile)) return null;
+        return deckFromHead(h, p, (q) => this.deckService.nextLinks(q));
+      },
+      () => this.deckService.compute(file),
+    );
   }
 
   /** Move one step back/forward along the deck chain (entering Slides mode as needed) */
   async navigate(direction: "prev" | "next"): Promise<void> {
-    this.enqueueNav({ dir: direction });
+    this.nav.push({ dir: direction });
   }
 
   /** Jump to a specific index in the deck chain (progress bar click) */
   async jumpTo(index: number): Promise<void> {
-    this.enqueueNav({ index });
-  }
-
-  /** Queue a navigation intent and drain the queue (only one drain runs at a time) */
-  private enqueueNav(intent: NavIntent): void {
-    this.navQueue.push(intent);
-    if (!this.navRunning) void this.drainNavQueue();
-  }
-
-  /**
-   * Apply queued intents one at a time, awaiting each open so the next step
-   * starts from the slide the previous one opened — not from the note the
-   * editor has not finished switching to.
-   */
-  private async drainNavQueue(): Promise<void> {
-    this.navRunning = true;
-    try {
-      while (this.navQueue.length > 0) {
-        const intent = this.navQueue.shift();
-        if (!intent) break;
-        const anchor = this.navPending ?? this.app.workspace.getActiveFile()?.path ?? null;
-        const deck = this.resolveDeckPath(anchor);
-        if (!deck) continue; // no longer a deck note — drop the intent
-        const target = stepTarget(deck, intent);
-        if (!target) continue; // first/last slide — the press is a no-op
-        if (!this.slidesMode) await this.enterSlides();
-        this.navPending = target;
-        await this.app.workspace.openLinkText(target, anchor ?? deck.chain[deck.index] ?? "");
-      }
-    } finally {
-      this.navPending = null; // queue drained: the active note is authoritative again
-      this.navRunning = false;
-    }
-  }
-
-  /** Deck resolution for a raw path (navigation anchors are paths, not files) */
-  private resolveDeckPath(path: string | null): DeckInfo | null {
-    const file = path ? this.app.vault.getAbstractFileByPath(path) : null;
-    if (!(file instanceof TFile)) return null;
-    const deck = this.resolveDeck(file);
-    if (deck) this.navChain = deck.chain; // remember the chain this session walks
-    return deck;
+    this.nav.push({ index });
   }
 
   // ── Bar rendering ─────────────────────────────────────────────────────

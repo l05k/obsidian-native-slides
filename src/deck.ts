@@ -72,6 +72,35 @@ export function computeDeck(
 }
 
 /**
+ * Walk the chain forward from a known head and locate `currentPath` in it.
+ *
+ * `computeDeck()` finds the head itself, which is ambiguous when several slides
+ * declare the same next slide; taking the head as given is what lets a
+ * navigation session keep the chain it entered. The walk is always live — the
+ * links come from the vault on every call — so slides created, deleted or
+ * renamed meanwhile are reflected, and a head that no longer reaches
+ * `currentPath` simply yields null (the caller falls back to `computeDeck()`).
+ */
+export function deckFromHead(
+  head: string,
+  currentPath: string,
+  getLinks: (path: string) => string[],
+): DeckInfo | null {
+  const chain: string[] = [];
+  const visited = new Set<string>();
+  let cur: string | undefined = head;
+  while (cur && !visited.has(cur)) {
+    visited.add(cur);
+    chain.push(cur);
+    cur = getLinks(cur)[0];
+  }
+
+  const index = chain.indexOf(currentPath);
+  if (index === -1) return null;
+  return { chain, index };
+}
+
+/**
  * Extract up to `max` note names from a `deck` property value.
  * Accepts a single string or a YAML list of strings; unquoted [[x]] values
  * are parsed by YAML as nested arrays and flattened here.
