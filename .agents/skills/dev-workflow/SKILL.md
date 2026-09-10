@@ -108,7 +108,7 @@ The authoring agent never reviews its own work. A **round** is one review plus t
    gh pr checks <pr> --watch
    ```
 
-6. **Merge or stop** — merge only once no blocker is open. The `protect-main` ruleset requires a PR, allows **squash only** (linear history), and requires **no approving review** — for agent-authored PRs the loop plus green CI is the whole gate — but CI is not a required status check, so waiting for it is your job. Plain `--squash` only: `--delete-branch` is refused before `gh` runs by the global `rm-protect.py` `PreToolUse` guard, not by repository policy (see §5, _clean up and sync_).
+6. **Merge or stop** — merge only once no blocker is open. The `protect-main` ruleset requires a PR, allows **squash only** (linear history), and requires **no approving review** — for agent-authored PRs the loop plus green CI is the whole gate — but CI is not a required status check, so waiting for it is your job. Plain `--squash` only: branch deletion is refused by the environment guard and has to go to the user (see §5).
 
    ```sh
    gh pr merge <pr> --squash
@@ -120,19 +120,16 @@ The authoring agent never reviews its own work. A **round** is one review plus t
 
 ### 5. After the PR is merged: clean up and sync
 
-Delete the local branch **before** any `git fetch --prune` — the tracking ref is what keeps `git branch -d` working after a squash merge:
+The environment guard refuses branch/reference deletion outright — `git branch -d/-D`, `git branch --delete`, `git tag -d`, `git tag --delete`, `git push -d`, `git push --delete`, `git push origin :<branch>`, `gh pr merge --delete-branch` — and there is no authorization path in the hook: its deny text invites 先取得用户明确授权 ("first obtain the user's explicit authorization", a translation of the guard's Chinese), but no authorized retry can ever pass, so never attempt one and never route around the refusal. None of these needs a path: the guard attaches ref intent wherever the form appears, including to a command-shaped line of a heredoc body. The cleanup is therefore the **user's** call: ask before deleting anything, and when they prefer to run it themselves, hand them these commands — **commands for the user**, not for the agent (the agent's own command here is the `gh pr merge <pr> --squash` of §4 step 6):
 
 ```sh
-git switch main
-git pull origin main                          # sync to the latest main
-git branch -d feat/my-change                  # delete the local branch
+git switch main                                                        # leave the branch first
+git branch -d <branch>                                                 # local, while its upstream ref still exists
+git pull origin main                                                   # sync to the latest main
+gh api -X DELETE repos/<owner>/<repo>/git/refs/heads/<branch>          # remote branch
+git fetch --prune                                                      # drop the remote-tracking ref
 ```
 
-If `git branch -d` still reports "not fully merged", stop and ask the human: the fallback `git branch -D` is denied by the permission policy.
+Delete the local branch **first**, while its upstream ref still exists: after a squash merge its commits are not ancestors of `main`, so `git branch -d` succeeds only through the upstream check against `origin/<branch>`, and that ref is exactly what `--prune` removes — running it before the `pull`/`prune` makes the delete independent of the user's `fetch.prune` setting. This repository does not delete branches on merge (`delete_branch_on_merge` is `false`), so the remote deletion is a required step rather than an optional tidy-up; the `gh api -X DELETE` form does run (the guard attaches no ref intent to it), but deleting the remote branch is still the user's decision, so ask first; `git push origin --delete` and `gh pr merge --delete-branch` never run here. If `-d` reports "not fully merged", stop and ask the human — `-D` is part of the same refused set.
 
-`gh pr merge --delete-branch` cannot be used here: this is an environment guard, not repository policy. A global `PreToolUse` hook, `~/.pi/scripts/rm-protect.py` (wired in `~/.pi/agent/settings.json` for the `bash` tool), denies any bash command whose text matches a delete verb — its `-delete\b` pattern matches the substring inside `--delete-branch` (and inside `origin --delete`) — when the command resolves to a protected path (anything outside `~/notebase`, minus its scratch/cache paths — and it refuses when no target can be resolved). It fires before `gh` runs, so nothing is deleted, locally or remotely. It strips quoted spans before matching, so it trips on an unquoted `--delete-branch` / `origin --delete` token, and on a heredoc body, which is not quote-stripped — exactly how a commit message written as a heredoc gets refused. Pass the message as a file instead (`git commit -F <path>`). This repository does not delete branches on merge, so delete the remote branch explicitly, then drop the remote-tracking ref:
-
-```sh
-gh api -X DELETE repos/<owner>/<repo>/git/refs/heads/feat/my-change   # remote branch
-git fetch --prune
-```
+The guard's other half governs merge and commit text: for delete intent a delete verb in command position or a whole-word `-delete`/`--delete` is refused when the command resolves to a protected path, and because the guard tokenizes the command, quotes change nothing for it; a heredoc body is ordinary shell text, so a command-shaped body line is refused unless the body is itself inside quotes — write such a commit message to a file and use `git commit -F <path>`. Details: the `AGENTS.md` harness note.
