@@ -120,37 +120,28 @@ The authoring agent never reviews its own work. A **round** is one review plus t
    - **A blocker still open after the fixes**: stop, leave the PR open, report the findings to the human. Never merge over an open blocker, and never start another review round to re-litigate it.
    - Report the round (findings + fixes + verdict) in the final summary and in the PR comment, and leave the reviewer pane open for inspection unless the user asks to close it.
 
-### 5. After the PR is merged: the branch deletion is the user's
+### 5. After the PR is merged: local delete, then sync
 
-The agent syncs; the user deletes. Nothing about a branch is the agent's to remove — not the remote one, and not the local one either, because the guard refuses `git branch -d` just as hard as `gh pr merge --delete-branch`:
+The split is by ref, not by who "owns" the branch: the agent deletes the **local** branch — the one deletion form the guard allows — and syncs; the user deletes the **remote** branch whenever they choose.
 
 ```sh
 git switch main
-git pull origin main      # sync to the latest main; leave the branch alone
+git branch -d <branch>    # non-force, and before anything prunes
+git pull origin main      # sync to the latest main
 ```
 
-Every git/gh deletion form is refused outright by the guard (`git branch -d/-D`, `git branch --delete`, `git tag -d`, `git tag --delete`, `git push -d`, `git push --delete`, `git push origin :<branch>`, `gh pr merge --delete-branch`), with no authorization path in the hook — its deny text invites 先取得用户明确授权 ("first obtain the user's explicit authorization", a translation of the guard's Chinese), but no authorized retry can ever pass, so never attempt one and never route around it. `gh api -X DELETE repos/<owner>/<repo>/git/refs/heads/<branch>` is the one form the hook does not classify as a ref deletion; it stays off-limits **by standing instruction** anyway, because the user deletes branches themselves — do not run it and do not hand it over as a step.
-
-**What to hand the user** (their commands, in this order):
-
-```sh
-git switch main && git pull origin main
-git branch -d <branch>                                            # local — before anything prunes
-git fetch --prune                                                 # only after the local delete
-```
-
-**Why that order, and what their warning means.** After a squash merge the PR branch's commits are not ancestors of `main`, so `git branch -d` can only pass through its other test: a merge-base check against the branch's upstream, `origin/<branch>`. Hence this, for every squash-merged branch while that tracking ref exists:
+**Order matters.** Delete the local branch first, while its upstream ref still exists. After a squash merge the branch's commits are not ancestors of `main`, so `git branch -d` can only pass through its other test — a merge-base check against `origin/<branch>` — and that ref is exactly what a prune removes. Expect this on every squash-merged branch:
 
 ```
 warning: deleting branch 'x' that has been merged to
          'refs/remotes/origin/x', but not yet merged to HEAD
 ```
 
-It is a **warning**, not an error (the delete succeeds, exit 0), and it names the ref that allowed it. Deleting the branch on GitHub does **not** remove the local remote-tracking ref — only a prune does — so that ref is what lets `-d` pass, and the order cannot be inverted: prune first and `-d` refuses with "not fully merged", leaving only `-D`, which skips the safety check and is itself in the refused set.
+It is a **warning**, not an error (the delete succeeds, exit 0), and it names the ref that allowed it. Deleting the branch on GitHub does **not** remove the local remote-tracking ref; only a prune does. So **never prune before the local delete** — prune first and `-d` refuses with "not fully merged", leaving only `-D`, which is refused for the agent. A bare `git fetch origin` prunes when `fetch.prune` (or `remote.<name>.prune`) is set, and a bare fetch is part of this workflow's own step 2; a refspec-scoped fetch (`git fetch origin main`, `git pull origin main`) prunes only what its refspec covers. If the user already deleted the remote branch and something pruned the tracking ref, stop and ask them to finish with `-D`.
 
-**Never prune on the user's behalf before they have run their local `git branch -d`.** A bare `git fetch origin` prunes when `fetch.prune` — or `remote.<name>.prune` — is set, and a bare fetch is part of this workflow's own step 2, so it can drop `origin/<branch>` long before they get to it and turn their `-d` into a `-D`. A refspec-scoped fetch (`git fetch origin main`, `git pull origin main`) prunes only what its refspec covers, so the sync above is safe.
+The guard allows exactly this one form — `git branch -d` / `git branch --delete` — and refuses the rest before they run: `git branch -D`/`-f`, `git tag -d`, `git tag --delete`, `git push -d`, `git push --delete`, `git push origin :<branch>`, `gh pr merge --delete-branch`. There is no authorization path in the hook, whose deny text invites 先取得用户明确授权 ("first obtain the user's explicit authorization", a translation of the guard's Chinese) even though no retry can pass. Never attempt a refused form and never route around it — and do not ask for permission for the whitelisted `-d`, it is a normal step.
 
-The guard's other half governs merge and commit text: for delete intent a delete verb in command position or a whole-word `-delete`/`--delete` is refused when the command resolves to a protected path, and because the guard tokenizes the command, quotes change nothing for it; a heredoc body is ordinary shell text, so a command-shaped body line is refused unless the body is itself inside quotes — write such a commit message to a file and use `git commit -F <path>`. Details: the `AGENTS.md` harness note.
+**Remote branches are the user's.** `gh api -X DELETE repos/<owner>/<repo>/git/refs/heads/<branch>` is the one form the hook does not classify as a ref deletion and would therefore run; it stays off-limits by standing instruction — do not run it and do not hand it over as a step. Say which remote branches are still there and let them delete those.
 
 ### 6. Releasing (the maintainer merges, the agent tags)
 
