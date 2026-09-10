@@ -22,13 +22,15 @@
  *   - src/settings.ts     settings tab
  *   - src/debug.ts        typography measurement tooling (dev builds only)
  *   - src/deck.ts         pure deck core (with src/createNext.ts)
+ *   - src/nav.ts          pure navigation core (queue + session chain)
  */
 
 import { MarkdownView, Plugin, TFile } from "obsidian";
 import { createBar, navButton, syncTabBarHeight } from "./src/bar";
 import { registerCommands } from "./src/commands";
 import { DeckService } from "./src/deck-service";
-import { formatValue } from "./src/deck";
+import { formatValue, deckFromHead, type DeckInfo } from "./src/deck";
+import { NavSession, sessionDeck } from "./src/nav";
 import { activeFrontmatter, currentMode, frontmatterOf, isLivePreview } from "./src/mode";
 import { SlidesPanelView, SLIDES_PANEL_VIEW } from "./src/panel";
 import { NativeSlidesSettingTab } from "./src/settings";
@@ -55,12 +57,22 @@ export default class NativeSlidesPlugin extends Plugin {
   private lastKey = "";
   /** Last measured tab-bar height (px) — cached while the slides bar is hidden */
   private tabBarHeight = 0;
+  /** Queue behind prev / next / jump — see src/nav.ts (issue #110) */
+  private nav!: NavSession;
   /** Whether the mouse pointer is hidden for presenting (session state) */
   pointerHidden = false;
 
   async onload(): Promise<void> {
     await this.loadSettings();
     this.deckService = new DeckService(this.app);
+    this.nav = new NavSession({
+      resolve: (path, head) => this.deckWithHead(path, head),
+      open: async (target, from) => {
+        if (!this.slidesMode) await this.enterSlides();
+        await this.app.workspace.openLinkText(target, from);
+      },
+      activePath: () => this.app.workspace.getActiveFile()?.path ?? null,
+    });
     this.addSettingTab(new NativeSlidesSettingTab(this));
 
     // ── 1. Refresh on "current note / view changed" events ──────────────
@@ -344,28 +356,43 @@ export default class NativeSlidesPlugin extends Plugin {
 
   // ── PPT navigation ────────────────────────────────────────────────────
 
+  /**
+   * Resolve a note's deck, preferring the chain head the current navigation
+   * session entered (walked live, so edits to the deck are honoured). The bar and
+   * the slides panel read this too, so the page number always describes the chain
+   * navigation is actually using.
+   */
+  resolveDeck(file: TFile): DeckInfo | null {
+    return this.deckWithHead(file.path, this.nav.rememberedHead);
+  }
+
+  /**
+   * Deck for `path`, walked live from `head` while that head still reaches it and
+   * resolved afresh (arbitrary head) otherwise.
+   */
+  private deckWithHead(path: string, head: string | null): DeckInfo | null {
+    const file = this.app.vault.getAbstractFileByPath(path);
+    if (!(file instanceof TFile)) return null;
+    return sessionDeck(
+      head,
+      path,
+      (h, p) => {
+        const headFile = this.app.vault.getAbstractFileByPath(h);
+        if (!(headFile instanceof TFile)) return null;
+        return deckFromHead(h, p, (q) => this.deckService.nextLinks(q));
+      },
+      () => this.deckService.compute(file),
+    );
+  }
+
   /** Move one step back/forward along the deck chain (entering Slides mode as needed) */
   async navigate(direction: "prev" | "next"): Promise<void> {
-    const file = this.app.workspace.getActiveFile();
-    if (!file) return;
-    const deck = this.deckService.compute(file);
-    if (!deck) return;
-    const target = deck.chain[direction === "prev" ? deck.index - 1 : deck.index + 1];
-    if (!target) return;
-    if (!this.slidesMode) await this.enterSlides();
-    void this.app.workspace.openLinkText(target, file.path);
+    this.nav.push({ dir: direction });
   }
 
   /** Jump to a specific index in the deck chain (progress bar click) */
   async jumpTo(index: number): Promise<void> {
-    const file = this.app.workspace.getActiveFile();
-    if (!file) return;
-    const deck = this.deckService.compute(file);
-    if (!deck || index < 0 || index >= deck.chain.length || index === deck.index) return;
-    const target = deck.chain[index];
-    if (!target) return;
-    if (!this.slidesMode) await this.enterSlides();
-    void this.app.workspace.openLinkText(target, file.path);
+    this.nav.push({ index });
   }
 
   // ── Bar rendering ─────────────────────────────────────────────────────
@@ -435,7 +462,7 @@ export default class NativeSlidesPlugin extends Plugin {
     if (!file) return; // barVisible implies a file, but narrow for TypeScript
 
     const fm = activeFrontmatter(this.app);
-    const deck = this.deckService.compute(file);
+    const deck = this.resolveDeck(file);
     clearChildren(this.bar);
 
     // ── Left: previous / next buttons (both always shown inside a deck;

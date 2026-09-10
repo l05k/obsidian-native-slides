@@ -74,7 +74,7 @@ export class SlidesPanelView extends ItemView {
    */
   private render(): void {
     const file = this.app.workspace.getActiveFile();
-    const deck = file ? this.plugin.deckService.compute(file) : null;
+    const deck = file ? this.plugin.resolveDeck(file) : null;
     const chain = deck
       ? deck.chain.filter((p) => this.app.vault.getAbstractFileByPath(p) instanceof TFile)
       : [];
