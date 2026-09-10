@@ -2,8 +2,9 @@
 
 [English](development.md) | **简体中文**
 
-面向开发者的文档——构建插件、开发循环、仅开发版的调试工具，以及 `.agents/skills/` 里的
-AI agent skills。用户向的 README 刻意保持为干净的发布页；插件作者或贡献者需要的都在这里。
+面向开发者的文档——构建插件、开发循环、在示例库中测试、仅开发版的调试工具，以及
+`.agents/skills/` 里的 AI agent skills。用户向的 README 刻意保持为干净的发布页；插件作者
+或贡献者需要的都在这里。
 
 ## 构建
 
@@ -31,6 +32,25 @@ npm run dev        # 监听 main.ts，变更时自动重建 main.js
 ```
 
 编辑 `main.ts` 后，在 Obsidian 里重载插件：按 `Cmd/Ctrl+P` 打开命令面板，搜索 **Reload app without saving** 并执行（该命令默认没有绑定快捷键）。或者，在 _设置 → 第三方插件_ 里关闭再开启 **Native Slides**。
+
+## 在示例库中测试
+
+**所有行为验证都在 `example-vault/` 里做 —— 绝不用其他库。** 它随仓库一起发布，插件目录里都是指向
+仓库根目录的**软链接**（`main.js`、`manifest.json`、`styles.css`），因此永远跑的就是你刚构建的版本。
+切勿让 agent、脚本或手工测试去碰存放真实笔记的库。
+
+- **循环**：`npm run build`（改代码时 `npm run dev`）→ 在 Obsidian 里重载插件
+  （`Cmd/Ctrl+P` → **Reload app without saving**）→ 验证。见上方「开发循环」。
+- **临时笔记**：验证需要时在 `example-vault/` 里新建，用完删掉 —— 不要把测试文件留在库里。
+  `Probe*.md` / `test.md` / `untitled-slides.md` 是维护者的草稿幻灯片，不要去动。
+- **夹具**：`example-vault/tests/typography-*.md` 是仅开发版命令 `Debug: Dump Typography Styles`
+  的采样夹具（`src/debug.ts` 硬编码了其中五个名字）—— 请勿改名或删除。演示套件是
+  `Welcome.md` → `Make it yours.md` → `Grow the Deck.md`，README 的引导依赖这三个名字与
+  `demo-image.png`。
+- **配置扰动**：Obsidian 运行时会改写库里**被追踪**的配置（`appearance.json`、
+  `community-plugins.json`、`core-plugins.json`）。切分支或开 PR 前用
+  `git restore -- example-vault/.obsidian` 还原，之后再确认一次 `git status`。
+- **驱动 App**（例如通过 CDP 的 `--remote-debugging-port=9222`）是允许的；本规则限制的是它可以碰哪个库。
 
 ## Agent skills
 

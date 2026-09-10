@@ -43,7 +43,7 @@ Thanks for your interest in contributing! This guide explains how to set up, bui
 - **One logical change per commit.** If you add a feature, include its docs and tests in the same commit.
 - **`main.js` must be committed with source changes.** CI verifies that `main.js` matches the bundled output of `main.ts` + `src/`.
 - **Commit message format**: short imperative subject (`feat: add X`, `fix: correct Y`, `docs: update Z`). No strict scope prefix requirement, but keep it descriptive.
-- **Never commit vault-specific state.** `example-vault/.obsidian/data.json`, `community-plugins.json`, `core-plugins.json` are gitignored or should be reverted before commit.
+- **Never commit vault-specific state.** The vault's tracked configuration (`example-vault/.obsidian/appearance.json`, `community-plugins.json`, `core-plugins.json`) is rewritten by Obsidian while it runs — revert it (`git restore -- example-vault/.obsidian`) before committing. Per-machine state (`workspaces.json`, plugin `data.json` outside the example vault, …) is gitignored.
 
 ## Pull request workflow
 
@@ -66,7 +66,7 @@ Include your Obsidian version, plugin version, and (for visual bugs) a screensho
 - **TypeScript** for all source code (`main.ts`, `src/`).
 - **ESLint + Prettier** enforce style. Run `npm run lint:fix` and `npm run format` before committing.
 - **CSS**: `styles.css` is hand-written (no preprocessor). Use the existing `--ns-*` variable layer for theme-scoped values; keep selectors scoped under `body.native-slides-mode` to avoid leaking into native modes.
-- **Tests**: `test/` uses Vitest. Add tests for pure logic (deck navigation, page-number computation, theme registry). Visual/CSS behavior is verified manually in Obsidian.
+- **Tests**: `test/` uses Vitest. Add tests for pure logic (deck navigation, page-number computation, theme registry). Visual/CSS behavior is verified manually in Obsidian — in **`example-vault/`**, which is the only vault anything here may be tested against (never a vault with real notes); see [Testing in the example vault](docs/development.md#testing-in-the-example-vault).
 
 ## Project structure
 
