@@ -22,13 +22,15 @@
  *   - src/settings.ts     settings tab
  *   - src/debug.ts        typography measurement tooling (dev builds only)
  *   - src/deck.ts         pure deck core (with src/createNext.ts)
+ *   - src/nav.ts          pure navigation core (queue + session chain)
  */
 
 import { MarkdownView, Plugin, TFile } from "obsidian";
 import { createBar, navButton, syncTabBarHeight } from "./src/bar";
 import { registerCommands } from "./src/commands";
 import { DeckService } from "./src/deck-service";
-import { formatValue } from "./src/deck";
+import { formatValue, type DeckInfo } from "./src/deck";
+import { sessionDeck, stepTarget, type NavIntent } from "./src/nav";
 import { activeFrontmatter, currentMode, frontmatterOf, isLivePreview } from "./src/mode";
 import { SlidesPanelView, SLIDES_PANEL_VIEW } from "./src/panel";
 import { NativeSlidesSettingTab } from "./src/settings";
@@ -55,6 +57,22 @@ export default class NativeSlidesPlugin extends Plugin {
   private lastKey = "";
   /** Last measured tab-bar height (px) — cached while the slides bar is hidden */
   private tabBarHeight = 0;
+  /**
+   * Navigation queue: presses are queued and applied one open at a time, so a
+   * burst advances one slide per press instead of collapsing into one open
+   * (issue #110). `navPending` is the target of the step in flight — the next
+   * step anchors on it rather than on the note the editor still shows.
+   */
+  private navQueue: NavIntent[] = [];
+  private navRunning = false;
+  private navPending: string | null = null;
+  /**
+   * The chain the current navigation session is walking. Preferred over a fresh
+   * resolution while the current note belongs to it, so a slide reachable from
+   * two predecessors cannot swap the deck (and its page numbers) mid-navigation
+   * (issue #110).
+   */
+  private navChain: string[] | null = null;
   /** Whether the mouse pointer is hidden for presenting (session state) */
   pointerHidden = false;
 
@@ -344,28 +362,67 @@ export default class NativeSlidesPlugin extends Plugin {
 
   // ── PPT navigation ────────────────────────────────────────────────────
 
+  /**
+   * Resolve a note's deck, preferring the chain the current navigation session
+   * is already walking. The bar and the slides panel read this too, so the page
+   * number always describes the chain navigation is actually using.
+   */
+  resolveDeck(file: TFile): DeckInfo | null {
+    return sessionDeck(this.navChain, file.path, (path) => {
+      const f = this.app.vault.getAbstractFileByPath(path);
+      return f instanceof TFile ? this.deckService.compute(f) : null;
+    });
+  }
+
   /** Move one step back/forward along the deck chain (entering Slides mode as needed) */
   async navigate(direction: "prev" | "next"): Promise<void> {
-    const file = this.app.workspace.getActiveFile();
-    if (!file) return;
-    const deck = this.deckService.compute(file);
-    if (!deck) return;
-    const target = deck.chain[direction === "prev" ? deck.index - 1 : deck.index + 1];
-    if (!target) return;
-    if (!this.slidesMode) await this.enterSlides();
-    void this.app.workspace.openLinkText(target, file.path);
+    this.enqueueNav({ dir: direction });
   }
 
   /** Jump to a specific index in the deck chain (progress bar click) */
   async jumpTo(index: number): Promise<void> {
-    const file = this.app.workspace.getActiveFile();
-    if (!file) return;
-    const deck = this.deckService.compute(file);
-    if (!deck || index < 0 || index >= deck.chain.length || index === deck.index) return;
-    const target = deck.chain[index];
-    if (!target) return;
-    if (!this.slidesMode) await this.enterSlides();
-    void this.app.workspace.openLinkText(target, file.path);
+    this.enqueueNav({ index });
+  }
+
+  /** Queue a navigation intent and drain the queue (only one drain runs at a time) */
+  private enqueueNav(intent: NavIntent): void {
+    this.navQueue.push(intent);
+    if (!this.navRunning) void this.drainNavQueue();
+  }
+
+  /**
+   * Apply queued intents one at a time, awaiting each open so the next step
+   * starts from the slide the previous one opened — not from the note the
+   * editor has not finished switching to.
+   */
+  private async drainNavQueue(): Promise<void> {
+    this.navRunning = true;
+    try {
+      while (this.navQueue.length > 0) {
+        const intent = this.navQueue.shift();
+        if (!intent) break;
+        const anchor = this.navPending ?? this.app.workspace.getActiveFile()?.path ?? null;
+        const deck = this.resolveDeckPath(anchor);
+        if (!deck) continue; // no longer a deck note — drop the intent
+        const target = stepTarget(deck, intent);
+        if (!target) continue; // first/last slide — the press is a no-op
+        if (!this.slidesMode) await this.enterSlides();
+        this.navPending = target;
+        await this.app.workspace.openLinkText(target, anchor ?? deck.chain[deck.index] ?? "");
+      }
+    } finally {
+      this.navPending = null; // queue drained: the active note is authoritative again
+      this.navRunning = false;
+    }
+  }
+
+  /** Deck resolution for a raw path (navigation anchors are paths, not files) */
+  private resolveDeckPath(path: string | null): DeckInfo | null {
+    const file = path ? this.app.vault.getAbstractFileByPath(path) : null;
+    if (!(file instanceof TFile)) return null;
+    const deck = this.resolveDeck(file);
+    if (deck) this.navChain = deck.chain; // remember the chain this session walks
+    return deck;
   }
 
   // ── Bar rendering ─────────────────────────────────────────────────────
@@ -435,7 +492,7 @@ export default class NativeSlidesPlugin extends Plugin {
     if (!file) return; // barVisible implies a file, but narrow for TypeScript
 
     const fm = activeFrontmatter(this.app);
-    const deck = this.deckService.compute(file);
+    const deck = this.resolveDeck(file);
     clearChildren(this.bar);
 
     // ── Left: previous / next buttons (both always shown inside a deck;

@@ -117,4 +117,4 @@ Typography Styles` command: it samples the current note in **both** edit and
 
 The source is split into `src/` modules (`types`, `mode`, `deck-service`,
 `panel`, `bar`, `commands`, `settings`, `debug`, `deck`, `createNext`,
-`deleteSlides`) with `main.ts` as the orchestration entry point.
+`deleteSlides`, `nav`) with `main.ts` as the orchestration entry point.

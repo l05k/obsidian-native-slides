@@ -8,6 +8,10 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 ## [Unreleased]
 
+### Fixed
+
+- **Next page no longer drops rapid presses or swaps the deck under you**: presses are queued and applied one open at a time, each anchored on the previous press's target, so a burst — key repeat, fast clicks on the bar button, or an impatient hand — advances one slide per press instead of collapsing into a single open (5 presses on a 6-slide deck used to advance one page, now they advance five, and presses past the last slide stay put). Navigation also stays inside the chain it started in: when two slides declare the same next slide (a shared `deck` link), stepping onto that slide used to re-derive the chain head from an arbitrary predecessor, renumbering the deck (1/3 became 3/4) and sending _Previous page_ to the other predecessor instead of back where you came from. The bar, the slides panel and the navigation now all resolve the chain the reader is actually walking (#110).
+
 ## [1.0.4] - 2026-09-07
 
 ### Added
