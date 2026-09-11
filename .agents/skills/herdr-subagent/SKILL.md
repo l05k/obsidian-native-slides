@@ -36,7 +36,14 @@ Use the user-requested direction and working directory when supplied; otherwise 
 herdr pane split --current --direction right --cwd "$PWD" --no-focus
 ```
 
-Read the new pane ID from `.result.pane.pane_id` in the JSON response. Use that exact ID in the next step.
+Read the new pane ID from `.result.pane.pane_id` in the JSON response. Use that exact ID in the next step: it is the **only** pane this workflow may target.
+
+Do not re-derive that ID later, and never pick a pane out of `herdr pane list`. A workspace holds other panes — earlier subagents' panes, plain shells, panes the user opened — so "an empty pane in this workspace" is not "the pane this workflow just created", and starting an agent in the wrong one takes over a terminal that was not yours. When you need the ID in a later command, carry it in a variable rather than searching for it:
+
+```bash
+PANE=$(herdr pane split --current --direction right --cwd "$PWD" --no-focus | jq -r '.result.pane.pane_id')
+herdr agent start default --kind pi --pane "$PANE"
+```
 
 ### 3. Start the agent
 
@@ -53,6 +60,8 @@ herdr agent start <name> --kind pi --pane <pane-id> -- --provider <provider> --m
 ```
 
 Use distinct lowercase names for parallel agents. Do not reuse an occupied name.
+
+`agent start` reports where it settled as `.result.agent.pane_id`. Check that it **equals** the ID from step 2 before you rely on the pane: if the two differ, the agent is running in a pane this workflow did not create, so stop, close nothing, and report the mismatch — every later step, including any close, would otherwise act on the wrong pane.
 
 ### 4. Delegate the task
 
@@ -103,6 +112,6 @@ Enter this path only when a happy-path command fails, a response field is missin
 
 ## Safety and completion
 
-Target the caller with `--current`, then use only the returned pane ID or the chosen unique agent name. Preserve user focus with `--no-focus`. Close, move, or stop only resources created by this workflow, and only when the user requests it. Never stop the Herdr server as cleanup.
+Target the caller with `--current`, then use only the returned pane ID or the chosen unique agent name. Preserve user focus with `--no-focus`. Close, move, or stop only resources created by this workflow, and only when the user requests it; a pane that merely exists in the workspace was not created by this workflow, so only an ID your own `pane split` returned, cross-checked as step 3 describes, is yours to touch. Never stop the Herdr server as cleanup.
 
 Synchronous delegation is complete only when the agent settles at `idle` or `done`, its result has been collected, and requested artifacts have been verified. Asynchronous delegation is complete when startup and prompt submission succeed and the agent name and pane ID have been reported.
