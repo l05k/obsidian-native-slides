@@ -16,11 +16,12 @@ When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the 
 
 All five exist in this repo's tracker: `wontfix` is a GitHub default, and the other four were created for this workflow. `gh label list` shows the current set.
 
-A fresh tracker — a fork, or a re-created repo — needs the four that GitHub does not ship by default, because `/triage` cannot apply a label that does not exist and does not create labels itself (its own words: the mapping "should have been provided to you").
+A fresh tracker — a fork, or a re-created repo — needs the four that GitHub does not ship by default, because `/triage` cannot apply a label that does not exist and does not create labels itself (its own words: the mapping "should have been provided to you"). Provisioning is a one-off maintainer step, not part of a `/triage` run.
 
 ```sh
-gh label create needs-triage
-gh label create needs-info
-gh label create ready-for-agent
-gh label create ready-for-human
+gh label list    # check which already exist
+gh label create needs-triage --color fbca04 --description "Maintainer needs to evaluate this issue"
+gh label create needs-info --color d4c5f9 --description "Waiting on reporter for more information"
+gh label create ready-for-agent --color 0e8a16 --description "Fully specified, ready for an AFK agent"
+gh label create ready-for-human --color 1d76db --description "Requires human implementation"
 ```
