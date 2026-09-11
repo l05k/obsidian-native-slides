@@ -119,9 +119,13 @@ gitignored directory (`.pi/skills/`) instead. A successful `add` prints
 > `git checkout -- .agents/skills` restores them, but never run those commands
 > blindly.
 
-After a first install, run the `/setup-matt-pocock-skills` skill once: it records
-this repository's issue tracker, triage labels and doc layout for the skills that
-need them.
+The `/setup-matt-pocock-skills` skill records this repository's issue tracker,
+triage labels and doc layout under [`docs/agents/`](agents/), for the skills that
+need them; it has been run here, and the three files are committed alongside this
+doc. `code-review-herdr` reads `docs/agents/issue-tracker.md` to resolve its Spec
+axis, and the triage mapping lives in `docs/agents/triage-labels.md`, which
+`AGENTS.md` points at, so whoever runs `/triage` has it to hand. Edit them
+directly; re-run the skill only to switch trackers or start over.
 
 ## Typography debug tooling (dev-only)
 
