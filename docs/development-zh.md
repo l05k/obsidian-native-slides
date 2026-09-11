@@ -97,11 +97,11 @@ npx skills@latest update                                                  # 按�
 > 会连仓库自有的 `dev-workflow`、`herdr-subagent` 与 `code-review-herdr` 一起删掉。它们已提交
 > 进版本库，`git checkout -- .agents/skills` 可恢复，但切勿盲目执行这些命令。
 
-首次安装后，运行一次 `/setup-matt-pocock-skills`：它会为本仓库记录 issue tracker、triage
-标签与文档布局，供需要它们的 skill 使用，并写入 [`docs/agents/`](agents/issue-tracker.md)。
-本仓库已完成该步骤——`code-review-herdr` 读取 `docs/agents/issue-tracker.md` 以确定 spec，
-`/triage` 读取 `docs/agents/triage-labels.md`——因此这三个文件与本文件一起提交。
-直接编辑它们即可；只有在切换 tracker 或重新开始时才需再次运行该 skill。
+`/setup-matt-pocock-skills` 会为本仓库记录 issue tracker、triage 标签与文档布局，写入
+[`docs/agents/`](agents/)，供需要它们的 skill 使用；本仓库已经运行过，这三个文件与本文件
+一起提交。`code-review-herdr` 读取 `docs/agents/issue-tracker.md` 以解析 Spec 轴，
+triage 映射则位于 `docs/agents/triage-labels.md` 并由 `AGENTS.md` 指向，运行 `/triage`
+时可随时查阅。直接编辑它们即可；只有在切换 tracker 或重新开始时才需再次运行该 skill。
 
 ## 排版测量工具（仅开发版）
 
