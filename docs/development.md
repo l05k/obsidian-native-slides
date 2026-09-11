@@ -120,8 +120,12 @@ gitignored directory (`.pi/skills/`) instead. A successful `add` prints
 > blindly.
 
 After a first install, run the `/setup-matt-pocock-skills` skill once: it records
-this repository's issue tracker, triage labels and doc layout for the skills that
-need them.
+this repository's issue tracker, triage labels and doc layout under
+[`docs/agents/`](agents/issue-tracker.md) for the skills that need them. That has
+been run here — `code-review-herdr` reads `docs/agents/issue-tracker.md` to
+resolve a spec, and `/triage` reads `docs/agents/triage-labels.md` — so the three
+files are committed alongside this doc. Edit them directly; re-run the skill only
+to switch trackers or start over.
 
 ## Typography debug tooling (dev-only)
 
