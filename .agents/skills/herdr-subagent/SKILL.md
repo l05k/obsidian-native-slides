@@ -11,7 +11,7 @@ Defaults unless the user overrides them:
 
 - sibling pane in the current tab
 - current working directory
-- split to the right
+- split to the right — the right choice for a **wide** pane; split a narrow or tall one down instead, and read which you have with `herdr pane layout --current` (`stty size` is not available when your shell is not a tty)
 - keep the user's focus unchanged
 - Herdr agent name `default`
 - agent kind `pi`
