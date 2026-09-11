@@ -83,7 +83,7 @@ Issues live in this repo's GitHub Issues, driven by the `gh` CLI. See [docs/agen
 
 ### Triage labels
 
-The five canonical triage roles, each label string equal to its role name (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`); only `wontfix` exists in the tracker today, so the rest are created before first use. See [docs/agents/triage-labels.md](docs/agents/triage-labels.md).
+The five canonical triage roles, each label string equal to its role name (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See [docs/agents/triage-labels.md](docs/agents/triage-labels.md).
 
 ### Domain docs
 
