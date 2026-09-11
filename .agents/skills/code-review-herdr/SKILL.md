@@ -73,21 +73,22 @@ If that fails, or if `herdr pane split` errors, do **not** silently single-threa
 
 ```sh
 # Standards pane — always
-herdr pane split --current --direction right --cwd "$PWD" --no-focus   # read .result.pane.pane_id
-herdr agent start review-<id>-standards --kind pi --pane <standards-pane-id>
+herdr pane split --current --direction right --cwd "$PWD" --no-focus   # read .result.pane.pane_id — the only pane you may target, and `herdr pane list` is never its source
+herdr agent start review-<id>-standards --kind pi --pane <standards-pane-id>   # .result.agent.pane_id must equal <standards-pane-id>
 herdr agent get review-<id>-standards                                  # expect .result.agent.interactive_ready: true
 
 # Spec pane — only when step 2 found a spec or a PR description
-herdr pane split --current --direction down --cwd "$PWD" --no-focus    # read .result.pane.pane_id
-herdr agent start review-<id>-spec --kind pi --pane <spec-pane-id>
+herdr pane split --current --direction down --cwd "$PWD" --no-focus    # read .result.pane.pane_id — the only pane you may target, and `herdr pane list` is never its source
+herdr agent start review-<id>-spec --kind pi --pane <spec-pane-id>     # .result.agent.pane_id must equal <spec-pane-id>
 herdr agent get review-<id>-spec                                       # expect .result.agent.interactive_ready: true
 ```
 
 - **Create and start the Spec pane only when step 2 found a spec or a PR description.** When step 2 decided the Spec axis skips, do not create that pane at all — a pane created here and never prompted is an agent left running for nothing, and 4.6 could not close it without contradicting 4.2.
 - Use `--current` — **your** pane — never the _focused_ pane: the user's focus may sit in another workspace or tab, so "focused" is not yours. Keep `--no-focus` so the human is not yanked around.
 - Follow Herdr's direction rule — split a **wide** pane to the right and a **narrow or tall** pane down — and avoid repeated same-direction splits, which leave unusably narrow columns or short rows. That rule is why the examples use `right` then `down`, and it holds whether the caller is the root pane of a top-level session or an already-split one. `--ratio` is the alternative if you prefer.
+  Re-read your own geometry after each split when you create several panes — the `herdr-subagent` SOP, step 2, says how: the rule is about the pane you are splitting **now**, not the one you started in.
 - Pass no native pi arguments after `--`: the panes then inherit pi's configured default provider and model.
-- **Verify the agent actually started** before you rely on the pane: `agent start` returns only once Herdr has detected the agent and considers it ready (`interactive_ready: true`), and a startup blocked on a dialog fails loudly with `agent_not_ready`. If `agent start` returns `agent_not_ready`, or `herdr agent get review-<id>-<axis>` shows no agent or `interactive_ready: false`, wait up to the CLI's 30 s startup timeout and **retry once** — then stop and report instead of prompting a pane that has nothing in it.
+- **Verify the agent actually started** before you rely on the pane: `agent start` returns only once Herdr has detected the agent and considers it ready (`interactive_ready: true`), and a startup blocked on a dialog fails loudly with `agent_not_ready`. If `agent start` returns `agent_not_ready`, or `herdr agent get review-<id>-<axis>` shows no agent or `interactive_ready: false`, wait up to the CLI's 30 s startup timeout and **retry once** — then stop and report instead of prompting a pane that has nothing in it. `agent start` also reports where it settled, as `.result.agent.pane_id`: confirm it **equals** the pane you created before doing anything else, because 4.6 closes the IDs recorded here — a mismatch would leave the real agent running and close a pane that never had one. On a mismatch, stop, close nothing, and report both pane IDs — prompt neither pane. Never look a pane up in `herdr pane list`; a workspace usually holds other panes, and only the ID your own split returned is yours.
 - Record each pane ID and agent name; step 4.6 closes exactly those panes.
 
 **4.3 Prompt each axis with its own brief.** The **Standards** brief must include:
