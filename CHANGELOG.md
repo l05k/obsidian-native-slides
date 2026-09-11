@@ -8,6 +8,10 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 ## [Unreleased]
 
+### Fixed
+
+- **Card title stays on the card when the editor pane is narrower than 80% of the window**: the card was a fixed `80vw` while the file-name card title's offset was measured against the pane, so with a wide sidebar, a split pane, or a window narrowed while a sidebar is open, the two disagreed — the card's auto-centring collapsed to the pane's edge and the title drifted out of the card, its bottom rule clipped short by the scroller. The card and the title now measure against one basis that is capped to the editor pane, so the title keeps lining up with the card's text column at any pane width (property-backed titles were never affected) (#120).
+
 ## [1.0.5] - 2026-09-10
 
 ### Fixed

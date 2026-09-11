@@ -459,6 +459,17 @@ body.native-slides-mode
   .cm-sizer {
   --ns-pad-y: 0.5em;
   --ns-pad-x: 1em;
+  /* Card width — the one basis the card and the card title both measure
+     against. 80% of the window is the design, but the editor pane can be
+     narrower than that (a wide sidebar, a split pane, a window narrowed
+     with a sidebar open), and then a bare `80vw` overflows the pane. The
+     auto margins on the card collapse to 0 while the title's
+     `(100% - <basis>) / 2` offset goes negative, so the title drifts out of
+     the card and its bottom rule is clipped by the scroller. Capping the
+     basis at the container keeps both on the same line. `100%` resolves per
+     use: the sizer's content box for the card, its padding box for the
+     absolutely positioned title. */
+  --ns-card-w: min(80vw, 100%);
   --ns-title-spacing: 0px; /* the card title sits flush under the card edge */
   --h1-size: 1.4em;
   --h1-weight: 700;
@@ -476,8 +487,8 @@ body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
   .cm-content {
-  width: 80vw;
-  max-width: 80vw;
+  width: var(--ns-card-w, min(80vw, 100%));
+  max-width: var(--ns-card-w, min(80vw, 100%));
   flex-grow: 0;
   margin-left: auto;
   margin-right: auto;
@@ -554,7 +565,9 @@ body.native-slides-mode
    Instead of painting the file name via a pseudo-element, restyle the
    native .inline-title (it is contenteditable in Live Preview and editing
    it renames the note) into the card title. Geometry matches the card:
-   left/right = the card's auto-centered 80vw box + its padding offset;
+   left/right = the card's auto-centered box + its padding offset, measured
+   with the same --ns-card-w basis the card's own width uses — the two must
+   stay in step, or the title drifts off the card's text column;
    top = the card's padding; all typography vars are resolved with the
    shared sizer constants (the /1.4 division converts them from the card's
    font context to the title's own H1 font context). The title's height is
@@ -567,8 +580,8 @@ body.native-slides-mode
   > .inline-title {
   position: absolute;
   top: calc(var(--ns-pad-y, 0.5em) / 1.4);
-  left: calc((100% - 80vw) / 2 + var(--ns-pad-x, 1em) / 1.4);
-  right: calc((100% - 80vw) / 2 + var(--ns-pad-x, 1em) / 1.4);
+  left: calc((100% - var(--ns-card-w, min(80vw, 100%))) / 2 + var(--ns-pad-x, 1em) / 1.4);
+  right: calc((100% - var(--ns-card-w, min(80vw, 100%))) / 2 + var(--ns-pad-x, 1em) / 1.4);
   margin: 0;
   padding-top: calc(var(--ns-title-spacing, var(--p-spacing, 1rem)) / 1.4);
   padding-bottom: calc(var(--ns-title-rule-pad, 0px) / 1.4);
