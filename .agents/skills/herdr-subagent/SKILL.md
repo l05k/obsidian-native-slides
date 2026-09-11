@@ -11,7 +11,7 @@ Defaults unless the user overrides them:
 
 - sibling pane in the current tab
 - current working directory
-- split to the right — the right choice for a **wide** pane; split a narrow or tall one down instead, and read which you have with `herdr pane layout --current` (`stty size` is not available when your shell is not a tty)
+- split to the right — the right choice for a **wide** pane; split a narrow or tall one down instead (step 2 says how to read which you have)
 - keep the user's focus unchanged
 - Herdr agent name `default`
 - agent kind `pi`
@@ -30,20 +30,30 @@ If this fails, report that the current process is not inside Herdr and stop. Do 
 
 ### 2. Create the subagent pane
 
-Use the user-requested direction and working directory when supplied; otherwise run:
+Use the user-requested direction and working directory when supplied; otherwise pick the direction from your own geometry first.
+
+- **Read your own rect** with `herdr pane layout --current`. It prints the **whole tab**, not your pane: `.result.layout` carries the tab's `area`, a `panes[]` array (each entry's `pane_id` and `rect`), and `splits[]`, with no filtering to the caller. So take the `panes[]` entry whose `pane_id` equals your own `$HERDR_PANE_ID` and read that entry's `rect` — the entry lookup is the part that matters, not the command. `stty size` is not available when your shell is not a tty, and `herdr pane get` reports no geometry at all, so neither answers this question.
+- **Pick the direction** from that rect: a pane **wider than it is tall** splits to the right, otherwise down. Both panes should stay usable — roughly 40 columns and 10 rows — so when one dimension is much larger than the other, bias the split with `--ratio` instead of halving it.
+- **If the read gives you nothing usable** — no `panes[]` entry for your own pane ID, or no `rect` on it — say so and fall back to the default direction rather than guessing.
 
 ```bash
-herdr pane split --current --direction right --cwd "$PWD" --no-focus
+herdr pane split --current --direction right --cwd "$PWD" --no-focus   # or --direction down, per the rect above
 ```
 
 Read the new pane ID from `.result.pane.pane_id` in the JSON response. Use that exact ID in the next step: it is the **only** pane this workflow may target.
 
-Do not re-derive that ID later, and never pick a pane out of `herdr pane list`. A workspace holds other panes — earlier subagents' panes, plain shells, panes the user opened — so "an empty pane in this workspace" is not "the pane this workflow just created", and starting an agent in the wrong one takes over a terminal that was not yours. When you need the ID in a later command, carry it in a variable rather than searching for it:
+Do not re-derive that ID later, and never pick a pane out of `herdr pane list`. A workspace holds other panes — earlier subagents' panes, plain shells, panes the user opened — so "an empty pane in this workspace" is not "the pane this workflow just created", and starting an agent in the wrong one takes over a terminal that was not yours. When you need the ID in a later command, carry it in a variable rather than searching for it. The block below is the **same** split and the **same** start as above written as one invocation — it is not an extra split, and running it as one would leave an orphan pane that the ownership rules below then disown:
 
 ```bash
 PANE=$(herdr pane split --current --direction right --cwd "$PWD" --no-focus | jq -r '.result.pane.pane_id')
+if [ -z "$PANE" ] || [ "$PANE" = null ]; then
+  echo "pane split returned no pane id — stopping instead of starting an agent in an unknown pane" >&2
+  exit 1
+fi
 herdr agent start default --kind pi --pane "$PANE"
 ```
+
+An empty or `null` result means the response did not match this SOP: stop and report rather than passing an empty `--pane`.
 
 ### 3. Start the agent
 
@@ -112,6 +122,6 @@ Enter this path only when a happy-path command fails, a response field is missin
 
 ## Safety and completion
 
-Target the caller with `--current`, then use only the returned pane ID or the chosen unique agent name. Preserve user focus with `--no-focus`. Close, move, or stop only resources created by this workflow, and only when the user requests it; a pane that merely exists in the workspace was not created by this workflow, so only an ID your own `pane split` returned, cross-checked as step 3 describes, is yours to touch. Never stop the Herdr server as cleanup.
+Target the caller with `--current`, then use only the returned pane ID or the chosen unique agent name. Preserve user focus with `--no-focus`. Close, move, or stop only resources created by this workflow, and only when the user requests it; a pane that merely exists in the workspace was not created by this workflow, so only an ID your own `pane split` returned is yours to touch. Never stop the Herdr server as cleanup.
 
 Synchronous delegation is complete only when the agent settles at `idle` or `done`, its result has been collected, and requested artifacts have been verified. Asynchronous delegation is complete when startup and prompt submission succeed and the agent name and pane ID have been reported.
