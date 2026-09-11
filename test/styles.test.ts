@@ -17,53 +17,45 @@ import { describe, expect, it } from "vitest";
  * layout and the test environment has no layout engine (no jsdom here, so no
  * `getBoundingClientRect`). The rendered behaviour is verified in
  * `example-vault` over CDP — `docs/development.md#testing-in-the-example-vault`.
+ *
+ * The assertions match against the whole file flattened to one string of
+ * *declarations* (comments stripped), so a Prettier-only re-wrap of a
+ * `min()`/`var()`/`calc()` cannot fail them, and every property is anchored at
+ * a `{` / `;` declaration boundary so `max-width` can never satisfy a `width`
+ * assertion. They are deliberately file-scoped rather than rule-scoped:
+ * locating a declaration by the very substring it is then asserted to contain
+ * would make the assertion vacuous.
  */
 const css = readFileSync(fileURLToPath(new URL("../styles.css", import.meta.url)), "utf8");
-const flat = css.replace(/\s+/g, " ");
-
-/** The declaration block of the rule whose selector contains `selector`. */
-function ruleBySelector(selector: string): string {
-  const at = css.indexOf(selector);
-  if (at === -1) throw new Error(`no rule whose selector contains: ${selector}`);
-  const open = css.indexOf("{", at);
-  const close = css.indexOf("}", open);
-  return css.slice(open + 1, close).replace(/\s+/g, " ");
-}
-
-/** The declaration block whose declarations contain `declaration`. */
-function ruleByDeclaration(declaration: string): string {
-  const at = css.indexOf(declaration);
-  if (at === -1) throw new Error(`no rule containing: ${declaration}`);
-  const open = css.lastIndexOf("{", at);
-  const close = css.indexOf("}", at);
-  return css.slice(open + 1, close).replace(/\s+/g, " ");
-}
-
-const CARD = ruleByDeclaration("width: var(--ns-card-w");
-const TITLE = ruleBySelector("[data-ns-inline-title]");
+// Comments may discuss `80vw` without declaring anything — drop them first.
+const flat = css.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/\s+/g, " ");
 
 describe("card width basis", () => {
-  it("is declared once, capped by the container rather than a bare 80vw", () => {
+  it("declares exactly one basis, capped by the container rather than a bare 80vw", () => {
     // The cap is the fix: min(<design width>, <container>) can never overflow
-    // the pane the card sits in.
-    expect(flat).toContain("--ns-card-w: min(80vw, 100%)");
+    // the pane the card sits in. Counting is what makes "one basis" mean one:
+    // a second, competing declaration must fail this.
+    const declarations = flat.match(/[{;]\s*--ns-card-w\s*:\s*min\(\s*80vw\s*,\s*100%\s*\)/g) ?? [];
+    expect(declarations).toHaveLength(1);
   });
 
-  it("sizes the card from that basis", () => {
-    expect(CARD).toContain("width: var(--ns-card-w");
-    expect(CARD).toContain("max-width: var(--ns-card-w");
+  it("consumes that basis from a width and from a max-width, not one or the other", () => {
+    // `[{;]` is what keeps `max-width: …` from satisfying the `width` line.
+    expect(flat).toMatch(/[{;]\s*width\s*:\s*var\(\s*--ns-card-w/);
+    expect(flat).toMatch(/[{;]\s*max-width\s*:\s*var\(\s*--ns-card-w/);
   });
 
-  it("positions the filename card title from the same basis", () => {
+  it("positions the filename card title's left and right from the same basis", () => {
     // Whitespace-tolerant: Prettier decides where the calc() wraps.
-    expect(TITLE).toMatch(/left: calc\(\s*\(100% - var\(--ns-card-w/);
-    expect(TITLE).toMatch(/right: calc\(\s*\(100% - var\(--ns-card-w/);
+    expect(flat).toMatch(/[{;]\s*left\s*:\s*calc\(\s*\(\s*100%\s*-\s*var\(\s*--ns-card-w/);
+    expect(flat).toMatch(/[{;]\s*right\s*:\s*calc\(\s*\(\s*100%\s*-\s*var\(\s*--ns-card-w/);
   });
 
-  it("leaves no uncapped viewport-width basis for either of them", () => {
+  it("leaves no uncapped viewport-width basis behind", () => {
     // Guards the #120 regression directly: a bare 80vw width, or a
-    // `(100% - 80vw)` offset that assumes a centred fixed-width card.
-    expect(flat).not.toMatch(/(?:width|max-width): 80vw/);
-    expect(flat).not.toContain("(100% - 80vw)");
+    // `(100% - 80vw)` offset that assumes a centred fixed-width card — under
+    // any wrapping, so Prettier alone can neither pass nor fail this.
+    expect(flat).not.toMatch(/[{;]\s*(?:max-)?width\s*:\s*80vw/);
+    expect(flat).not.toMatch(/\(\s*100%\s*-\s*80vw\s*\)/);
   });
 });

@@ -453,23 +453,33 @@ body.native-slides-mode
    title. The title element (.inline-title) is a direct child of the sizer
    (not of the card), so the values are declared here — on their common
    ancestor — and both read identical numbers. */
+
+/* Card width — the one basis the card and the card title both measure against.
+   `min()` caps the design's 80% of the window at the container, because the
+   editor pane can be narrower than that (a wide sidebar, a split pane, a
+   window narrowed with a sidebar open): with a bare `80vw` the card overflows
+   the pane, its auto margins collapse to 0, and the title's
+   `(100% - <basis>) / 2` offset goes negative — the title drifts out of the
+   card and the scroller clips its bottom rule short.
+
+   `100%` is not resolved once here: a custom property is substituted as a
+   token, so it resolves per consumer — the card's against its containing block
+   `.cm-contentContainer`, the absolutely positioned title's against
+   `.cm-sizer`'s padding box (its `position: relative` ancestor). Those are the
+   same box only while both stay horizontally padding-free, and that
+   coincidence is what makes one shared basis correct today: give either box
+   padding and the two percentages drift apart.
+
+   The cap on the card also leans on the global `box-sizing: border-box` — the
+   card declares no `box-sizing` of its own, and under `content-box` a `100%`
+   width plus the card's own padding would overflow the pane again. */
 body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
   .cm-sizer {
   --ns-pad-y: 0.5em;
   --ns-pad-x: 1em;
-  /* Card width — the one basis the card and the card title both measure
-     against. 80% of the window is the design, but the editor pane can be
-     narrower than that (a wide sidebar, a split pane, a window narrowed
-     with a sidebar open), and then a bare `80vw` overflows the pane. The
-     auto margins on the card collapse to 0 while the title's
-     `(100% - <basis>) / 2` offset goes negative, so the title drifts out of
-     the card and its bottom rule is clipped by the scroller. Capping the
-     basis at the container keeps both on the same line. `100%` resolves per
-     use: the sizer's content box for the card, its padding box for the
-     absolutely positioned title. */
-  --ns-card-w: min(80vw, 100%);
+  --ns-card-w: min(80vw, 100%); /* the one shared basis — see the note above */
   --ns-title-spacing: 0px; /* the card title sits flush under the card edge */
   --h1-size: 1.4em;
   --h1-weight: 700;

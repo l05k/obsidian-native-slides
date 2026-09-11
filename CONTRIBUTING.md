@@ -66,7 +66,7 @@ Include your Obsidian version, plugin version, and (for visual bugs) a screensho
 - **TypeScript** for all source code (`main.ts`, `src/`).
 - **ESLint + Prettier** enforce style. Run `npm run lint:fix` and `npm run format` before committing.
 - **CSS**: `styles.css` is hand-written (no preprocessor). Use the existing `--ns-*` variable layer for theme-scoped values; keep selectors scoped under `body.native-slides-mode` to avoid leaking into native modes.
-- **Tests**: `test/` uses Vitest. Add tests for pure logic (deck navigation, page-number computation, theme registry). Visual/CSS behavior is verified manually in Obsidian — in **`example-vault/`**, which is the only vault anything here may be tested against (never a vault with real notes); see [Testing in the example vault](docs/development.md#testing-in-the-example-vault).
+- **Tests**: `test/` uses Vitest. Add tests for pure logic (deck navigation, page-number computation, theme registry). Visual/CSS behavior is verified manually in Obsidian — in **`example-vault/`**, which is the only vault anything here may be tested against (never a vault with real notes); see [Testing in the example vault](docs/development.md#testing-in-the-example-vault). A layout invariant that would otherwise regress silently may also be locked with a contract test over `styles.css`, with that same run in `example-vault` as the behavioural evidence.
 
 ## Project structure
 
