@@ -61,7 +61,7 @@ Every behavioural check runs against the repository's own **`example-vault/`** �
 - Obsidian rewrites the vault's tracked configuration while it runs (`appearance.json`, `community-plugins.json`, `core-plugins.json`): `git restore -- example-vault/.obsidian` before switching branches or opening a PR, and re-check `git status` afterwards.
 - Driving the running app is fine — for example over CDP with `--remote-debugging-port=9222` — and this rule is what limits which vault it may touch. **The port is process-wide, so it can expose several windows, including one holding real notes**: identify the target by asking the app (`app.vault.adapter.getBasePath()`, never the window title) and abort on zero **or several** matches. `scripts/vault-cdp.mjs` is that guard — it refuses to connect unless exactly one window holds `example-vault/` — and never dispatch input to an element that has no layout (a collapsed sidebar gives every panel entry a `0×0` rect, and the click lands at `(0,0)` in the editor).
 
-**Full instructions:** [docs/development.md#testing-in-the-example-vault](docs/development.md#testing-in-the-example-vault) and [docs/development.md#driving-the-running-app-over-cdp](docs/development.md#driving-the-running-app-over-cdp)
+**Full instructions:** [docs/development.md#testing-in-the-example-vault](docs/development.md#testing-in-the-example-vault), [docs/development.md#driving-the-running-app-over-cdp](docs/development.md#driving-the-running-app-over-cdp) for the mechanism, and [.agents/skills/vault-cdp-testing/SKILL.md](.agents/skills/vault-cdp-testing/SKILL.md) for the procedure a behavioural check follows.
 
 ## Rule 4 — Releases: the maintainer merges, the agent tags
 
@@ -75,7 +75,7 @@ A release is a Rule 1 PR that bumps the version, plus one step only the agent pe
 
 ## Agent skills
 
-`.agents/skills/` holds both the repository's own skills — `dev-workflow` (Rules 1, 2 and 4), `herdr-subagent` (the Herdr mechanics Rule 2 uses) and `code-review-herdr` (this repository's fork of the vendored `code-review`, adapted to run each review axis in its own Herdr pane) — and the 25 published [mattpocock/skills](https://github.com/mattpocock/skills) (grilling a plan, test-first implementation, code review, debugging loops, handoffs). Read the matching `SKILL.md` before starting that kind of work instead of improvising a process. Layout, update commands and the `skills-lock.json` hash trail are documented in [docs/development.md](docs/development.md#agent-skills).
+`.agents/skills/` holds both the repository's own skills — `dev-workflow` (Rules 1, 2 and 4), `herdr-subagent` (the Herdr mechanics Rule 2 uses), `code-review-herdr` (this repository's fork of the vendored `code-review`, adapted to run each review axis in its own Herdr pane) and `vault-cdp-testing` (Rule 3's behavioural-check procedure) — and the 25 published [mattpocock/skills](https://github.com/mattpocock/skills) (grilling a plan, test-first implementation, code review, debugging loops, handoffs). Read the matching `SKILL.md` before starting that kind of work instead of improvising a process. Layout, update commands and the `skills-lock.json` hash trail are documented in [docs/development.md](docs/development.md#agent-skills).
 
 ### Issue tracker
 

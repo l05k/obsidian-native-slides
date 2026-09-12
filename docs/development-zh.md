@@ -56,7 +56,7 @@ npm run dev        # 监听 main.ts，变更时自动重建 main.js
 ### 通过 CDP 驱动运行中的 App
 
 单元测试够不到的行为（拖动、点击、菜单动作）要靠 CDP 验证，因为它驱动的是真实 App、跑的就是你刚构建
-的版本。它同时带一个尖锐的边界，所以这一节是**操作规程**，不是一句许可。
+的版本。它同时带一个尖锐的边界，所以它配的是一个守卫，而不是一句裸的许可。
 
 **调试端口是进程级的，因此可能同时暴露多个库。** `--remote-debugging-port` 是 Obsidian **进程**的
 参数，而一个进程可以开多个窗口：在本机上，维护者自己的笔记库与 `example-vault/` 曾同时出现在 `:9222`
@@ -103,22 +103,18 @@ const expected = [before[3], before[0], before[1], before[2]];
 if (!sameArray(await cdp.order(), expected)) throw new Error("…");
 ```
 
-**绝不盲派发输入。** 没有布局的元素会把点击送到「该坐标上恰好存在的东西」—— 侧边栏收起时每个面板条目的
-rect 都是 `0×0`，于是「点第 1 条」变成了在编辑器里点 `(0,0)`，改掉了一张演示笔记并在仓库根留下一个
-杂散文件。先断言布局（`cdp.drag` 正因此会拒绝无布局的条目），并且在行为允许时优先用 `app.*` 读状态、
-而不是合成输入。
+**一次行为检查遵循的流程**——它的步骤、每步的完成标准，以及把检查留在这个库上的规则——在
+[`.agents/skills/vault-cdp-testing/SKILL.md`](../.agents/skills/vault-cdp-testing/SKILL.md)；本节是它背后的机制。
+其中三条规则之所以存在，是因为它们各自已经出错一次：
 
-**被遮挡的窗口仍然能跑，但 Chrome 会节流它。** `requestAnimationFrame` 可能永不触发，Obsidian 的
-`Menu` 可能根本不挂载 DOM —— 于是菜单不能按渲染出的条目断言，动画也观察不到。`Page.bringToFront`
-在这里不足以把它抬起来。改为断言**行为**：真右键是否到达 handler（`defaultPrevented`）、菜单项背后的
-动作是否真的改动了套件 —— 并**在报告里写明哪些检查是这样做**；环境限制不等于通过。
-
-**断言之前先等 App 落定。** 库与缓存的操作都是异步的（`openLinkText`、frontmatter 写入、metadata
-重建索引），读得太早会读到只应用了一半的状态，于是**一次正确的拒绝看起来像 bug**。轮询到面板与实时链
-一致，并断言前置条件而不是假设它成立。
-
-**最后收尾**：删掉临时笔记、还原 `example-vault/.obsidian`（见上方「配置扰动」一条），让 `git status`
-里不留下你的东西。
+- **不盲派发输入**——侧边栏收起时每个面板条目的 rect 都是 `0×0`，于是「点第 1 条」变成了在编辑器里点
+  `(0,0)`，改掉了一张演示笔记并在仓库根留下一个杂散文件；
+- **断言之前先等 App 落定**——`openLinkText`、frontmatter 写入与 metadata 重建索引都是异步的，读得太早
+  会读到只应用了一半的状态，于是**一次正确的拒绝看起来像 bug**；
+- **环境限制不等于通过**——被遮挡的窗口会被 Chrome 节流：`requestAnimationFrame` 可能永不触发，
+  Obsidian 的 `Menu` 可能根本不挂载 DOM，于是菜单不能按渲染出的条目断言，动画也观察不到
+  （`Page.bringToFront` 在这里不足以把它抬起来）。改为断言 handler 与菜单项背后的动作，并在报告里写明
+  哪些检查是这样做。
 
 ## Agent skills
 
@@ -127,10 +123,11 @@ rect 都是 `0×0`，于是「点第 1 条」变成了在编辑器里点 `(0,0)`
 循环或交接会话。它们就是普通的 Markdown 文件，归你所有、可以自由修改。
 
 - **仓库自有的 skill**——`dev-workflow`（[Rule 1](../AGENTS.md) / [Rule 2](../AGENTS.md) / [Rule 4](../AGENTS.md) 的强制
-  工作流）、`herdr-subagent`（Rule 2 所用的 Herdr 窗格/子代理操作手册）与 `code-review-herdr`
+  工作流）、`herdr-subagent`（Rule 2 所用的 Herdr 窗格/子代理操作手册）、`code-review-herdr`
   （本仓库对 vendored `code-review` 的 fork：两轴方法相同，但每条轴都在自己的 Herdr 窗格里
-  运行——Pi 没有原生 subagent 工具，这正是它需要的——报告收齐后这些窗格会被关闭）。
-  这三个是我们的：随意修改，且仍受 Prettier 约束（ESLint 会跳过整个 `.agents/skills/`）。
+  运行——Pi 没有原生 subagent 工具，这正是它需要的——报告收齐后这些窗格会被关闭）与
+  `vault-cdp-testing`（行为检查在运行中的 App 里遵循的流程，[Rule 3](../AGENTS.md)）。
+  这四个是我们的：随意修改，且仍受 Prettier 约束（ESLint 会跳过整个 `.agents/skills/`）。
 - **随仓库带入的 25 个**——来自 [mattpocock/skills](https://github.com/mattpocock/skills) 的
   `engineering` + `productivity`，即 [aihero.dev/skills](https://www.aihero.dev/skills) 列出的两套。
   实验性的 `in-progress` / `misc` skill 有意不装。vendored 的 `code-review` 保持上游原文
@@ -144,7 +141,7 @@ rect 都是 `0×0`，于是「点第 1 条」变成了在编辑器里点 `(0,0)`
   路径与内容哈希。`npx skills update` / `npx skills experimental_install` 会在重新下载后
   **改写**这些哈希——因此上游变更会以 `skills-lock.json` 的 diff 呈现，而 `.agents/skills/`
   下的本地改动会被静默覆盖。由于没有记录 commit `ref`，重装会解析上游默认分支。
-- **第三方内容不参与格式化**：`.prettierignore` 排除了 `.agents/skills/*`（并重新纳入那三个
+- **第三方内容不参与格式化**：`.prettierignore` 排除了 `.agents/skills/*`（并重新纳入那四个
   仓库自有的 skill）——切勿重新格式化带入的文件，这样以后更新仍然可 diff。Prettier 同时也会读取
   `.gitignore`，因此被它忽略的内容（本检出的本地草稿文件、Obsidian 的每机状态文件）同样会被
   `npm run format:check` 跳过。
@@ -162,8 +159,8 @@ npx skills@latest update                                                  # 按�
 `→ ./.agents/skills/<name>`。
 
 > **注意**：该目录由 CLI 管理。限定范围的 `npx skills remove`——尤其是 `remove --all`——
-> 会连仓库自有的 `dev-workflow`、`herdr-subagent` 与 `code-review-herdr` 一起删掉。它们已提交
-> 进版本库，`git checkout -- .agents/skills` 可恢复，但切勿盲目执行这些命令。
+> 会连仓库自有的 `dev-workflow`、`herdr-subagent`、`code-review-herdr` 与 `vault-cdp-testing`
+> 一起删掉。它们已提交进版本库，`git checkout -- .agents/skills` 可恢复，但切勿盲目执行这些命令。
 
 `/setup-matt-pocock-skills` 会为本仓库记录 issue tracker、triage 标签与文档布局，写入
 [`docs/agents/`](agents/)，供需要它们的 skill 使用；本仓库已经运行过，这三个文件与本文件

@@ -7,3 +7,4 @@ example-vault/
 !.agents/skills/dev-workflow/
 !.agents/skills/herdr-subagent/
 !.agents/skills/code-review-herdr/
+!.agents/skills/vault-cdp-testing/
