@@ -12,7 +12,7 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 ### Added
 
-- **Move slides in the slides panel**: drag an entry to a gap in the list — or use the context menu's **Move up** / **Move down** — and the deck is reordered. A 2px accent line marks the gap the slide would land in (above the first entry and below the last one included), the entries being moved dim while a copy follows the pointer, `Escape` cancels the drag, and a drop that changes nothing writes nothing. Dragging an entry that belongs to the selection moves the whole selection as one block, keeping the relative order of the slides you did not pick; dragging one outside the selection moves just that slide and clears the selection. A move rewrites the `deck` links of the slides whose next link actually changed and touches nothing else, so the panel, the slides bar's page number and ◀ ▶ navigation follow the new order immediately (#124). Two consequences are documented in the README: a move writes frontmatter, which Obsidian's undo (`Cmd/Ctrl+Z`) does not cover, and the panel has to be visible — Slides mode hides both sidebars.
+- **Move slides in the slides panel**: drag an entry to a gap in the list — or use the context menu's **Move slide up** / **Move slide down**, shown as **Move N slides up** / **Move N slides down** when a selection is being moved — and the deck is reordered. A 2px accent line marks the gap the slide would land in (above the first entry and below the last one included), the entries being moved dim while a copy follows the pointer, `Escape` cancels the drag, and a drop that changes nothing writes nothing. Dragging an entry that belongs to the selection moves the whole selection as one block, keeping the relative order of the slides you did not pick; dragging one outside the selection moves just that slide and clears the selection. A move rewrites the `deck` links of the slides whose next link actually changed and touches nothing else, so the panel, the slides bar's page number and ◀ ▶ navigation follow the new order immediately (#124). Two consequences are documented in the README: a move writes frontmatter, which Obsidian's undo (`Cmd/Ctrl+Z`) does not cover, and the panel has to be visible — Slides mode hides both sidebars.
 
 ### Fixed
 
@@ -175,5 +175,5 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 - Settings tab toggling the ◀ ▶ buttons and the page number.
 - Example vault (`example-vault/`) with a demo deck and an overview page embedding an Obsidian Base view.
 
-[Unreleased]: https://github.com/Losk-x/obsidian-native-slides/compare/0.1.0...HEAD
-[0.1.0]: https://github.com/Losk-x/obsidian-native-slides/releases/tag/0.1.0
+[Unreleased]: https://github.com/l05k/obsidian-native-slides/compare/0.1.0...HEAD
+[0.1.0]: https://github.com/l05k/obsidian-native-slides/releases/tag/0.1.0
