@@ -59,9 +59,9 @@ Every behavioural check runs against the repository's own **`example-vault/`** �
 
 - Create scratch notes inside `example-vault/` when a check needs them, and remove them when you are done. The `Probe*.md` / `test.md` / `untitled-slides.md` slides and the `tests/typography-*.md` fixtures are **not yours to delete** (`src/debug.ts` hard-codes five of those fixture names).
 - Obsidian rewrites the vault's tracked configuration while it runs (`appearance.json`, `community-plugins.json`, `core-plugins.json`): `git restore -- example-vault/.obsidian` before switching branches or opening a PR, and re-check `git status` afterwards.
-- Driving the running app is fine — for example over CDP with `--remote-debugging-port=9222` — and this rule is what limits which vault it may touch.
+- Driving the running app is fine — for example over CDP with `--remote-debugging-port=9222` — and this rule is what limits which vault it may touch. **The port is process-wide, so it can expose several windows, including one holding real notes**: identify the target by asking the app (`app.vault.adapter.getBasePath()`, never the window title) and abort on zero **or several** matches. `scripts/vault-cdp.mjs` is that guard — it refuses to connect unless exactly one window holds `example-vault/` — and never dispatch input to an element that has no layout (a collapsed sidebar gives every panel entry a `0×0` rect, and the click lands at `(0,0)` in the editor).
 
-**Full instructions:** [docs/development.md#testing-in-the-example-vault](docs/development.md#testing-in-the-example-vault)
+**Full instructions:** [docs/development.md#testing-in-the-example-vault](docs/development.md#testing-in-the-example-vault) and [docs/development.md#driving-the-running-app-over-cdp](docs/development.md#driving-the-running-app-over-cdp)
 
 ## Rule 4 — Releases: the maintainer merges, the agent tags
 

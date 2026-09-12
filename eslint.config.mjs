@@ -16,5 +16,19 @@ export default tseslint.config(
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  {
+    // scripts/ runs in Node, so it needs Node's globals; the app-facing code in
+    // src/ runs in Electron's renderer and is covered by tseslint above.
+    files: ["scripts/**/*.mjs"],
+    languageOptions: {
+      globals: {
+        console: "readonly",
+        process: "readonly",
+        fetch: "readonly",
+        WebSocket: "readonly",
+        setTimeout: "readonly",
+      },
+    },
+  },
   prettier, // disable style rules handled by Prettier
 );
