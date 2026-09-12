@@ -81,10 +81,10 @@ export class NavSession {
   }
 
   /**
-   * Re-base the session on a different chain head. A reorder rewires the deck
+   * Re-base the session on a different chain head. A move rewires the deck
    * around the session, so the head it entered may no longer be the deck's
    * head (and, still reaching the current note, would walk a truncated chain
-   * from the middle); the caller hands over the reordered chain's own head.
+   * from the middle); the caller hands over the new chain's own head.
    */
   setHead(head: string | null): void {
     this.head = head;

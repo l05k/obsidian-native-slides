@@ -8,7 +8,7 @@ import {
 import { computeDeck, extractLinks, extractRawLinks, type DeckInfo } from "./deck";
 import { pickLandingPath, planDeleteSlides } from "./deleteSlides";
 import { frontmatterOf } from "./mode";
-import type { ReorderPlan } from "./reorder";
+import type { MovePlan } from "./move";
 import { DECK_KEY } from "./types";
 
 /** Result of a Delete slides run */
@@ -202,30 +202,39 @@ export class DeckService {
   }
 
   /**
-   * Apply a reorder plan: rewrite the `deck` property of every slide whose
+   * Apply a move plan: rewrite the `deck` property of every slide whose
    * next link changed, in new chain order, as bare `[[basename]]` links (the
    * form createNext and deleteSlides write). Only the notes the plan names are
    * touched — the rest of the deck keeps its frontmatter untouched.
    *
    * Stops at the first failed write and returns false: the remaining notes
    * keep their old links, which the caller shows by re-rendering from the live
-   * chain. Returns true when every rewrite was applied.
+   * chain. A rewrite whose source or target note has vanished aborts the same
+   * way — writing `deck: []` for a target that is gone would silently truncate
+   * the chain. Returns true when every rewrite was applied.
    */
-  async executeReorder(plan: ReorderPlan): Promise<boolean> {
+  async executeMove(plan: MovePlan): Promise<boolean> {
     for (const rewrite of plan.rewrites) {
       const file = this.app.vault.getAbstractFileByPath(rewrite.path);
       if (!(file instanceof TFile)) {
-        new Notice(`Native slides: could not reorder slides — "${rewrite.path}" is gone`);
+        new Notice(`Native slides: could not move slides — "${rewrite.path}" is gone`);
         return false;
       }
-      const next = rewrite.nextPath ? this.app.vault.getAbstractFileByPath(rewrite.nextPath) : null;
+      const nextPath = rewrite.nextPath;
+      const next = nextPath ? this.app.vault.getAbstractFileByPath(nextPath) : null;
+      if (nextPath !== null && !(next instanceof TFile)) {
+        new Notice(
+          `Native slides: could not move slides — "${nextPath}" is gone (needed by "${file.basename}")`,
+        );
+        return false;
+      }
       try {
         await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
           fm[DECK_KEY] = next instanceof TFile ? [`[[${next.basename}]]`] : [];
         });
       } catch (error) {
         new Notice(
-          `Native slides: could not reorder slides — writing "${file.basename}" failed (${String(error)})`,
+          `Native slides: could not move slides — writing "${file.basename}" failed (${String(error)})`,
         );
         return false;
       }

@@ -14,7 +14,7 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 ### Fixed
 
-- **A deck taller than the sidebar scrolls in the slides panel**: the entries were appended to the leaf's content element, which clips its children (`overflow: hidden`), so slides below the fold could not be seen or reached at all. They now live in Obsidian's own scrollable view content, allowed to shrink (`min-height: 0`) — which also gives the drag gesture something to scroll when the pointer reaches the panel's top or bottom edge (#124).
+- **A deck taller than the sidebar scrolls in the slides panel**: the entries were appended to the leaf's content element, which clips its children (`overflow: hidden`), so slides below the fold could not be seen or reached at all. They now live in Obsidian's own scrollable view content, allowed to shrink (`min-height: 0`) — which also gives the drag gesture something to scroll when the pointer reaches the panel's top or bottom edge. The panel's own 8 px inset goes with the move: the view content keeps Obsidian's default view padding instead of the removed `.native-slides-panel` padding rule (#124).
 
 ## [1.0.6] - 2026-09-11
 

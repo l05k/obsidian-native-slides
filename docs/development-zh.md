@@ -110,4 +110,4 @@ triage 映射则位于 `docs/agents/triage-labels.md` 并由 `AGENTS.md` 指向�
 - **开发构建**（`npm run build` / `npm run dev`）会注册 `Debug: Dump Typography Styles` 命令：在**编辑与阅读两种视图**各采样一次当前笔记、计算差异，并写入 vault 根目录的 `.native-slides-debug.json`（无需手动复制控制台输出）。在开启 Slides 模式的 deck 笔记上运行；`example-vault/` 里五个 `typography-sample-*.md` 是它的固定一页采样夹具——请勿改名或删除。
 - **发布构建**（`npm run build:release`）会压缩 `main.js`，并通过 `--define:DEV_MODE=false` + tree-shaking 彻底移除 debug 命令及其支撑代码。发布后执行 `npm run build` 即可恢复开发版产物。
 
-源码已拆分到 `src/` 模块（`types`、`mode`、`deck-service`、`panel`、`panel-drag`、`bar`、`commands`、`settings`、`debug`、`deck`、`createNext`、`deleteSlides`、`reorder`、`nav`、`capacity`、`capacity-core`、`confirm-delete`、`utils`），`main.ts` 仅作编排入口。
+源码已拆分到 `src/` 模块（`types`、`mode`、`deck-service`、`panel`、`panel-drag`、`bar`、`commands`、`settings`、`debug`、`deck`、`createNext`、`deleteSlides`、`move`、`nav`、`capacity`、`capacity-core`、`confirm-delete`、`utils`），`main.ts` 仅作编排入口。

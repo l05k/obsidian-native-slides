@@ -1,28 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { planReorder, stepInsertAt } from "../src/reorder";
+import { planMove, stepInsertAt } from "../src/move";
 
-describe("planReorder", () => {
+describe("planMove", () => {
   const chain = ["a.md", "b.md", "c.md", "d.md"];
 
-  it("returns null for a chain that cannot be reordered", () => {
-    expect(planReorder(["solo.md"], ["solo.md"], 0)).toBeNull();
-    expect(planReorder([], [], 0)).toBeNull();
+  it("returns null for a chain that cannot be moved", () => {
+    expect(planMove(["solo.md"], ["solo.md"], 0)).toBeNull();
+    expect(planMove([], [], 0)).toBeNull();
   });
 
   it("returns null when nothing (or everything) is moving", () => {
-    expect(planReorder(chain, [], 0)).toBeNull();
-    expect(planReorder(chain, ["x.md"], 0)).toBeNull();
-    expect(planReorder(chain, chain, 0)).toBeNull();
+    expect(planMove(chain, [], 0)).toBeNull();
+    expect(planMove(chain, ["x.md"], 0)).toBeNull();
+    expect(planMove(chain, chain, 0)).toBeNull();
   });
 
   it("returns null for an insertAt outside the gaps", () => {
-    expect(planReorder(chain, ["b.md"], -1)).toBeNull();
-    expect(planReorder(chain, ["b.md"], chain.length + 1)).toBeNull();
-    expect(planReorder(chain, ["b.md"], 1.5)).toBeNull();
+    expect(planMove(chain, ["b.md"], -1)).toBeNull();
+    expect(planMove(chain, ["b.md"], chain.length + 1)).toBeNull();
+    expect(planMove(chain, ["b.md"], 1.5)).toBeNull();
   });
 
   it("moves a slide to the tail (gap = chain.length)", () => {
-    const plan = planReorder(chain, ["b.md"], chain.length);
+    const plan = planMove(chain, ["b.md"], chain.length);
     expect(plan?.chain).toEqual(["a.md", "c.md", "d.md", "b.md"]);
     expect(plan?.rewrites).toEqual([
       { path: "a.md", nextPath: "c.md" },
@@ -32,7 +32,7 @@ describe("planReorder", () => {
   });
 
   it("moves the tail slide to the head (gap = 0)", () => {
-    const plan = planReorder(chain, ["d.md"], 0);
+    const plan = planMove(chain, ["d.md"], 0);
     expect(plan?.chain).toEqual(["d.md", "a.md", "b.md", "c.md"]);
     // The new head takes over the old head's link; the new tail closes the chain
     expect(plan?.rewrites).toEqual([
@@ -42,7 +42,7 @@ describe("planReorder", () => {
   });
 
   it("rewires the three notes an adjacent swap touches", () => {
-    const plan = planReorder(chain, ["b.md"], 3);
+    const plan = planMove(chain, ["b.md"], 3);
     expect(plan?.chain).toEqual(["a.md", "c.md", "b.md", "d.md"]);
     expect(plan?.rewrites).toEqual([
       { path: "a.md", nextPath: "c.md" },
@@ -53,38 +53,38 @@ describe("planReorder", () => {
 
   it("moves a non-contiguous selection as one block, keeping the rest in order", () => {
     const five = ["1.md", "2.md", "3.md", "4.md", "5.md"];
-    const plan = planReorder(five, ["2.md", "4.md"], five.length);
+    const plan = planMove(five, ["2.md", "4.md"], five.length);
     expect(plan?.chain).toEqual(["1.md", "3.md", "5.md", "2.md", "4.md"]);
   });
 
   it("keeps the block in chain order whatever order the moving paths arrive in", () => {
-    const plan = planReorder(chain, ["d.md", "b.md"], 0);
+    const plan = planMove(chain, ["d.md", "b.md"], 0);
     expect(plan?.chain).toEqual(["b.md", "d.md", "a.md", "c.md"]);
   });
 
   it("treats a gap inside the moving block as a no-op", () => {
-    const plan = planReorder(chain, ["b.md"], 2);
+    const plan = planMove(chain, ["b.md"], 2);
     expect(plan?.chain).toEqual(chain);
     expect(plan?.rewrites).toEqual([]);
 
-    const block = planReorder(chain, ["b.md", "c.md"], 3);
+    const block = planMove(chain, ["b.md", "c.md"], 3);
     expect(block?.chain).toEqual(chain);
     expect(block?.rewrites).toEqual([]);
   });
 
   it("drops the moving slide onto its own gap without a rewrite", () => {
-    const plan = planReorder(chain, ["c.md"], 2);
+    const plan = planMove(chain, ["c.md"], 2);
     expect(plan?.chain).toEqual(chain);
     expect(plan?.rewrites).toEqual([]);
   });
 
   it("ignores moving paths outside the chain", () => {
-    const plan = planReorder(chain, ["b.md", "x.md"], 0);
+    const plan = planMove(chain, ["b.md", "x.md"], 0);
     expect(plan?.chain).toEqual(["b.md", "a.md", "c.md", "d.md"]);
   });
 
   it("closes the chain with a null next when the new tail had a link", () => {
-    const plan = planReorder(chain, ["a.md"], chain.length);
+    const plan = planMove(chain, ["a.md"], chain.length);
     expect(plan?.rewrites).toContainEqual({ path: "a.md", nextPath: null });
   });
 });
@@ -119,14 +119,9 @@ describe("stepInsertAt", () => {
     expect(stepInsertAt(["solo.md"], ["solo.md"], "down")).toBeNull();
   });
 
-  it("produces a gap planReorder accepts", () => {
+  it("produces a gap planMove accepts", () => {
     const gap = stepInsertAt(chain, ["c.md"], "down");
     expect(gap).not.toBeNull();
-    expect(planReorder(chain, ["c.md"], gap ?? -1)?.chain).toEqual([
-      "a.md",
-      "b.md",
-      "d.md",
-      "c.md",
-    ]);
+    expect(planMove(chain, ["c.md"], gap ?? -1)?.chain).toEqual(["a.md", "b.md", "d.md", "c.md"]);
   });
 });

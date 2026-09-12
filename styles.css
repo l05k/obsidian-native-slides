@@ -233,7 +233,7 @@ body.native-slides-pointer-hidden * {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* Drag to reorder: the grabbed slides stay in place, dimmed, while a clone
+/* Drag to move: the grabbed slides stay in place, dimmed, while a clone
    follows the pointer and a line marks the gap the drop would land in. */
 .native-slides-panel-item.is-dragging {
   opacity: 0.4;

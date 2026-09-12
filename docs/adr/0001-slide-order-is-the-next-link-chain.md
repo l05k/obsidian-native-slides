@@ -2,7 +2,7 @@
 
 A deck's order is defined by the `deck` links themselves — every slide names the
 one that follows it — so moving a slide rewires those links instead of writing a
-position into each note: `planReorder()` turns "these slides, this gap" into one
+position into each note: `planMove()` turns "these slides, this gap" into one
 `deck` rewrite per slide whose next link changed, and nothing else in the plugin
 (navigation, page numbers, the slides bar, the slides panel, deletion) has to
 know that a move happened. The alternative, a per-slide `deck-order` property,

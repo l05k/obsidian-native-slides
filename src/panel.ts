@@ -2,7 +2,7 @@ import { ItemView, Menu, TFile, WorkspaceLeaf } from "obsidian";
 import type NativeSlidesPlugin from "../main";
 import { ConfirmDeleteModal } from "./confirm-delete";
 import { PanelDrag } from "./panel-drag";
-import { planReorder, stepInsertAt, type ReorderPlan } from "./reorder";
+import { planMove, stepInsertAt, type MovePlan } from "./move";
 
 /** View type id of the slides sidebar panel */
 export const SLIDES_PANEL_VIEW = "native-slides-panel";
@@ -30,9 +30,9 @@ export class SlidesPanelView extends ItemView {
   private selected = new Set<string>();
   /** Selection anchor for Shift+click range extension */
   private anchor: string | null = null;
-  /** The drag-to-reorder gesture (pointer handling only — no deck knowledge) */
+  /** The drag-to-move gesture (pointer handling only — no deck knowledge) */
   private drag: PanelDrag;
-  /** Whether a reorder is writing frontmatter right now (renders are held back) */
+  /** Whether a move is writing frontmatter right now (renders are held back) */
   private writing = false;
 
   constructor(
@@ -46,7 +46,8 @@ export class SlidesPanelView extends ItemView {
       container: () => this.contentEl,
       onGrab: (path) => this.onGrab(path),
       willChange: (moving, insertAt) => this.willChange(moving, insertAt),
-      onDrop: (moving, insertAt, snapshot) => void this.applyReorder(moving, insertAt, snapshot),
+      onDrop: (moving, insertAt, snapshot) => void this.applyMove(moving, insertAt, snapshot),
+      onEnd: () => this.render(),
     });
   }
 
@@ -91,10 +92,11 @@ export class SlidesPanelView extends ItemView {
    * their highlight updated, so item elements always survive.
    */
   private render(): void {
-    // A gesture or a reorder owns the DOM: rebuilding the list mid-drag would
-    // destroy the elements the gesture is measuring, and the reorder's own
+    // A gesture or a move owns the DOM: rebuilding the list mid-drag would
+    // destroy the elements the gesture is measuring, and the move's own
     // writes fire a burst of metadataCache events. Both paths render once more
-    // when they are done with it.
+    // when they are done with it — the gesture through `onEnd`, the writes
+    // through `applyMove`'s own render.
     if (this.drag.active || this.writing) return;
 
     const file = this.app.workspace.getActiveFile();
@@ -231,7 +233,7 @@ export class SlidesPanelView extends ItemView {
 
   /** Whether that drop would actually rewire something (a no-op hides the line) */
   private willChange(moving: string[], insertAt: number): boolean {
-    const plan = planReorder(this.lastChain, moving, insertAt);
+    const plan = planMove(this.lastChain, moving, insertAt);
     return plan !== null && plan.rewrites.length > 0;
   }
 
@@ -239,7 +241,7 @@ export class SlidesPanelView extends ItemView {
   private moveStep(moving: string[], direction: "up" | "down"): void {
     const insertAt = stepInsertAt(this.lastChain, moving, direction);
     if (insertAt === null) return;
-    void this.applyReorder(moving, insertAt, this.lastChain);
+    void this.applyMove(moving, insertAt, this.lastChain);
   }
 
   /**
@@ -249,18 +251,14 @@ export class SlidesPanelView extends ItemView {
    * the deck changed meanwhile the gap index means nothing, so the move is
    * dropped rather than applied to a deck it no longer describes.
    */
-  private async applyReorder(
-    moving: string[],
-    insertAt: number,
-    snapshot: string[],
-  ): Promise<void> {
+  private async applyMove(moving: string[], insertAt: number, snapshot: string[]): Promise<void> {
     const chain = this.liveChain(this.app.workspace.getActiveFile());
     if (!chainEquals(chain, snapshot)) return;
-    const plan = planReorder(chain, moving, insertAt);
+    const plan = planMove(chain, moving, insertAt);
     if (!plan || plan.rewrites.length === 0) return; // nothing moved — write nothing
 
-    const applied = await this.runReorder(plan);
-    // A complete run re-bases the navigation session on the reordered chain's
+    const applied = await this.runMove(plan);
+    // A complete run re-bases the navigation session on the moved chain's
     // head. A failed one leaves a mixed order behind, and the head the session
     // entered may now sit mid-chain — forgetting the hint is what lets the next
     // resolution find the deck's real head again.
@@ -268,11 +266,11 @@ export class SlidesPanelView extends ItemView {
     this.render();
   }
 
-  /** Run a reorder with the panel's re-rendering held back for its duration */
-  private async runReorder(plan: ReorderPlan): Promise<boolean> {
+  /** Run a move with the panel's re-rendering held back for its duration */
+  private async runMove(plan: MovePlan): Promise<boolean> {
     this.writing = true;
     try {
-      return await this.plugin.deckService.executeReorder(plan);
+      return await this.plugin.deckService.executeMove(plan);
     } finally {
       this.writing = false;
     }

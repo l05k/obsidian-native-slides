@@ -1,13 +1,15 @@
 /**
- * panel-drag.ts — the pointer gesture behind "drag a slide to reorder it".
+ * panel-drag.ts — the pointer gesture behind "drag a slide to move it".
  *
  * The slides panel owns the deck model (what a drop *means*); this module owns
  * only the gesture: it decides when a press becomes a drag, paints the ghost
  * and the insertion line, scrolls the list when the pointer reaches its edge,
  * and hands the panel a single commit — `onDrop(moving, insertAt, snapshot)`.
- * It never writes to the vault and knows nothing about `deck` links.
+ * Every gesture that ever became a drag also ends with `onEnd()`, so the panel
+ * can re-render once the drag is no longer active. It never writes to the
+ * vault and knows nothing about `deck` links.
  *
- * Obsidian's public API has no drag-to-reorder helper a custom view could use
+ * Obsidian's public API has no drag-to-move helper a custom view could use
  * (the declarative settings list's `onReorder` renders inside the settings
  * modal only), so the gesture is built on pointer events: `pointerdown` on an
  * item, a movement threshold before anything happens (a plain press must stay
@@ -55,6 +57,13 @@ export interface DragHost {
   willChange(moving: string[], insertAt: number): boolean;
   /** Commit a drop; `snapshot` is the chain the gesture started on */
   onDrop(moving: string[], insertAt: number, snapshot: string[]): void;
+  /**
+   * The gesture is over — committed, refused or cancelled. Always called for a
+   * gesture that became a drag, and after `onDrop` when a drop was committed,
+   * so the panel can re-render once the drag is no longer active (its renders
+   * are suspended while one is in flight).
+   */
+  onEnd(): void;
 }
 
 /** Gesture state, created once the pointer passes the threshold */
@@ -77,7 +86,7 @@ interface DragState {
   raf: number;
 }
 
-/** Drag-to-reorder gesture for a list of rendered items */
+/** Drag-to-move gesture for a list of rendered items */
 export class PanelDrag {
   /** A press that has not travelled far enough to be a drag yet */
   private press: { x: number; y: number; path: string } | null = null;
@@ -100,9 +109,17 @@ export class PanelDrag {
 
   /** A press on an item; it becomes a drag once the pointer travels far enough */
   begin(event: PointerEvent, path: string): void {
-    if (event.button !== 0 || this.press || this.state) return;
-    if (this.host.items().length < 2) return; // a lone slide has nowhere to go
+    if (event.button !== 0) return;
+    // Every left press clears the previous gesture's click flag: a drag that
+    // ended away from its entry fires no click on it, and a stale flag would
+    // swallow a later click (the flag is only safe to leave set until the next
+    // left press).
     this.dragged = false;
+    // A modified press keeps its selection meaning (Mod toggles an item, Shift
+    // extends the range), so it must not become a drag if the pointer drifts.
+    if (event.shiftKey || event.ctrlKey || event.metaKey) return;
+    if (this.press || this.state) return;
+    if (this.host.items().length < 2) return; // a lone slide has nowhere to go
     this.press = { x: event.clientX, y: event.clientY, path };
     document.addEventListener("pointermove", this.onMove);
     document.addEventListener("pointerup", this.onUp);
@@ -216,6 +233,9 @@ export class PanelDrag {
     window.cancelAnimationFrame(state.raf);
 
     if (!cancelled) this.host.onDrop(state.moving, state.insertAt, state.chain);
+    // A refused or no-op drop returns from `onDrop` without rendering, and a
+    // cancel never renders either — this is the one replay path for all three.
+    this.host.onEnd();
   }
 
   /** Move the ghost to the pointer and the insertion line to the nearest gap */

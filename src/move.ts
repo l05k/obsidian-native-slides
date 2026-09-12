@@ -1,23 +1,22 @@
 /**
- * reorder.ts — Pure "move slides" planning core for native-slides.
+ * move.ts — Pure "move slides" planning core for native-slides.
  *
  * Free of Obsidian runtime dependencies so it can be unit tested directly
- * (see test/reorder.test.ts). The adapter in deck-service.ts applies the
- * plan: it rewrites the `deck` properties of the notes whose next link
- * changed.
+ * (see test/move.test.ts). The adapter in deck-service.ts applies the plan:
+ * it rewrites the `deck` properties of the notes whose next link changed.
  *
  * A deck stores no order of its own — the order *is* the next-link chain
- * (see src/deck.ts). Reordering is therefore a **rewiring**, not a write of
- * a new order property: the moving slides become one block inserted at a
+ * (see src/deck.ts). Moving slides is therefore a **rewiring**, not a write
+ * of a new order property: the moving slides become one block inserted at a
  * gap, and every note whose next link is different afterwards gets
  * rewritten. The head slide needs no marker (it is simply `chain[0]`), and
  * the new last slide ends the chain with `deck: []` — the same shape
  * createNext and deleteSlides write, so nothing else in the plugin has to
- * know that a reorder happened.
+ * know that a move happened.
  */
 
 /** One note whose `deck` property must be rewritten */
-export interface ReorderRewrite {
+export interface MoveRewrite {
   /** Vault path of the note to rewrite */
   path: string;
   /**
@@ -28,14 +27,14 @@ export interface ReorderRewrite {
 }
 
 /** The result of planning a move */
-export interface ReorderPlan {
-  /** The reordered chain ([0] = the new head slide) */
+export interface MovePlan {
+  /** The chain after the move ([0] = the new head slide) */
   chain: string[];
   /**
    * Notes whose next link differs afterwards, in new chain order. Empty when
    * the drop does not change the order — callers must then write nothing.
    */
-  rewrites: ReorderRewrite[];
+  rewrites: MoveRewrite[];
 }
 
 /**
@@ -57,11 +56,11 @@ export interface ReorderPlan {
  * legitimate no-op: the plan comes back with an unchanged chain and no
  * rewrites, so a drop that changes nothing writes nothing.
  */
-export function planReorder(
+export function planMove(
   chain: string[],
   moving: readonly string[],
   insertAt: number,
-): ReorderPlan | null {
+): MovePlan | null {
   if (chain.length < 2) return null;
   if (!Number.isInteger(insertAt) || insertAt < 0 || insertAt > chain.length) return null;
 
@@ -80,7 +79,7 @@ export function planReorder(
   const oldNext = new Map<string, string | null>();
   for (let i = 0; i < chain.length; i++) oldNext.set(chain[i], chain[i + 1] ?? null);
 
-  const rewrites: ReorderRewrite[] = [];
+  const rewrites: MoveRewrite[] = [];
   for (let i = 0; i < next.length; i++) {
     const newNext = next[i + 1] ?? null;
     if (oldNext.get(next[i]) !== newNext) rewrites.push({ path: next[i], nextPath: newNext });
