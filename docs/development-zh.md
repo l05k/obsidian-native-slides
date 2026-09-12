@@ -50,7 +50,75 @@ npm run dev        # 监听 main.ts，变更时自动重建 main.js
 - **配置扰动**：Obsidian 运行时会改写库里**被追踪**的配置（`appearance.json`、
   `community-plugins.json`、`core-plugins.json`）。切分支或开 PR 前用
   `git restore -- example-vault/.obsidian` 还原，之后再确认一次 `git status`。
-- **驱动 App**（例如通过 CDP 的 `--remote-debugging-port=9222`）是允许的；本规则限制的是它可以碰哪个库。
+- **驱动 App**（例如通过 CDP 的 `--remote-debugging-port=9222`）是允许的，而且往往是验证「手势类行为」
+  的唯一手段 —— 见下方「通过 CDP 驱动运行中的 App」，它才是把脚本限制在 `example-vault/` 里的机制。
+
+### 通过 CDP 驱动运行中的 App
+
+单元测试够不到的行为（拖动、点击、菜单动作）要靠 CDP 验证，因为它驱动的是真实 App、跑的就是你刚构建
+的版本。它同时带一个尖锐的边界，所以这一节是**操作规程**，不是一句许可。
+
+**调试端口是进程级的，因此可能同时暴露多个库。** `--remote-debugging-port` 是 Obsidian **进程**的
+参数，而一个进程可以开多个窗口：在本机上，维护者自己的笔记库与 `example-vault/` 曾同时出现在 `:9222`
+上。端点无法区分它们 —— 每个窗口都回答 `app://obsidian.md/index.html` —— 而窗口标题会本地化、会滞后，
+所以标题匹配**不是**身份识别。这是**保密边界**，不只是写入边界：连上去就能读另一个窗口里的笔记。
+
+**靠问 App 来识别目标，并且失败即停（fail closed）。**
+
+```js
+// App 自己的回答才是身份 —— 绝不用窗口标题
+const basePath = await cdp.eval(`app.vault.adapter.getBasePath()`);
+if (basePath !== EXPECTED_VAULT) throw new Error(`refusing to drive ${basePath}`);
+```
+
+`EXPECTED_VAULT` 就是本仓库的 `example-vault/`。`connect()` 会问遍端口上的每个 page target：匹配数为 0
+说明库没打开；**匹配数 >1 说明身份有歧义 —— 停下来，不要挑一个。** 两种情况都中止。
+
+**`scripts/vault-cdp.mjs` 做的就是这件事**，也是推荐的入口：除非恰好有一个窗口持有 `example-vault/`，
+否则它拒绝连接；并在每次派发输入前重新校验该身份。它是一个小型库 + 一次性命令的 CLI：
+
+```sh
+node scripts/vault-cdp.mjs state      # 库路径、插件版本、当前笔记、解析出的套件
+node scripts/vault-cdp.mjs reload     # 重载插件，加载新的 main.js
+node scripts/vault-cdp.mjs eval 'app.workspace.getActiveFile()?.path'  # 在 App 里求值并打印
+node scripts/vault-cdp.mjs order      # slides 面板列出的幻灯片标题
+node scripts/vault-cdp.mjs rects      # 同样这些条目及其布局
+node scripts/vault-cdp.mjs open "Check A"  # 在编辑器中打开一张笔记
+node scripts/vault-cdp.mjs drag 3 40  # 按住第 3 条，拖到 y=40，松开
+node scripts/vault-cdp.mjs create-deck "Check A" "Check B"
+node scripts/vault-cdp.mjs delete-notes "Check A" "Check B"
+```
+
+多步验证写在 `import` 它的临时脚本里，并放在**仓库之外**（`/tmp/…`），这样任何「测试形状」的文件都不会
+被提交：
+
+```js
+import { connect, sameArray } from "<repo>/scripts/vault-cdp.mjs";
+const cdp = await connect();
+await cdp.open("Check A");
+const before = await cdp.order();
+await cdp.drag(3, 40);
+// 把第 3 条拖到最前面，它就会成为链首
+const expected = [before[3], before[0], before[1], before[2]];
+if (!sameArray(await cdp.order(), expected)) throw new Error("…");
+```
+
+**绝不盲派发输入。** 没有布局的元素会把点击送到「该坐标上恰好存在的东西」—— 侧边栏收起时每个面板条目的
+rect 都是 `0×0`，于是「点第 1 条」变成了在编辑器里点 `(0,0)`，改掉了一张演示笔记并在仓库根留下一个
+杂散文件。先断言布局（`cdp.drag` 正因此会拒绝无布局的条目），并且在行为允许时优先用 `app.*` 读状态、
+而不是合成输入。
+
+**被遮挡的窗口仍然能跑，但 Chrome 会节流它。** `requestAnimationFrame` 可能永不触发，Obsidian 的
+`Menu` 可能根本不挂载 DOM —— 于是菜单不能按渲染出的条目断言，动画也观察不到。`Page.bringToFront`
+在这里不足以把它抬起来。改为断言**行为**：真右键是否到达 handler（`defaultPrevented`）、菜单项背后的
+动作是否真的改动了套件 —— 并**在报告里写明哪些检查是这样做**；环境限制不等于通过。
+
+**断言之前先等 App 落定。** 库与缓存的操作都是异步的（`openLinkText`、frontmatter 写入、metadata
+重建索引），读得太早会读到只应用了一半的状态，于是**一次正确的拒绝看起来像 bug**。轮询到面板与实时链
+一致，并断言前置条件而不是假设它成立。
+
+**最后收尾**：删掉临时笔记、还原 `example-vault/.obsidian`（见上方「配置扰动」一条），让 `git status`
+里不留下你的东西。
 
 ## Agent skills
 
@@ -111,3 +179,5 @@ triage 映射则位于 `docs/agents/triage-labels.md` 并由 `AGENTS.md` 指向�
 - **发布构建**（`npm run build:release`）会压缩 `main.js`，并通过 `--define:DEV_MODE=false` + tree-shaking 彻底移除 debug 命令及其支撑代码。发布后执行 `npm run build` 即可恢复开发版产物。
 
 源码已拆分到 `src/` 模块（`types`、`mode`、`deck-service`、`panel`、`panel-drag`、`bar`、`commands`、`settings`、`debug`、`deck`、`createNext`、`deleteSlides`、`move`、`nav`、`capacity`、`capacity-core`、`confirm-delete`、`utils`），`main.ts` 仅作编排入口。
+
+`scripts/` 放的是**不属于插件**、也永远不会随发布产出的开发工具（Release 工作流只发布 `main.js`、`manifest.json` 与 `styles.css`）——目前只有 `vault-cdp.mjs`，即上方「通过 CDP 驱动运行中的 App」里的驱动脚本。

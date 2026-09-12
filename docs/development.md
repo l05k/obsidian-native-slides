@@ -58,8 +58,86 @@ or a manual test at a vault that holds real notes.
   (`appearance.json`, `community-plugins.json`, `core-plugins.json`). Restore it with
   `git restore -- example-vault/.obsidian` before switching branches or opening a PR, and re-check
   `git status` afterwards.
-- **Driving the app** — for example over CDP with `--remote-debugging-port=9222` — is allowed; this
-  rule is what limits which vault it may touch.
+- **Driving the app** over CDP with `--remote-debugging-port=9222` is allowed and often the only
+  way to check a behaviour that is a gesture — see _Driving the running app over CDP_ below, which is
+  what keeps such a script on `example-vault/`.
+
+### Driving the running app over CDP
+
+CDP is the way to check a behaviour that a unit test cannot reach — a drag, a click, a menu action —
+because it drives the real app against the build you just made. It also carries one sharp edge, so
+this section is a procedure rather than a permission.
+
+**The debugging port is process-wide, so it can expose more than one vault.** `--remote-debugging-port`
+is a flag on the Obsidian _process_, and one process can hold several windows: on this machine the
+maintainer's own notes vault and `example-vault/` have both been reachable on `:9222` at the same
+time. The endpoint cannot tell them apart — every window answers `app://obsidian.md/index.html` — and
+the window title is localized and stale, so a title match is not an identity. That is a
+confidentiality boundary, not just a write boundary: anything connected can read the notes in the
+other window.
+
+**Identify the target by asking the app, and fail closed.**
+
+```js
+// the app's own answer is the identity — never the window title
+const basePath = await cdp.eval(`app.vault.adapter.getBasePath()`);
+if (basePath !== EXPECTED_VAULT) throw new Error(`refusing to drive ${basePath}`);
+```
+
+`EXPECTED_VAULT` is this repository's `example-vault/`. `connect()` asks every page target on the
+port: zero matches means the vault is not open, and **several matches means the identity is
+ambiguous — stop, do not pick one.** Both cases abort.
+
+**`scripts/vault-cdp.mjs` does exactly this**, and is the intended entry point: it refuses to connect
+unless precisely one window holds `example-vault/`, and re-checks that identity before every input
+dispatch. It is a small library plus a one-shot CLI:
+
+```sh
+node scripts/vault-cdp.mjs state      # vault path, plugin version, active note, resolved deck
+node scripts/vault-cdp.mjs reload     # reload the plugin, picking up a fresh main.js
+node scripts/vault-cdp.mjs eval 'app.workspace.getActiveFile()?.path'  # evaluate and print it
+node scripts/vault-cdp.mjs order      # slide titles as the slides panel lists them
+node scripts/vault-cdp.mjs rects      # the same entries with their layout
+node scripts/vault-cdp.mjs open "Check A"  # open a note in the editor
+node scripts/vault-cdp.mjs drag 3 40  # press entry 3, drag to y=40, release
+node scripts/vault-cdp.mjs create-deck "Check A" "Check B"
+node scripts/vault-cdp.mjs delete-notes "Check A" "Check B"
+```
+
+Multi-step checks belong in a scratch script that imports it, kept **outside** the repository
+(`/tmp/…`) so no test-shaped file is ever committed:
+
+```js
+import { connect, sameArray } from "<repo>/scripts/vault-cdp.mjs";
+const cdp = await connect();
+await cdp.open("Check A");
+const before = await cdp.order();
+await cdp.drag(3, 40);
+// dragging entry 3 to the top moves it to the head
+const expected = [before[3], before[0], before[1], before[2]];
+if (!sameArray(await cdp.order(), expected)) throw new Error("…");
+```
+
+**Never dispatch input blind.** An element with no layout would send the click to whatever sits at
+those coordinates — a collapsed sidebar gives every panel entry a `0×0` rect, and a "click entry 1"
+became a click at `(0,0)` inside the editor, which edited a demo note and left a stray file in the
+repository root. Assert the layout first (`cdp.drag` refuses a layout-less entry for this reason), and
+prefer reading state through `app.*` over synthesizing input whenever the behaviour allows it.
+
+**A window that is occluded still runs, but Chrome throttles it.** `requestAnimationFrame` may never
+fire and Obsidian's `Menu` may mount no DOM, so a menu cannot be asserted on its rendered items and
+an animation cannot be observed. `Page.bringToFront` has not been enough to lift it here. Assert the
+behaviour instead — that a real right-click reaches the handler (`defaultPrevented`), that the action
+behind a menu entry moves the deck — and **say in the report which checks were run that way**; an
+environment limit is not a pass.
+
+**Let the app settle before asserting.** Vault and cache work is asynchronous (`openLinkText`, a
+frontmatter write, a metadata reindex), so a check that reads immediately reads a half-applied state
+and a correct refusal looks like a bug. Poll until the panel and the live deck agree, and assert the
+precondition instead of assuming it.
+
+**Then clean up**: delete the scratch notes, restore `example-vault/.obsidian` (the _Config churn_
+bullet above), and leave `git status` showing nothing of yours.
 
 ## Agent skills
 
@@ -148,3 +226,7 @@ The source is split into `src/` modules (`types`, `mode`, `deck-service`,
 `panel`, `panel-drag`, `bar`, `commands`, `settings`, `debug`, `deck`,
 `createNext`, `deleteSlides`, `move`, `nav`, `capacity`, `capacity-core`,
 `confirm-delete`, `utils`) with `main.ts` as the orchestration entry point.
+
+`scripts/` holds development tooling that is **not** part of the plugin and never ships in a release
+(the Release workflow publishes `main.js`, `manifest.json` and `styles.css` only) — currently
+`vault-cdp.mjs`, the CDP driver of _Driving the running app over CDP_ above.
