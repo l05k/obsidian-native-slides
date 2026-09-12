@@ -145,6 +145,6 @@ Typography Styles` command: it samples the current note in **both** edit and
   restore the dev artifact.
 
 The source is split into `src/` modules (`types`, `mode`, `deck-service`,
-`panel`, `bar`, `commands`, `settings`, `debug`, `deck`, `createNext`,
-`deleteSlides`, `nav`, `capacity`, `capacity-core`, `confirm-delete`, `utils`)
-with `main.ts` as the orchestration entry point.
+`panel`, `panel-drag`, `bar`, `commands`, `settings`, `debug`, `deck`,
+`createNext`, `deleteSlides`, `reorder`, `nav`, `capacity`, `capacity-core`,
+`confirm-delete`, `utils`) with `main.ts` as the orchestration entry point.

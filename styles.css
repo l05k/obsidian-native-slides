@@ -176,8 +176,13 @@ body.native-slides-pointer-hidden * {
 }
 
 /* ── 7. Slides sidebar panel (deck slide list, v1.0.0) ────────────── */
-.native-slides-panel {
-  padding: var(--size-4-2) var(--size-4-2);
+/* The items live in the view's content element, which Obsidian already makes
+   scrollable — but only once it may shrink. Its default `min-height: auto`
+   lets a deck taller than the sidebar overflow the leaf (which clips) instead
+   of scrolling inside it, which is also what the drag gesture scrolls when the
+   pointer reaches an edge. */
+.native-slides-panel .view-content {
+  min-height: 0;
 }
 .native-slides-panel-empty {
   padding: var(--size-4-3);
@@ -227,6 +232,34 @@ body.native-slides-pointer-hidden * {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* Drag to reorder: the grabbed slides stay in place, dimmed, while a clone
+   follows the pointer and a line marks the gap the drop would land in. */
+.native-slides-panel-item.is-dragging {
+  opacity: 0.4;
+}
+.native-slides-panel-drag-ghost {
+  position: fixed;
+  z-index: var(--layer-menu, 30);
+  pointer-events: none;
+  margin: 0;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  box-shadow: var(--shadow-s);
+  color: var(--text-normal);
+}
+.native-slides-panel-drop-line {
+  position: fixed;
+  z-index: var(--layer-menu, 30);
+  height: 2px;
+  border-radius: 1px;
+  background: var(--text-accent);
+  pointer-events: none;
+}
+body.native-slides-dragging {
+  cursor: grabbing;
+  user-select: none;
 }
 
 /* ── 7b. Confirm-delete dialog (slides panel → Delete slide(s)) ─────── */

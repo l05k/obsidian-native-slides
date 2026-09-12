@@ -23,6 +23,8 @@
  *   - src/debug.ts        typography measurement tooling (dev builds only)
  *   - src/deck.ts         pure deck core (with src/createNext.ts)
  *   - src/nav.ts          pure navigation core (queue + session chain)
+ *   - src/reorder.ts      pure "move slides" core (rewires the next links)
+ *   - src/panel-drag.ts   the drag-to-reorder gesture behind the slides panel
  */
 
 import { MarkdownView, Plugin, TFile } from "obsidian";
@@ -364,6 +366,16 @@ export default class NativeSlidesPlugin extends Plugin {
    */
   resolveDeck(file: TFile): DeckInfo | null {
     return this.deckWithHead(file.path, this.nav.rememberedHead);
+  }
+
+  /**
+   * Re-base the navigation session on a deck head. The slides panel calls this
+   * after a reorder: the session's remembered head may now sit mid-chain, so
+   * the bar, the page number and the panel would otherwise describe a
+   * truncated deck.
+   */
+  rememberDeckHead(head: string | null): void {
+    this.nav.setHead(head);
   }
 
   /**

@@ -8,6 +8,14 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 ## [Unreleased]
 
+### Added
+
+- **Move slides in the slides panel**: drag an entry to a gap in the list — or use the context menu's **Move up** / **Move down** — and the deck is reordered. A 2px accent line marks the gap the slide would land in (above the first entry and below the last one included), the entries being moved dim while a copy follows the pointer, `Escape` cancels the drag, and a drop that changes nothing writes nothing. Dragging an entry that belongs to the selection moves the whole selection as one block, keeping the relative order of the slides you did not pick; dragging one outside the selection moves just that slide and clears the selection. A move rewrites the `deck` links of the slides whose next link actually changed and touches nothing else, so the panel, the slides bar's page number and ◀ ▶ navigation follow the new order immediately (#124). Two consequences are documented in the README: a move writes frontmatter, which Obsidian's undo (`Cmd/Ctrl+Z`) does not cover, and the panel has to be visible — Slides mode hides both sidebars.
+
+### Fixed
+
+- **A deck taller than the sidebar scrolls in the slides panel**: the entries were appended to the leaf's content element, which clips its children (`overflow: hidden`), so slides below the fold could not be seen or reached at all. They now live in Obsidian's own scrollable view content, allowed to shrink (`min-height: 0`) — which also gives the drag gesture something to scroll when the pointer reaches the panel's top or bottom edge (#124).
+
 ## [1.0.6] - 2026-09-11
 
 ### Fixed
