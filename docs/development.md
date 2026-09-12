@@ -65,8 +65,8 @@ or a manual test at a vault that holds real notes.
 ### Driving the running app over CDP
 
 CDP is the way to check a behaviour that a unit test cannot reach — a drag, a click, a menu action —
-because it drives the real app against the build you just made. It also carries one sharp edge, so
-this section is a procedure rather than a permission.
+because it drives the real app against the build you just made. It also carries one sharp edge, which
+is why it comes with a guard rather than a bare permission.
 
 **The debugging port is process-wide, so it can expose more than one vault.** `--remote-debugging-port`
 is a flag on the Obsidian _process_, and one process can hold several windows: on this machine the
@@ -115,29 +115,35 @@ const before = await cdp.order();
 await cdp.drag(3, 40);
 // dragging entry 3 to the top moves it to the head
 const expected = [before[3], before[0], before[1], before[2]];
-if (!sameArray(await cdp.order(), expected)) throw new Error("…");
+const order = await cdp.order();
+if (!sameArray(order, expected)) throw new Error("…");
+// and the notes themselves agree: slide i links to slide i+1, the last holds []
+const chain = await cdp.eval(`(async () => {
+  const titles = ${JSON.stringify(order)};
+  return titles.map((t) => {
+    const file = app.vault.getAbstractFileByPath(t + ".md");
+    return app.metadataCache.getFileCache(file)?.frontmatter?.deck ?? null;
+  });
+})()`);
+const linked = order.slice(0, -1).map((_, i) => ["[[" + order[i + 1] + "]]"]);
+if (!sameArray(chain, [...linked, []]))
+  throw new Error("the frontmatter chain does not follow the panel order");
 ```
 
-**Never dispatch input blind.** An element with no layout would send the click to whatever sits at
-those coordinates — a collapsed sidebar gives every panel entry a `0×0` rect, and a "click entry 1"
-became a click at `(0,0)` inside the editor, which edited a demo note and left a stray file in the
-repository root. Assert the layout first (`cdp.drag` refuses a layout-less entry for this reason), and
-prefer reading state through `app.*` over synthesizing input whenever the behaviour allows it.
+**The procedure a check follows** — its steps, their completion criteria and the rules that keep it on
+this vault — is [`.agents/skills/vault-cdp-testing/SKILL.md`](../.agents/skills/vault-cdp-testing/SKILL.md);
+this section is the mechanism behind it. Three incidents are why three of those rules exist:
 
-**A window that is occluded still runs, but Chrome throttles it.** `requestAnimationFrame` may never
-fire and Obsidian's `Menu` may mount no DOM, so a menu cannot be asserted on its rendered items and
-an animation cannot be observed. `Page.bringToFront` has not been enough to lift it here. Assert the
-behaviour instead — that a real right-click reaches the handler (`defaultPrevented`), that the action
-behind a menu entry moves the deck — and **say in the report which checks were run that way**; an
-environment limit is not a pass.
-
-**Let the app settle before asserting.** Vault and cache work is asynchronous (`openLinkText`, a
-frontmatter write, a metadata reindex), so a check that reads immediately reads a half-applied state
-and a correct refusal looks like a bug. Poll until the panel and the live deck agree, and assert the
-precondition instead of assuming it.
-
-**Then clean up**: delete the scratch notes, restore `example-vault/.obsidian` (the _Config churn_
-bullet above), and leave `git status` showing nothing of yours.
+- **a click that landed in the editor** — a collapsed sidebar gave every panel entry a `0×0` rect, so
+  "click entry 1" became a click at `(0,0)` inside the editor, which edited a demo note and left a
+  stray file in the repository root;
+- **a read that came too early** — `openLinkText`, a frontmatter write and a metadata reindex are
+  asynchronous, so a check that read immediately read a half-applied state, and a _correct_ refusal
+  looked like a bug;
+- **a window Chrome had throttled** — an occluded window still runs, but `requestAnimationFrame` may
+  never fire and Obsidian's `Menu` may mount no DOM, so a menu could not be asserted on its rendered
+  items and an animation could not be observed (`Page.bringToFront` has not been enough to lift it
+  here).
 
 ## Agent skills
 
@@ -148,12 +154,13 @@ session off. They are plain Markdown you own and may edit.
 
 - **Repo-owned skills** — `dev-workflow` (the mandatory workflow of
   [Rule 1](../AGENTS.md), [Rule 2](../AGENTS.md) and [Rule 4](../AGENTS.md)),
-  `herdr-subagent` (the Herdr pane/subagent mechanics Rule 2 uses) and
+  `herdr-subagent` (the Herdr pane/subagent mechanics Rule 2 uses),
   `code-review-herdr` (this repository's fork of the vendored `code-review`: same
   two-axis method, but each axis runs in its own Herdr pane, which is what Pi
   needs — it has no native sub-agent tool — and those panes are closed once their
-  reports are collected). Ours: edit freely; they stay Prettier-formatted (ESLint
-  skips the whole `.agents/skills/` tree).
+  reports are collected) and `vault-cdp-testing` (the procedure a behavioural
+  check follows in the running app, [Rule 3](../AGENTS.md)). Ours: edit freely;
+  they stay Prettier-formatted (ESLint skips the whole `.agents/skills/` tree).
 - **The vendored 25** — the `engineering` + `productivity` skills from
   [mattpocock/skills](https://github.com/mattpocock/skills), i.e. the sets listed
   at [aihero.dev/skills](https://www.aihero.dev/skills). The experimental
@@ -173,7 +180,7 @@ session off. They are plain Markdown you own and may edit.
   `.agents/skills/` are overwritten without warning. No commit `ref` is recorded,
   so a reinstall resolves the upstream default branch.
 - **Third-party content stays unformatted**: `.prettierignore` excludes
-  `.agents/skills/*` (re-including the three repo-owned skills) — never reformat
+  `.agents/skills/*` (re-including the four repo-owned skills) — never reformat
   the vendored files, so updates stay diffable. Prettier consults `.gitignore`
   too, so anything ignored there (this checkout's local scratch files, per-machine
   Obsidian state) is skipped by `npm run format:check` as well.
@@ -193,9 +200,9 @@ gitignored directory (`.pi/skills/`) instead. A successful `add` prints
 
 > **Caution:** the CLI owns this directory. A scoped `npx skills remove` — and
 > especially `remove --all` — would delete the repo-owned `dev-workflow`,
-> `herdr-subagent` and `code-review-herdr` too. They are committed, so
-> `git checkout -- .agents/skills` restores them, but never run those commands
-> blindly.
+> `herdr-subagent`, `code-review-herdr` and `vault-cdp-testing` too. They are
+> committed, so `git checkout -- .agents/skills` restores them, but never run
+> those commands blindly.
 
 The `/setup-matt-pocock-skills` skill records this repository's issue tracker,
 triage labels and doc layout under [`docs/agents/`](agents/), for the skills that
