@@ -28,21 +28,22 @@
  *   node scripts/vault-cdp.mjs order
  *   node scripts/vault-cdp.mjs drag 3 40
  *   node scripts/vault-cdp.mjs eval 'app.workspace.getActiveFile()?.path'
- *   node scripts/vault-cdp.mjs create-deck "Probe A" "Probe B"
- *   node scripts/vault-cdp.mjs delete-notes "Probe A" "Probe B"
+ *   node scripts/vault-cdp.mjs create-deck "Check A" "Check B"
+ *   node scripts/vault-cdp.mjs delete-notes "Check A" "Check B"
  *
  * Or import the primitives into a scratch check script — keep those outside
  * the repository (`/tmp/…`) so no test-shaped file is ever committed:
  *
- *   import { connect } from "<repo>/scripts/vault-cdp.mjs";
+ *   import { connect, sameArray } from "<repo>/scripts/vault-cdp.mjs";
  *   const cdp = await connect();
- *   await cdp.open("Probe A");
+ *   await cdp.open("Check A");
  *   const before = await cdp.order();
- *   await cdp.drag(3, 40);
- *   if (!same(await cdp.order(), moved(before, 3, 0))) throw new Error("…");
+ *   await cdp.drag(3, 40);            // entry 3 moves to the head
+ *   const expected = [before[3], before[0], before[1], before[2]];
+ *   if (!sameArray(await cdp.order(), expected)) throw new Error("…");
  *
  * The running app must have been started with `--remote-debugging-port=9222`
- * (or `--port <n>` / `OBSIDIAN_CDP_PORT` here). A window that is occluded is
+ * (or another port via `OBSIDIAN_CDP_PORT`). A window that is occluded is
  * still drivable, but Chrome throttles it: `requestAnimationFrame` may never
  * fire and Obsidian's `Menu` mounts no DOM — assert on behaviour and on
  * handlers rather than on rendered pixels, and say so in the report.
@@ -61,7 +62,7 @@ const EXPECTED_VAULT = path.join(REPO_ROOT, "example-vault");
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Order-sensitive array comparison, for assertions in check scripts */
-export const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+export const sameArray = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
 /** `p` with symlinks resolved, or `p` itself when it cannot be resolved */
 function canonical(p) {
@@ -72,6 +73,11 @@ function canonical(p) {
   }
 }
 
+/** Whether two vault paths name the same directory (symlinks resolved) */
+function sameVault(a, b) {
+  return canonical(a) === canonical(b);
+}
+
 /** Page targets on the debugging port (workers and other target kinds dropped) */
 async function pageTargets(port) {
   const response = await fetch(`http://127.0.0.1:${port}/json/list`);
@@ -80,11 +86,18 @@ async function pageTargets(port) {
   return targets.filter((t) => t.type === "page" && t.webSocketDebuggerUrl);
 }
 
-/** A CDP connection with the helpers the checks need */
+/**
+ * A CDP connection with the helpers the checks need.
+ *
+ * Invariant: every path that reads app state or mutates the vault goes through
+ * a guarded entry point — `eval()`, `mouse()` or `pressEscape()` — which
+ * re-checks the vault identity first. Only the connect-time probe and
+ * `assertVault()` itself may use `evalRaw()`, which performs no check
+ * (`assertVault()` must not call the guarded `eval()`, or it would recurse).
+ */
 class Cdp {
-  constructor(ws, port, vaultPath) {
+  constructor(ws, vaultPath) {
     this.ws = ws;
-    this.port = port;
     this.vaultPath = vaultPath;
     this.id = 0;
     this.pending = new Map();
@@ -106,8 +119,12 @@ class Cdp {
     });
   }
 
-  /** Evaluate `expression` in the page and return its value */
-  async eval(expression) {
+  /**
+   * Evaluate `expression` in the page with **no** vault check. Only the
+   * connect-time probe and `assertVault()` may call this; every other path
+   * goes through `eval()` (see the class doc).
+   */
+  async evalRaw(expression) {
     const result = await this.send("Runtime.evaluate", {
       expression,
       awaitPromise: true,
@@ -121,17 +138,23 @@ class Cdp {
   }
 
   /**
-   * Re-read the vault path from the live page. Every input dispatch goes
+   * Re-read the vault path from the live page. Every guarded entry point goes
    * through this: the connection outlives the window it was made for.
    */
   async assertVault() {
-    const actual = await this.eval(`app.vault.adapter.getBasePath()`);
-    if (canonical(actual) !== canonical(this.vaultPath)) {
+    const actual = await this.evalRaw(`app.vault.adapter.getBasePath()`);
+    if (!sameVault(actual, this.vaultPath)) {
       throw new Error(
         `refusing to dispatch input: the window now holds ${actual}, not ${this.vaultPath}`,
       );
     }
     return actual;
+  }
+
+  /** Evaluate `expression` in the page and return its value, after re-checking the vault */
+  async eval(expression) {
+    await this.assertVault();
+    return this.evalRaw(expression);
   }
 
   /** One synthetic mouse event, after re-checking the vault */
@@ -148,11 +171,11 @@ class Cdp {
     });
   }
 
-  /** One synthetic key press, after re-checking the vault */
-  async key(key) {
+  /** One synthetic Escape press, after re-checking the vault */
+  async pressEscape() {
     await this.assertVault();
-    await this.send("Input.dispatchKeyEvent", { type: "keyDown", key, code: key });
-    await this.send("Input.dispatchKeyEvent", { type: "keyUp", key, code: key });
+    await this.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape" });
+    await this.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape" });
   }
 
   /** Rendered panel entries, in order, with their layout */
@@ -210,7 +233,7 @@ class Cdp {
       await sleep(20);
     }
     if (escape) {
-      await this.key("Escape");
+      await this.pressEscape();
       await sleep(100);
     }
     await this.mouse("mouseReleased", x, toY, { modifiers });
@@ -238,12 +261,13 @@ export async function connect(port = Number(process.env.OBSIDIAN_CDP_PORT ?? 922
         ws.addEventListener("open", resolve, { once: true });
         ws.addEventListener("error", reject, { once: true });
       });
-      const probe = new Cdp(ws, port, EXPECTED_VAULT);
-      const basePath = await probe.eval(`app.vault.adapter.getBasePath()`);
-      const title = await probe.eval(`document.title`);
+      const probe = new Cdp(ws, EXPECTED_VAULT);
+      const basePath = await probe.evalRaw(`app.vault.adapter.getBasePath()`);
+      const title = await probe.evalRaw(`document.title`);
       seen.push(`${title} → ${basePath}`);
-      if (canonical(basePath) === canonical(EXPECTED_VAULT)) {
-        matches.push(new Cdp(ws, port, EXPECTED_VAULT));
+      if (sameVault(basePath, EXPECTED_VAULT)) {
+        // the probe is already connected to the right window — reuse it
+        matches.push(probe);
         continue;
       }
     } catch (error) {
@@ -260,7 +284,8 @@ export async function connect(port = Number(process.env.OBSIDIAN_CDP_PORT ?? 922
   }
   if (matches.length > 1) {
     throw new Error(
-      `refusing to guess: ${matches.length} windows hold ${EXPECTED_VAULT} on port ${port}`,
+      `refusing to guess: ${matches.length} windows hold ${EXPECTED_VAULT} on port ${port}. ` +
+        `Windows seen: ${seen.join("; ")}`,
     );
   }
   return matches[0];

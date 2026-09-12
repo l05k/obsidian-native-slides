@@ -66,13 +66,13 @@ npm run dev        # 监听 main.ts，变更时自动重建 main.js
 **靠问 App 来识别目标，并且失败即停（fail closed）。**
 
 ```js
-// 端口上每个 page target 都问一遍，用 App 自己的回答 —— 绝不用标题
-const basePath = await eval(`app.vault.adapter.getBasePath()`);
-if (canonical(basePath) !== canonical(EXPECTED_VAULT)) reject();
+// App 自己的回答才是身份 —— 绝不用窗口标题
+const basePath = await cdp.eval(`app.vault.adapter.getBasePath()`);
+if (basePath !== EXPECTED_VAULT) throw new Error(`refusing to drive ${basePath}`);
 ```
 
-`EXPECTED_VAULT` 就是本仓库的 `example-vault/`。匹配数为 0 说明库没打开；**匹配数 >1 说明身份有歧义
-—— 停下来，不要挑一个。** 两种情况都中止。
+`EXPECTED_VAULT` 就是本仓库的 `example-vault/`。`connect()` 会问遍端口上的每个 page target：匹配数为 0
+说明库没打开；**匹配数 >1 说明身份有歧义 —— 停下来，不要挑一个。** 两种情况都中止。
 
 **`scripts/vault-cdp.mjs` 做的就是这件事**，也是推荐的入口：除非恰好有一个窗口持有 `example-vault/`，
 否则它拒绝连接；并在每次派发输入前重新校验该身份。它是一个小型库 + 一次性命令的 CLI：
@@ -80,23 +80,27 @@ if (canonical(basePath) !== canonical(EXPECTED_VAULT)) reject();
 ```sh
 node scripts/vault-cdp.mjs state      # 库路径、插件版本、当前笔记、解析出的套件
 node scripts/vault-cdp.mjs reload     # 重载插件，加载新的 main.js
+node scripts/vault-cdp.mjs eval 'app.workspace.getActiveFile()?.path'  # 在 App 里求值并打印
 node scripts/vault-cdp.mjs order      # slides 面板列出的幻灯片标题
 node scripts/vault-cdp.mjs rects      # 同样这些条目及其布局
+node scripts/vault-cdp.mjs open "Check A"  # 在编辑器中打开一张笔记
 node scripts/vault-cdp.mjs drag 3 40  # 按住第 3 条，拖到 y=40，松开
-node scripts/vault-cdp.mjs create-deck "Probe A" "Probe B"
-node scripts/vault-cdp.mjs delete-notes "Probe A" "Probe B"
+node scripts/vault-cdp.mjs create-deck "Check A" "Check B"
+node scripts/vault-cdp.mjs delete-notes "Check A" "Check B"
 ```
 
 多步验证写在 `import` 它的临时脚本里，并放在**仓库之外**（`/tmp/…`），这样任何「测试形状」的文件都不会
 被提交：
 
 ```js
-import { connect, same } from "<repo>/scripts/vault-cdp.mjs";
+import { connect, sameArray } from "<repo>/scripts/vault-cdp.mjs";
 const cdp = await connect();
-await cdp.open("Probe A");
+await cdp.open("Check A");
 const before = await cdp.order();
 await cdp.drag(3, 40);
-if (!same(await cdp.order(), [before[3], before[0], before[1], before[2]])) throw new Error("…");
+// 把第 3 条拖到最前面，它就会成为链首
+const expected = [before[3], before[0], before[1], before[2]];
+if (!sameArray(await cdp.order(), expected)) throw new Error("…");
 ```
 
 **绝不盲派发输入。** 没有布局的元素会把点击送到「该坐标上恰好存在的东西」—— 侧边栏收起时每个面板条目的

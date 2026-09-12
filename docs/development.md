@@ -79,13 +79,14 @@ other window.
 **Identify the target by asking the app, and fail closed.**
 
 ```js
-// every page target on the port, then the app's own answer — never the title
-const basePath = await eval(`app.vault.adapter.getBasePath()`);
-if (canonical(basePath) !== canonical(EXPECTED_VAULT)) reject();
+// the app's own answer is the identity — never the window title
+const basePath = await cdp.eval(`app.vault.adapter.getBasePath()`);
+if (basePath !== EXPECTED_VAULT) throw new Error(`refusing to drive ${basePath}`);
 ```
 
-`EXPECTED_VAULT` is this repository's `example-vault/`. Zero matches means the vault is not open;
-**several matches means the identity is ambiguous — stop, do not pick one.** Both cases abort.
+`EXPECTED_VAULT` is this repository's `example-vault/`. `connect()` asks every page target on the
+port: zero matches means the vault is not open, and **several matches means the identity is
+ambiguous — stop, do not pick one.** Both cases abort.
 
 **`scripts/vault-cdp.mjs` does exactly this**, and is the intended entry point: it refuses to connect
 unless precisely one window holds `example-vault/`, and re-checks that identity before every input
@@ -94,23 +95,27 @@ dispatch. It is a small library plus a one-shot CLI:
 ```sh
 node scripts/vault-cdp.mjs state      # vault path, plugin version, active note, resolved deck
 node scripts/vault-cdp.mjs reload     # reload the plugin, picking up a fresh main.js
+node scripts/vault-cdp.mjs eval 'app.workspace.getActiveFile()?.path'  # evaluate and print it
 node scripts/vault-cdp.mjs order      # slide titles as the slides panel lists them
 node scripts/vault-cdp.mjs rects      # the same entries with their layout
+node scripts/vault-cdp.mjs open "Check A"  # open a note in the editor
 node scripts/vault-cdp.mjs drag 3 40  # press entry 3, drag to y=40, release
-node scripts/vault-cdp.mjs create-deck "Probe A" "Probe B"
-node scripts/vault-cdp.mjs delete-notes "Probe A" "Probe B"
+node scripts/vault-cdp.mjs create-deck "Check A" "Check B"
+node scripts/vault-cdp.mjs delete-notes "Check A" "Check B"
 ```
 
 Multi-step checks belong in a scratch script that imports it, kept **outside** the repository
 (`/tmp/…`) so no test-shaped file is ever committed:
 
 ```js
-import { connect, same } from "<repo>/scripts/vault-cdp.mjs";
+import { connect, sameArray } from "<repo>/scripts/vault-cdp.mjs";
 const cdp = await connect();
-await cdp.open("Probe A");
+await cdp.open("Check A");
 const before = await cdp.order();
 await cdp.drag(3, 40);
-if (!same(await cdp.order(), [before[3], before[0], before[1], before[2]])) throw new Error("…");
+// dragging entry 3 to the top moves it to the head
+const expected = [before[3], before[0], before[1], before[2]];
+if (!sameArray(await cdp.order(), expected)) throw new Error("…");
 ```
 
 **Never dispatch input blind.** An element with no layout would send the click to whatever sits at
