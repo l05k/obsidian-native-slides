@@ -8,6 +8,7 @@
     "build:release": "esbuild main.ts --bundle --format=cjs --external:obsidian --outfile=main.js --sourcemap=inline --minify --define:DEV_MODE=false",
     "dev": "esbuild main.ts --bundle --format=cjs --external:obsidian --outfile=main.js --sourcemap=inline --watch=forever --define:DEV_MODE=true",
     "check": "tsc --noEmit",
+    "check:geometry": "node scripts/check-slide-geometry.mjs",
     "test": "vitest run",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
