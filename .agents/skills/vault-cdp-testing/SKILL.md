@@ -1,6 +1,6 @@
 ---
 name: vault-cdp-testing
-description: Run a behavioural check in the running Obsidian app — drive example-vault over CDP and assert what the user would see. Use when a change has to be verified by driving the app (a drag, a click, a menu action, a page number, anything a unit test cannot reach), when reproducing a claim before it goes into a PR body, or when re-verifying a PR after a review round.
+description: Run a behavioural check in the running Obsidian app — drive example-vault over CDP. Use when a unit test cannot reach the behaviour (a drag, a click, a menu action), when reproducing a claim before it goes into a PR body, or when re-verifying a PR after a review round.
 ---
 
 # Vault CDP testing
@@ -20,7 +20,7 @@ A **behavioural check** drives the running Obsidian app against the build you ju
 ## Rules
 
 - **Drive one vault: `example-vault/`.** The guard refuses on zero **or several** matches, and anything connected to the wrong window can read the notes in it — so a refusal means fix the setup, not work around the guard.
-- **Assert the layout before you click or drag it.** A collapsed sidebar gives every panel entry a `0×0` rect, and the click then lands in the editor at `(0,0)` — which is how a demo note got edited and a stray file ended up in the repository root.
-- **Settle before asserting.** `openLinkText`, a frontmatter write and a metadata reindex are asynchronous; reading immediately reads a half-applied state, and a _correct_ refusal then looks like a bug.
-- **An environment limit is not a pass.** A throttled window (`requestAnimationFrame` never firing, `Menu` mounting no DOM) changes _how_ you assert — on the handler, on the action behind a menu entry — and you say so in the report.
+- **Assert the layout before you click or drag it.** A collapsed sidebar gives every panel entry a `0×0` rect, and `cdp.drag` refuses a layout-less entry rather than clicking whatever sits at those coordinates.
+- **Settle before asserting.** `openLinkText`, a frontmatter write and a metadata reindex are asynchronous; reading immediately reads a half-applied state.
+- **An environment limit is not a pass.** A throttled window (`requestAnimationFrame` never firing, `Menu` mounting no DOM) changes _how_ you assert — on the handler (a real right-click reaching it, `defaultPrevented`) or on the action behind a menu entry — and you say so in the report.
 - **Keep scratch check scripts outside the repository** (`/tmp/…`), importing the primitives; nothing test-shaped is committed.

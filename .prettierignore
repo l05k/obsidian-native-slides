@@ -3,6 +3,8 @@ package-lock.json
 node_modules
 .npm-cache
 example-vault/
+# Vendored skills stay unformatted; the repo-owned ones are re-included by hand below,
+# so a new repo-owned skill must be added here or it is silently left unformatted.
 .agents/skills/*
 !.agents/skills/dev-workflow/
 !.agents/skills/herdr-subagent/

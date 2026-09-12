@@ -100,21 +100,32 @@ const before = await cdp.order();
 await cdp.drag(3, 40);
 // 把第 3 条拖到最前面，它就会成为链首
 const expected = [before[3], before[0], before[1], before[2]];
-if (!sameArray(await cdp.order(), expected)) throw new Error("…");
+const order = await cdp.order();
+if (!sameArray(order, expected)) throw new Error("…");
+// 笔记本身也要对得上：第 i 张链向第 i+1 张，最后一张为 []
+const chain = await cdp.eval(`(async () => {
+  const titles = ${JSON.stringify(order)};
+  return titles.map((t) => {
+    const file = app.vault.getAbstractFileByPath(t + ".md");
+    return app.metadataCache.getFileCache(file)?.frontmatter?.deck ?? null;
+  });
+})()`);
+const linked = order.slice(0, -1).map((_, i) => ["[[" + order[i + 1] + "]]"]);
+if (!sameArray(chain, [...linked, []]))
+  throw new Error("the frontmatter chain does not follow the panel order");
 ```
 
 **一次行为检查遵循的流程**——它的步骤、每步的完成标准，以及把检查留在这个库上的规则——在
 [`.agents/skills/vault-cdp-testing/SKILL.md`](../.agents/skills/vault-cdp-testing/SKILL.md)；本节是它背后的机制。
-其中三条规则之所以存在，是因为它们各自已经出错一次：
+其中三条规则之所以存在，是因为下面三件事各自出过一次：
 
-- **不盲派发输入**——侧边栏收起时每个面板条目的 rect 都是 `0×0`，于是「点第 1 条」变成了在编辑器里点
-  `(0,0)`，改掉了一张演示笔记并在仓库根留下一个杂散文件；
-- **断言之前先等 App 落定**——`openLinkText`、frontmatter 写入与 metadata 重建索引都是异步的，读得太早
-  会读到只应用了一半的状态，于是**一次正确的拒绝看起来像 bug**；
-- **环境限制不等于通过**——被遮挡的窗口会被 Chrome 节流：`requestAnimationFrame` 可能永不触发，
-  Obsidian 的 `Menu` 可能根本不挂载 DOM，于是菜单不能按渲染出的条目断言，动画也观察不到
-  （`Page.bringToFront` 在这里不足以把它抬起来）。改为断言 handler 与菜单项背后的动作，并在报告里写明
-  哪些检查是这样做。
+- **一次落进编辑器里的点击**——侧边栏收起时每个面板条目的 rect 都是 `0×0`，于是「点第 1 条」变成了在
+  编辑器里点 `(0,0)`，改掉了一张演示笔记并在仓库根留下一个杂散文件；
+- **一次读得太早的断言**——`openLinkText`、frontmatter 写入与 metadata 重建索引都是异步的，读得太早
+  就会读到只应用了一半的状态，于是一次**正确的拒绝看起来像 bug**；
+- **一个被 Chrome 节流的窗口**——被遮挡的窗口仍在运行，但 `requestAnimationFrame` 永不触发，
+  Obsidian 的 `Menu` 根本不挂载 DOM，于是菜单不能按渲染出的条目断言，动画也观察不到
+  （`Page.bringToFront` 在这里不足以把它抬起来）。
 
 ## Agent skills
 

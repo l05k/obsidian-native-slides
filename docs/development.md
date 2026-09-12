@@ -115,25 +115,35 @@ const before = await cdp.order();
 await cdp.drag(3, 40);
 // dragging entry 3 to the top moves it to the head
 const expected = [before[3], before[0], before[1], before[2]];
-if (!sameArray(await cdp.order(), expected)) throw new Error("…");
+const order = await cdp.order();
+if (!sameArray(order, expected)) throw new Error("…");
+// and the notes themselves agree: slide i links to slide i+1, the last holds []
+const chain = await cdp.eval(`(async () => {
+  const titles = ${JSON.stringify(order)};
+  return titles.map((t) => {
+    const file = app.vault.getAbstractFileByPath(t + ".md");
+    return app.metadataCache.getFileCache(file)?.frontmatter?.deck ?? null;
+  });
+})()`);
+const linked = order.slice(0, -1).map((_, i) => ["[[" + order[i + 1] + "]]"]);
+if (!sameArray(chain, [...linked, []]))
+  throw new Error("the frontmatter chain does not follow the panel order");
 ```
 
 **The procedure a check follows** — its steps, their completion criteria and the rules that keep it on
 this vault — is [`.agents/skills/vault-cdp-testing/SKILL.md`](../.agents/skills/vault-cdp-testing/SKILL.md);
-this section is the mechanism behind it. Three of those rules are there because each has already gone
-wrong once:
+this section is the mechanism behind it. Three incidents are why three of those rules exist:
 
-- **no blind input dispatch** — a collapsed sidebar gives every panel entry a `0×0` rect, so "click
-  entry 1" became a click at `(0,0)` inside the editor, which edited a demo note and left a stray file
-  in the repository root;
-- **settle before asserting** — `openLinkText`, a frontmatter write and a metadata reindex are
-  asynchronous, so reading immediately read a half-applied state and a _correct_ refusal looked like a
-  bug;
-- **an environment limit is not a pass** — an occluded window is throttled by Chrome:
-  `requestAnimationFrame` may never fire and Obsidian's `Menu` may mount no DOM, so a menu cannot be
-  asserted on its rendered items and an animation cannot be observed (`Page.bringToFront` has not been
-  enough to lift it here). Assert the handler and the action behind the entry instead, and say in the
-  report which checks were run that way.
+- **a click that landed in the editor** — a collapsed sidebar gave every panel entry a `0×0` rect, so
+  "click entry 1" became a click at `(0,0)` inside the editor, which edited a demo note and left a
+  stray file in the repository root;
+- **a read that came too early** — `openLinkText`, a frontmatter write and a metadata reindex are
+  asynchronous, so a check that read immediately read a half-applied state, and a _correct_ refusal
+  looked like a bug;
+- **a window Chrome had throttled** — an occluded window still runs, but `requestAnimationFrame` may
+  never fire and Obsidian's `Menu` may mount no DOM, so a menu could not be asserted on its rendered
+  items and an animation could not be observed (`Page.bringToFront` has not been enough to lift it
+  here).
 
 ## Agent skills
 
