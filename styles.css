@@ -650,14 +650,16 @@ body.native-slides-mode
   margin: 0;
   /* Themes that style the readable line width restyle this element too, as a
      line-width box of their own (Minimal: `width: var(--line-width)`,
-     `max-width: var(--max-width)`, `margin-inline: … !important`), which
-     replaces the left/right box above with a 40rem box centred on the sizer.
-     The title's box IS the card's text column here, so the width and the
-     margins are pinned back to it — `!important` because the theme's margin
-     declaration is itself important, and the width/max-width need it to
-     survive a theme that marks its own important. */
-  width: auto !important;
-  max-width: none !important;
+     `max-width: var(--max-width)`, `margin-inline: var(--content-margin)
+     !important`), which replaces the left/right box above with a 40rem box
+     centred on the sizer. The title's box IS the card's text column here, so
+     the width and the margins are pinned back to it. `width` and `max-width`
+     win on specificity alone — this selector (0,9,1) outranks the theme's
+     `.cm-sizer > .inline-title` (0,5,0), exactly as the container rule above
+     needs no `!important`; `margin-inline` is the one declaration that cannot,
+     because the theme's own is `!important` and only `!important` beats it. */
+  width: auto;
+  max-width: none;
   margin-inline: 0 !important;
   padding-top: calc(var(--ns-title-spacing, var(--p-spacing, 1rem)) / 1.4);
   padding-bottom: calc(var(--ns-title-rule-pad, 0px) / 1.4);

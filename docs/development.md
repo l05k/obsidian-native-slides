@@ -104,8 +104,9 @@ node scripts/vault-cdp.mjs create-deck "Check A" "Check B"
 node scripts/vault-cdp.mjs delete-notes "Check A" "Check B"
 ```
 
-Multi-step checks belong in a scratch script that imports it, kept **outside** the repository
-(`/tmp/…`) so no test-shaped file is ever committed:
+A multi-step check is a script that imports it — whether it belongs in `scripts/` or in a scratch file
+outside the repository is the rule in
+[`.agents/skills/vault-cdp-testing/SKILL.md`](../.agents/skills/vault-cdp-testing/SKILL.md):
 
 ```js
 import { connect, sameArray } from "<repo>/scripts/vault-cdp.mjs";
@@ -131,9 +132,10 @@ if (!sameArray(chain, [...linked, []]))
 ```
 
 **`scripts/check-slide-geometry.mjs` is the worked example of a committed check**: it drives the app,
-measures the card-title invariant across font sizes and themes, and exits non-zero on any drift. Reach
-for it when a change touches the card's geometry, and copy its shape for the next invariant that only a
-real layout engine can see.
+measures the card-title invariant across font sizes, themes and pane widths, and exits non-zero on any
+drift. Run it with `npm run check:geometry` — dev-only, because it needs the running app, so it is
+deliberately not part of CI. Reach for it when a change touches the card's geometry, and copy its shape
+for the next invariant that only a real layout engine can see.
 
 **The procedure a check follows** — its steps, their completion criteria and the rules that keep it on
 this vault — is [`.agents/skills/vault-cdp-testing/SKILL.md`](../.agents/skills/vault-cdp-testing/SKILL.md);

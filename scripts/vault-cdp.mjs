@@ -31,8 +31,8 @@
  *   node scripts/vault-cdp.mjs create-deck "Check A" "Check B"
  *   node scripts/vault-cdp.mjs delete-notes "Check A" "Check B"
  *
- * Or import the primitives into a scratch check script — keep those outside
- * the repository (`/tmp/…`) so no test-shaped file is ever committed:
+ * Or import the primitives into a check script of your own — where such a script
+ * lives is the rule in `.agents/skills/vault-cdp-testing/SKILL.md`:
  *
  *   import { connect, sameArray } from "<repo>/scripts/vault-cdp.mjs";
  *   const cdp = await connect();
@@ -293,8 +293,8 @@ export async function connect(port = Number(process.env.OBSIDIAN_CDP_PORT ?? 922
 
 // ── CLI ────────────────────────────────────────────────────────────────────
 // Small on purpose: the one-shot commands below cover the loop in
-// docs/development.md, while anything multi-step belongs in a scratch script
-// that imports the primitives above.
+// docs/development.md, while anything multi-step belongs in a check script of
+// its own that imports the primitives above.
 
 const isCli =
   process.argv[1] && canonical(process.argv[1]) === canonical(fileURLToPath(import.meta.url));

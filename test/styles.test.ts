@@ -84,15 +84,19 @@ describe("card width basis", () => {
 describe("theme line-width caps", () => {
   it("drops a theme's readable-line-width cap on the card's containing block", () => {
     // `max-width: none` on the container is what keeps the card's `100%` and
-    // the title's `100%` the same number.
-    expect(flat).toMatch(/\.cm-contentContainer\s*\{[^{}]*?max-width:\s*none[^{}]*?\}/);
+    // the title's `100%` the same number. `[{;]` is the declaration boundary
+    // the contract above uses, so `max-width` cannot satisfy a `width`
+    // assertion and vice versa.
+    expect(flat).toMatch(/\.cm-contentContainer\s*\{[^{}]*?[{;]\s*max-width\s*:\s*none\s*;/);
   });
 
   it("pins the card title's own width and margins back to the card's column", () => {
-    // `!important` is load-bearing: Minimal's margin declaration is important
-    // itself, and a theme may mark its width important too.
-    expect(flat).toMatch(/\.inline-title\s*\{[^{}]*?width:\s*auto\s*!important/);
-    expect(flat).toMatch(/\.inline-title\s*\{[^{}]*?max-width:\s*none\s*!important/);
-    expect(flat).toMatch(/\.inline-title\s*\{[^{}]*?margin-inline:\s*0\s*!important/);
+    // Only `margin-inline` is forced: Minimal declares it `!important` itself,
+    // and nothing but `!important` beats that. `width`/`max-width` win on
+    // specificity — this rule (0,9,1) outranks the theme's (0,5,0) — so they
+    // must not carry `!important` (issue #84), exactly like the container rule.
+    expect(flat).toMatch(/\.inline-title\s*\{[^{}]*?[{;]\s*width\s*:\s*auto\s*;/);
+    expect(flat).toMatch(/\.inline-title\s*\{[^{}]*?[{;]\s*max-width\s*:\s*none\s*;/);
+    expect(flat).toMatch(/\.inline-title\s*\{[^{}]*?[{;]\s*margin-inline\s*:\s*0\s*!important\s*;/);
   });
 });

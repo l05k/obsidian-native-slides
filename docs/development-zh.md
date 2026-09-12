@@ -89,8 +89,8 @@ node scripts/vault-cdp.mjs create-deck "Check A" "Check B"
 node scripts/vault-cdp.mjs delete-notes "Check A" "Check B"
 ```
 
-多步验证写在 `import` 它的临时脚本里，并放在**仓库之外**（`/tmp/…`），这样任何「测试形状」的文件都不会
-被提交：
+多步验证写在 `import` 它的脚本里 —— 它该放在 `scripts/` 还是仓库之外的临时文件，规则见
+[`.agents/skills/vault-cdp-testing/SKILL.md`](../.agents/skills/vault-cdp-testing/SKILL.md)：
 
 ```js
 import { connect, sameArray } from "<repo>/scripts/vault-cdp.mjs";
@@ -115,9 +115,10 @@ if (!sameArray(chain, [...linked, []]))
   throw new Error("the frontmatter chain does not follow the panel order");
 ```
 
-**`scripts/check-slide-geometry.mjs` 是「已提交的检查」的范例**：它驱动 App，在多种字号与主题下测量卡片
-标题的不变量，任何漂移都以非零退出码报出。改动涉及卡片几何时直接跑它，下一个「只有真实布局引擎才看得
-到」的不变量也可以照它的形状写。
+**`scripts/check-slide-geometry.mjs` 是「已提交的检查」的范例**：它驱动 App，在多种字号、主题与窗格宽度下
+测量卡片标题的不变量，任何漂移都以非零退出码报出。用 `npm run check:geometry` 运行 —— 仅开发用：它需要
+App 正在运行，因此故意不进 CI。改动涉及卡片几何时直接跑它，下一个「只有真实布局引擎才看得到」的不变量
+也可以照它的形状写。
 
 **一次行为检查遵循的流程**——它的步骤、每步的完成标准，以及把检查留在这个库上的规则——在
 [`.agents/skills/vault-cdp-testing/SKILL.md`](../.agents/skills/vault-cdp-testing/SKILL.md)；本节是它背后的机制。
