@@ -1,6 +1,8 @@
 import { ItemView, Menu, TFile, WorkspaceLeaf } from "obsidian";
 import type NativeSlidesPlugin from "../main";
 import { ConfirmDeleteModal } from "./confirm-delete";
+import { PanelDrag } from "./panel-drag";
+import { planMove, stepInsertAt, type MovePlan } from "./move";
 
 /** View type id of the slides sidebar panel */
 export const SLIDES_PANEL_VIEW = "native-slides-panel";
@@ -14,7 +16,10 @@ export const SLIDES_PANEL_VIEW = "native-slides-panel";
  *   - click            → open that slide (and clear any selection)
  *   - Mod+click        → toggle the item in the selection
  *   - Shift+click      → extend the selection from the last anchor
- *   - right-click      → context menu: Create next slide / Delete slide(s)
+ *   - drag             → move the slide to a gap (the whole selection, when the
+ *                        grabbed slide is part of one) — see src/panel-drag.ts
+ *   - right-click      → context menu: Move up / Move down / Create next slide /
+ *                        Delete slide(s)
  */
 export class SlidesPanelView extends ItemView {
   /** Chain signature of the currently rendered list */
@@ -25,12 +30,25 @@ export class SlidesPanelView extends ItemView {
   private selected = new Set<string>();
   /** Selection anchor for Shift+click range extension */
   private anchor: string | null = null;
+  /** The drag-to-move gesture (pointer handling only — no deck knowledge) */
+  private drag: PanelDrag;
+  /** Whether a move is writing frontmatter right now (renders are held back) */
+  private writing = false;
 
   constructor(
     private plugin: NativeSlidesPlugin,
     leaf: WorkspaceLeaf,
   ) {
     super(leaf);
+    this.drag = new PanelDrag({
+      items: () => this.items,
+      movingFor: (path) => this.movingFor(path),
+      container: () => this.contentEl,
+      onGrab: (path) => this.onGrab(path),
+      willChange: (moving, insertAt) => this.willChange(moving, insertAt),
+      onDrop: (moving, insertAt, snapshot) => void this.applyMove(moving, insertAt, snapshot),
+      onEnd: () => this.render(),
+    });
   }
 
   getViewType(): string {
@@ -57,7 +75,8 @@ export class SlidesPanelView extends ItemView {
   }
 
   async onClose(): Promise<void> {
-    this.containerEl.empty();
+    this.drag.cancel();
+    this.contentEl.empty();
     this.lastChain = [];
     this.items = [];
     this.selected.clear();
@@ -73,11 +92,15 @@ export class SlidesPanelView extends ItemView {
    * their highlight updated, so item elements always survive.
    */
   private render(): void {
+    // A gesture or a move owns the DOM: rebuilding the list mid-drag would
+    // destroy the elements the gesture is measuring, and the move's own
+    // writes fire a burst of metadataCache events. Both paths render once more
+    // when they are done with it — the gesture through `onEnd`, the writes
+    // through `applyMove`'s own render.
+    if (this.drag.active || this.writing) return;
+
     const file = this.app.workspace.getActiveFile();
-    const deck = file ? this.plugin.resolveDeck(file) : null;
-    const chain = deck
-      ? deck.chain.filter((p) => this.app.vault.getAbstractFileByPath(p) instanceof TFile)
-      : [];
+    const chain = this.liveChain(file);
 
     // Drop selections whose note vanished from the chain meanwhile
     if (this.selected.size > 0) {
@@ -95,9 +118,20 @@ export class SlidesPanelView extends ItemView {
     this.syncSelectionClasses();
   }
 
+  /** The deck chain of `file`, limited to slides that exist right now */
+  private liveChain(file: TFile | null): string[] {
+    const deck = file ? this.plugin.resolveDeck(file) : null;
+    return deck
+      ? deck.chain.filter((p) => this.app.vault.getAbstractFileByPath(p) instanceof TFile)
+      : [];
+  }
+
   /** Full rebuild (chain shape changed) */
   private rebuild(chain: string[]): void {
-    const root = this.containerEl;
+    // The items live in the view's own content element — the part Obsidian
+    // scrolls and the only part that is ours to empty (emptying containerEl
+    // would take the view header with it).
+    const root = this.contentEl;
     root.empty();
     this.items = [];
     this.lastChain = chain;
@@ -119,6 +153,7 @@ export class SlidesPanelView extends ItemView {
       item.createSpan({ cls: "native-slides-panel-num" }).setText(String(i + 1));
       item.createSpan({ cls: "native-slides-panel-title" }).setText(f.basename);
       item.addEventListener("click", (e) => this.onItemClick(e, i, f));
+      item.addEventListener("pointerdown", (e) => this.drag.begin(e, path));
       item.addEventListener("contextmenu", (e) => {
         e.preventDefault();
         this.openContextMenu(e, f);
@@ -129,6 +164,9 @@ export class SlidesPanelView extends ItemView {
 
   /** Click routing: plain = open, Mod = toggle select, Shift = range select */
   private onItemClick(e: MouseEvent, index: number, f: TFile): void {
+    // A drag ends with a click on the slide it grabbed — that click moved the
+    // slide, it does not open it.
+    if (this.drag.consumeClick()) return;
     if (e.shiftKey || e.ctrlKey || e.metaKey) {
       if (e.shiftKey) {
         // Range anchor: the last selected item, or the displayed slide
@@ -174,22 +212,105 @@ export class SlidesPanelView extends ItemView {
     for (const it of this.items) it.el.classList.toggle("is-selected", this.selected.has(it.path));
   }
 
+  /**
+   * The slides an action on `path` applies to: the whole selection when `path`
+   * belongs to it, otherwise just that slide. Chain-ordered, and limited to
+   * the slides the deck still holds.
+   */
+  private movingFor(path: string): string[] {
+    if (!this.selected.has(path)) return [path];
+    return this.lastChain.filter((p) => this.selected.has(p));
+  }
+
+  /** A drag started on `path`: a slide outside the selection is dragged alone */
+  private onGrab(path: string): void {
+    if (!this.selected.has(path) && this.selected.size > 0) {
+      this.selected.clear();
+      this.syncSelectionClasses();
+    }
+    this.anchor = path;
+  }
+
+  /** Whether that drop would actually rewire something (a no-op hides the line) */
+  private willChange(moving: string[], insertAt: number): boolean {
+    const plan = planMove(this.lastChain, moving, insertAt);
+    return plan !== null && plan.rewrites.length > 0;
+  }
+
+  /** Move the given slides one step towards `direction` (context menu) */
+  private moveStep(moving: string[], direction: "up" | "down"): void {
+    const insertAt = stepInsertAt(this.lastChain, moving, direction);
+    if (insertAt === null) return;
+    void this.applyMove(moving, insertAt, this.lastChain);
+  }
+
+  /**
+   * Apply a move: plan it against the live chain, then let the deck service
+   * rewire the `deck` links of the slides whose next link changes. `snapshot`
+   * is the chain the gesture (or the menu action) was computed against — when
+   * the deck changed meanwhile the gap index means nothing, so the move is
+   * dropped rather than applied to a deck it no longer describes.
+   */
+  private async applyMove(moving: string[], insertAt: number, snapshot: string[]): Promise<void> {
+    const chain = this.liveChain(this.app.workspace.getActiveFile());
+    if (!chainEquals(chain, snapshot)) return;
+    const plan = planMove(chain, moving, insertAt);
+    if (!plan || plan.rewrites.length === 0) return; // nothing moved — write nothing
+
+    const applied = await this.runMove(plan);
+    // A complete run re-bases the navigation session on the moved chain's
+    // head. A failed one leaves a mixed order behind, and the head the session
+    // entered may now sit mid-chain — forgetting the hint is what lets the next
+    // resolution find the deck's real head again.
+    this.plugin.rememberDeckHead(applied ? (plan.chain[0] ?? null) : null);
+    this.render();
+  }
+
+  /** Run a move with the panel's re-rendering held back for its duration */
+  private async runMove(plan: MovePlan): Promise<boolean> {
+    this.writing = true;
+    try {
+      return await this.plugin.deckService.executeMove(plan);
+    } finally {
+      this.writing = false;
+    }
+  }
+
   /** Right-click menu on one item; operates on the whole selection when it belongs to one */
   private openContextMenu(e: MouseEvent, f: TFile): void {
     const menu = new Menu();
+    const moving = this.movingFor(f.path);
+    const what = moving.length > 1 ? `${moving.length} slides` : "slide";
+
+    // Move up / down act on exactly the set a drag would move, so a selection
+    // stays a block; each is disabled when that set already sits at its end.
+    const up = stepInsertAt(this.lastChain, moving, "up");
+    const down = stepInsertAt(this.lastChain, moving, "down");
+    menu.addItem((mi) =>
+      mi
+        .setTitle(`Move ${what} up`)
+        .setIcon("arrow-up")
+        .setDisabled(up === null)
+        .onClick(() => this.moveStep(moving, "up")),
+    );
+    menu.addItem((mi) =>
+      mi
+        .setTitle(`Move ${what} down`)
+        .setIcon("arrow-down")
+        .setDisabled(down === null)
+        .onClick(() => this.moveStep(moving, "down")),
+    );
     menu.addItem((mi) =>
       mi
         .setTitle("Create next slide")
         .setIcon("plus")
         .onClick(() => void this.createNextAfter(f)),
     );
-    const targets = this.selected.has(f.path) ? [...this.selected] : [f.path];
-    const ordered = this.lastChain.filter((p) => targets.includes(p));
     menu.addItem((mi) =>
       mi
-        .setTitle(ordered.length > 1 ? `Delete ${ordered.length} slides` : "Delete slide")
+        .setTitle(moving.length > 1 ? `Delete ${moving.length} slides` : "Delete slide")
         .setIcon("trash")
-        .onClick(() => this.deleteSlides(ordered)),
+        .onClick(() => this.deleteSlides(moving)),
     );
     menu.showAtMouseEvent(e);
   }

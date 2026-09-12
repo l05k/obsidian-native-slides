@@ -80,6 +80,16 @@ export class NavSession {
     return this.head;
   }
 
+  /**
+   * Re-base the session on a different chain head. A move rewires the deck
+   * around the session, so the head it entered may no longer be the deck's
+   * head (and, still reaching the current note, would walk a truncated chain
+   * from the middle); the caller hands over the new chain's own head.
+   */
+  setHead(head: string | null): void {
+    this.head = head;
+  }
+
   /** Queue a press; the first one starts the drain. Resolves once the queue is empty. */
   push(intent: NavIntent): Promise<void> {
     this.queue.push(intent);

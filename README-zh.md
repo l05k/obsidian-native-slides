@@ -43,6 +43,8 @@ v1.0.0 起不再有概览页——**slides 面板**接管"纵览整套 deck"的�
 
 右键条目弹出来菜单：**Create next slide** —— 与命令行为一致，但相对**被右键的那页**插入（新笔记命名为 `⟨该页名⟩-next`，自动接线，创建后不打开）；**Delete slide** —— 把笔记移入回收站（按设置中的删除位置偏好：库内回收站或系统回收站）并拼接链（前一页的 `deck` 链接直接跨过被删页）。按 `Cmd/Ctrl` 逐张加入/移出选中（移出只能再次 ctrl+click 它），`Shift` 范围选择——范围始终连带你当前查看的那张页；没有已选锚点时第一次 shift+click 就以当前页为起点。右键已选中的条目，菜单显示 **Delete N slides** 一次删除多页。若删除的是当前打开的页，编辑区自动跳到最近的幸存页（优先下一张，其次前一张）。确认弹窗列出将被删除的页名；勾选 **Don't ask again** 或关闭 **设置 → Confirm slide deletion**（默认开）可跳过确认。
 
+**拖动条目即可移动幻灯片**：一条 2px 的强调色横线标出它将要落入的间隙（第一条之上、最后一条之下都算），被移动的条目变暗、一份副本跟随指针，按 `Escape` 取消。若被拖动的条目属于当前选中，则整块选中一起移动（未选中的幻灯片保持相对顺序）；拖动选中之外的条目只移动它自己并清空选中。右键菜单提供同样的两种移动：**Move slide up** / **Move slide down**（移动多张选中时显示 **Move N slides up** / **Move N slides down**）—— 位于链首/链尾时置灰，作用于同一组幻灯片。一次移动只重写「下一条链接确实变了」的那些幻灯片的 `deck` 属性（其余笔记的 frontmatter 一个字节都不动），面板、slides 栏页号与 ◀ ▶ 翻页会立刻跟随新顺序。deck 高于侧边栏时面板可滚动，拖动到面板上下边缘时也会自动滚动。两点需要注意：移动会写 frontmatter，**`Cmd/Ctrl+Z` 无法撤销**——把幻灯片拖回去即可；并且需要面板可见，因为 Slides 模式会隐藏两侧侧边栏，所以排序是编辑期操作。
+
 ## 示例库
 
 演示笔记位于 [`example-vault/`](example-vault/)，这就是要打开的 Obsidian 示例库。它包含一套三页演示套件——`Welcome.md`（核心设计原则的极简介绍，不展示属性列）、**Make it yours（随心定制）**（设置项指引，frontmatter 携带 `series` / `level` / `date` 作为 _Bar properties_ 演示）、`Grow the Deck.md`（最后一页，`deck: []`）——文件名与卡片上展示的标题一致——以及测试笔记用到的 `demo-image.png`。`example-vault/tests/` 下有 `typography-demo.md`（Markdown 全家桶，用于测试 Slides 排版）和五个 `typography-sample-*.md` 笔记（**仅开发版** `Debug: Dump Typography Styles` 命令专用的固定一页采样笔记——请勿改名或删除）。示例库还带一份最小化的 `.obsidian/` 配置——包括演示外观（`baseFontSize` 23、默认主题）和插件的演示设置（Lecture (jyy) 模板、`series, level, date` bar properties）——以及一个插件目录，其中的文件都是**指向仓库根目录的符号链接**——示例库始终运行当前构建。
@@ -72,6 +74,7 @@ v1.0.0 起不再有概览页——**slides 面板**接管"纵览整套 deck"的�
 - `deck` 是**保留属性名**；`position` 键同样保留且不在 slides 栏显示（可留给其它工具使用，不会挤占 slides 栏）。
 - _Previous Page / Next Page_ 的默认快捷键会占用编辑模式下"选择到行首/行尾"的按键，但**仅在 deck 笔记打开时**；普通笔记上不再干扰（这两个命令只在 deck 笔记上生效）。不需要翻页的话，可在 设置 → 快捷键 中移除。
 - YAML 里链接建议**加引号**（`deck: ["[[slide-2]]"]`）——不加引号 `[[...]]` 会被 YAML 解析成嵌套数组（插件能兼容，但规范写法更稳）。
+- 移动幻灯片时，被改写的 `deck` 链接一律写成裸的 `[[文件名]]` 形式（与 **Create Next Slide**、**Delete slide** 相同），因此需要改写的「带路径」或「带别名」链接会失去原有形式。
 - 套件链不能有环；某条链接失效只会终止（或排除）该链，不会报错。
 
 ## 许可证

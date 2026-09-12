@@ -8,7 +8,8 @@
 
 笔记在**源码模式**与**实时预览**下保持完全可读。插件从不改写、重排或在笔记内容中
 注入任何标记——它只**读取**（通过 `metadataCache`）并**渲染 UI**（底部栏、CSS 覆盖）。
-笔记内唯一的痕迹是 `deck` 这个 frontmatter 属性，它本身就是普通、可读的 YAML。
+笔记正文一概不动；插件唯一会写的界面是 `deck` 这个 frontmatter 属性，且只由维护链的
+操作写入——Create Next Slide、Delete slide(s) 与移动幻灯片。它本身就是普通、可读的 YAML。
 
 ## 2. 对 properties 最小侵入
 
@@ -58,7 +59,11 @@ README 中功能背后的具体机制：
 | Create Next Slide                | `planCreateNext()`（纯逻辑核心）算出新文件名、新笔记的 `deck` 链接与改写方案；命令用 `vault.create` + `fileManager.processFrontMatter` 执行，并在编辑模式打开新笔记。仅 deck 笔记可用      |
 | Create New Slide                 | `planCreateNew()`（纯逻辑核心）为新 deck 第一页命名（`untitled-slides`，防重名）；在"新笔记默认位置"以 `deck: []` 创建，其余一概不动。不属于任何 deck 的笔记、空白标签页可用               |
 | Initialize slides with this note | `planMakeFirstSlide()`（纯逻辑核心）以 `deckService.isMember` 把关；命令用 `fileManager.processFrontMatter` 写入 `deck: []`（其余属性原样），等 metadataCache 落盘后再自动进入 Slides 模式 |
+| 移动幻灯片（拖动、Move up/down） | `planMove()`（纯逻辑核心）把「移动哪些、插到哪个间隙」算成要改写的 `deck`；`executeMove()` 写入                                                                                            |
+| Slides 面板滚动                  | 条目挂在 Obsidian 自己会滚动的 view content 里（`min-height: 0` 使其可收缩）；deck 高于侧边栏时在面板内部滚动而不是被裁切——拖动到面板边缘时滚动的正是它                                    |
 | 设置                             | 声明式设置 API（Obsidian ≥ 1.13.0，可被设置搜索索引）+ 传统 `PluginSettingTab` 回退；`loadData/saveData` 持久化开关；快捷键走 Obsidian 原生命令系统                                        |
+
+**移动幻灯片（#124 起）。** 套件本身不存顺序——顺序**就是** next 链接链——所以一次移动只是重连被移动幻灯片周围的 `deck` 链接：`planMove()`（纯逻辑核心）把「这些页、这个间隙」算成「每张 next 链接真的变了的页一条改写」，`DeckService.executeMove()` 负责写入。也正因如此，翻页、页号与 slides 面板都不需要知道发生过移动（[ADR 0001](adr/0001-slide-order-is-the-next-link-chain.md)）。手势本体在 `src/panel-drag.ts`，基于 pointer 事件——4px 阈值让「按下」仍然是点击、浮动副本与间隙指示线、`Escape` 与窗口失焦取消、边缘自动滚动——因为 Obsidian 公开 API 里没有自定义视图可用的拖动移动能力（声明式设置列表的 `onReorder` 只在设置弹窗里渲染）。手势进行中链若已改变则放弃投放；不产生变化的投放不写盘。
 
 **翻页会话（#110 修复起）。** 按键会排队，每一步以上一步的目标为锚点：连按（按键重复、快速点 slides 栏按钮）时一次按键前进一页，而不会被吞成一次打开；已到最后一页时多余按键原地不动。会话会记住它进入时的**链头**，只要该链头仍能到达编辑器中当前这一页，因此共享的 `deck` 链接（两页声明同一下一页）无法在翻页中途把套件换轨，也无法把 _上一页_ 引到别处；slides 栏、幻灯片侧栏与翻页三者走的是同一条链。
 
