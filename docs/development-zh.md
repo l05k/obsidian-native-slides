@@ -115,6 +115,10 @@ if (!sameArray(chain, [...linked, []]))
   throw new Error("the frontmatter chain does not follow the panel order");
 ```
 
+**`scripts/check-slide-geometry.mjs` 是「已提交的检查」的范例**：它驱动 App，在多种字号与主题下测量卡片
+标题的不变量，任何漂移都以非零退出码报出。改动涉及卡片几何时直接跑它，下一个「只有真实布局引擎才看得
+到」的不变量也可以照它的形状写。
+
 **一次行为检查遵循的流程**——它的步骤、每步的完成标准，以及把检查留在这个库上的规则——在
 [`.agents/skills/vault-cdp-testing/SKILL.md`](../.agents/skills/vault-cdp-testing/SKILL.md)；本节是它背后的机制。
 其中三条规则之所以存在，是因为下面三件事各自出过一次：
@@ -188,4 +192,4 @@ triage 映射则位于 `docs/agents/triage-labels.md` 并由 `AGENTS.md` 指向�
 
 源码已拆分到 `src/` 模块（`types`、`mode`、`deck-service`、`panel`、`panel-drag`、`bar`、`commands`、`settings`、`debug`、`deck`、`createNext`、`deleteSlides`、`move`、`nav`、`capacity`、`capacity-core`、`confirm-delete`、`utils`），`main.ts` 仅作编排入口。
 
-`scripts/` 放的是**不属于插件**、也永远不会随发布产出的开发工具（Release 工作流只发布 `main.js`、`manifest.json` 与 `styles.css`）——目前只有 `vault-cdp.mjs`，即上方「通过 CDP 驱动运行中的 App」里的驱动脚本。
+`scripts/` 放的是**不属于插件**、也永远不会随发布产出的开发工具（Release 工作流只发布 `main.js`、`manifest.json` 与 `styles.css`）——`vault-cdp.mjs`（上方「通过 CDP 驱动运行中的 App」里的驱动脚本）与 `check-slide-geometry.mjs`（在运行中的 App 里测量卡片标题几何——#125 背后的不变量，单测看不到）。

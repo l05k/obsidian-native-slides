@@ -130,6 +130,11 @@ if (!sameArray(chain, [...linked, []]))
   throw new Error("the frontmatter chain does not follow the panel order");
 ```
 
+**`scripts/check-slide-geometry.mjs` is the worked example of a committed check**: it drives the app,
+measures the card-title invariant across font sizes and themes, and exits non-zero on any drift. Reach
+for it when a change touches the card's geometry, and copy its shape for the next invariant that only a
+real layout engine can see.
+
 **The procedure a check follows** — its steps, their completion criteria and the rules that keep it on
 this vault — is [`.agents/skills/vault-cdp-testing/SKILL.md`](../.agents/skills/vault-cdp-testing/SKILL.md);
 this section is the mechanism behind it. Three incidents are why three of those rules exist:
@@ -235,5 +240,7 @@ The source is split into `src/` modules (`types`, `mode`, `deck-service`,
 `confirm-delete`, `utils`) with `main.ts` as the orchestration entry point.
 
 `scripts/` holds development tooling that is **not** part of the plugin and never ships in a release
-(the Release workflow publishes `main.js`, `manifest.json` and `styles.css` only) — currently
-`vault-cdp.mjs`, the CDP driver of _Driving the running app over CDP_ above.
+(the Release workflow publishes `main.js`, `manifest.json` and `styles.css` only) — `vault-cdp.mjs`,
+the CDP driver of _Driving the running app over CDP_ above, and `check-slide-geometry.mjs`, which
+measures the card-title geometry in the running app (the invariant behind #125, which no unit test can
+see).

@@ -59,3 +59,40 @@ describe("card width basis", () => {
     expect(flat).not.toMatch(/\(\s*100%\s*-\s*80vw\s*\)/);
   });
 });
+
+/**
+ * Contract for the theme line-width caps (#125).
+ *
+ * The shared basis above only holds while the card and the absolutely
+ * positioned title resolve `100%` against boxes of the same width — the card's
+ * containing block is `.cm-contentContainer`, the title's is `.cm-sizer`. A
+ * theme's readable line width breaks that in two independent ways, and both
+ * are pinned here because both produced a drifted title and a clipped rule:
+ *
+ *   - Blue Topaz caps `.cm-contentContainer` (`--file-line-width`), shrinking
+ *     the card and parking it against the pane's left edge;
+ *   - Minimal restyles `.inline-title` itself (`width: var(--line-width)`,
+ *     `max-width: var(--max-width)`, `margin-inline: … !important`), which
+ *     replaces the left/right box with a 40rem box centred on the sizer.
+ *
+ * As in the contract above, these are CSS-text assertions: the failure is pure
+ * layout and there is no layout engine here. The **computed geometry** is
+ * verified in the running app by `scripts/check-slide-geometry.mjs`, which
+ * measures the title box against the card's text column across font sizes and
+ * themes and exits non-zero on any drift.
+ */
+describe("theme line-width caps", () => {
+  it("drops a theme's readable-line-width cap on the card's containing block", () => {
+    // `max-width: none` on the container is what keeps the card's `100%` and
+    // the title's `100%` the same number.
+    expect(flat).toMatch(/\.cm-contentContainer\s*\{[^{}]*?max-width:\s*none[^{}]*?\}/);
+  });
+
+  it("pins the card title's own width and margins back to the card's column", () => {
+    // `!important` is load-bearing: Minimal's margin declaration is important
+    // itself, and a theme may mark its width important too.
+    expect(flat).toMatch(/\.inline-title\s*\{[^{}]*?width:\s*auto\s*!important/);
+    expect(flat).toMatch(/\.inline-title\s*\{[^{}]*?max-width:\s*none\s*!important/);
+    expect(flat).toMatch(/\.inline-title\s*\{[^{}]*?margin-inline:\s*0\s*!important/);
+  });
+});
