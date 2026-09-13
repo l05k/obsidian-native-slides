@@ -4,7 +4,8 @@
   "description": "Slides mode for Obsidian deck notes: an immersive, editable card view with a bottom bar for properties and PPT-style deck navigation — one `deck` property drives prev/next and auto-computed page numbers.",
   "main": "main.js",
   "scripts": {
-    "build": "esbuild main.ts --bundle --format=cjs --external:obsidian --outfile=main.js --sourcemap=inline --define:DEV_MODE=true",
+    "build": "esbuild main.ts --bundle --format=cjs --external:obsidian --outfile=main.js --sourcemap=inline --minify --define:DEV_MODE=false",
+    "build:dev": "esbuild main.ts --bundle --format=cjs --external:obsidian --outfile=main.js --sourcemap=inline --define:DEV_MODE=true",
     "build:release": "esbuild main.ts --bundle --format=cjs --external:obsidian --outfile=main.js --sourcemap=inline --minify --define:DEV_MODE=false",
     "dev": "esbuild main.ts --bundle --format=cjs --external:obsidian --outfile=main.js --sourcemap=inline --watch=forever --define:DEV_MODE=true",
     "check": "tsc --noEmit",
@@ -18,11 +19,14 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.13.4",
-    "esbuild": "^0.24.0",
+    "esbuild": "^0.28.2",
     "eslint": "^10.8.1",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-obsidianmd": "^0.4.2",
     "obsidian": "^1.7.2",
     "prettier": "^3.9.6",
+    "stylelint": "^17.15.0",
+    "stylelint-config-obsidianmd": "^0.1.0",
     "typescript": "^5.6.0",
     "typescript-eslint": "^8.67.0",
     "vitest": "^2.1.9"

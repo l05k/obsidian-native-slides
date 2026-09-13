@@ -138,7 +138,22 @@ body.native-slides-pointer-hidden * {
   flex-shrink: 0;
 }
 .native-slides-nav-btn {
-  all: unset;
+  /* Explicit resets in place of `all: unset` — the `all` property is flagged
+     by the community scanner, and `all: unset` also cleared Obsidian's own
+     `box-sizing` (content-box) by accident. Every property below is one
+     Obsidian's own `button` styling sets; the button's visual is then the
+     same as before. */
+  appearance: none;
+  box-sizing: content-box;
+  margin: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  text-decoration: none;
+  /* The button's own look follows. */
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -406,13 +421,13 @@ body.native-slides-mode
 body.native-slides-mode.native-slides-block-images
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
-  .cm-line:has(> img:not(.cm-widgetBuffer))
-  img:not(.cm-widgetBuffer),
+  .cm-line
+  > img:not(.cm-widgetBuffer),
 body.native-slides-mode.native-slides-block-images
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
   .cm-line
-  .internal-embed:has(img),
+  .internal-embed.media-embed,
 body.native-slides-mode.native-slides-block-images
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
@@ -797,7 +812,7 @@ body.native-slides-mode.native-slides-theme-jyy {
 body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
-  .cm-line:has(.cm-formatting-list) {
+  .cm-line.HyperMD-list-line:not(.HyperMD-task-line) {
   padding-block: 0.125em !important;
 }
 body.native-slides-mode
@@ -960,7 +975,7 @@ body.native-slides-mode
 body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
-  .cm-line:has(.cm-formatting-list) {
+  .cm-line.HyperMD-list-line:not(.HyperMD-task-line) {
   line-height: 1.25;
 }
 /* Disc bullets: the wiki uses list-style-position: inside, so its disc sits
@@ -974,14 +989,16 @@ body.native-slides-mode
 body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
-  .cm-line:not(.cm-active):has(.cm-formatting-list-ul)
+  .cm-line:not(.cm-active)
+  .cm-formatting-list-ul
   .list-bullet {
   position: relative;
 }
 body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
-  .cm-line:not(.cm-active):has(.cm-formatting-list-ul)
+  .cm-line:not(.cm-active)
+  .cm-formatting-list-ul
   .list-bullet
   .cm-formatting-list {
   color: transparent !important;
@@ -989,7 +1006,8 @@ body.native-slides-mode
 body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
-  .cm-line:not(.cm-active):has(.cm-formatting-list-ul)
+  .cm-line:not(.cm-active)
+  .cm-formatting-list-ul
   .list-bullet::before {
   display: none !important;
   content: none !important;
@@ -997,7 +1015,8 @@ body.native-slides-mode
 body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
-  .cm-line:not(.cm-active):has(.cm-formatting-list-ul)
+  .cm-line:not(.cm-active)
+  .cm-formatting-list-ul
   .list-bullet::after {
   content: "" !important;
   position: absolute;
