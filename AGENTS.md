@@ -55,7 +55,7 @@ An agent never reviews its own work, and no longer waits for a human to merge it
 
 ## Rule 3 — Test in `example-vault/`, never in another vault
 
-Every behavioural check runs against the repository's own **`example-vault/`** — never against another vault, and in particular never against the maintainer's notes vault, which holds real notes. `example-vault/` is wired to the repository root with symlinks, so it always runs the build you just made and `npm run build` plus a plugin reload is the whole loop.
+Every behavioural check runs against the repository's own **`example-vault/`** — never against another vault, and in particular never against the maintainer's notes vault, which holds real notes. `example-vault/` is wired to the repository root with symlinks, so it always runs the build you just made and `npm run build:dev` plus a plugin reload is the whole loop.
 
 - Create scratch notes inside `example-vault/` when a check needs them, and remove them when you are done. The `Probe*.md` / `test.md` / `untitled-slides.md` slides and the `tests/typography-*.md` fixtures are **not yours to delete** (`src/debug.ts` hard-codes five of those fixture names).
 - Obsidian rewrites the vault's tracked configuration while it runs (`appearance.json`, `community-plugins.json`, `core-plugins.json`): `git restore -- example-vault/.obsidian` before switching branches or opening a PR, and re-check `git status` afterwards.

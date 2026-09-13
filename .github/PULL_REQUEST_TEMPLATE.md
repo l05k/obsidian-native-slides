@@ -18,7 +18,7 @@ Fixes #(issue number)
 
 ## Checklist
 
-- [ ] `npm run build` passes (main.js is up to date)
+- [ ] `npm run build` passes (the committed release `main.js` is up to date)
 - [ ] `npm run check` passes (TypeScript)
 - [ ] `npm test` passes (unit tests)
 - [ ] `npm run lint` passes (ESLint)

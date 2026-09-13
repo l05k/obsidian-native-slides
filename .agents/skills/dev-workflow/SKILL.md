@@ -52,7 +52,7 @@ git merge origin/main
   npm run test         # vitest unit tests
   npm run lint         # ESLint
   npm run format:check # Prettier
-  npm run build        # compile main.ts → main.js
+  npm run build        # the release build → the committed main.js
   ```
 
 - Never open a PR that is behind or in conflict with `origin/main`.
@@ -165,10 +165,10 @@ Patch vs minor: read `[Unreleased]`. Only `### Fixed` (a bug-fix issue) → patc
 
 - the five sites agree, and `versions.json[version]` equals `minAppVersion`;
 - `[Unreleased]` is genuinely empty and the new section is dated correctly;
-- **Prettier first, then `npm run build`** (`npm run format` / `format:check`, then build) so the committed dev `main.js` is not left stale — a version bump alone leaves `main.js` byte-identical, which is expected;
+- **Prettier first, then `npm run build`** (`npm run format` / `format:check`, then build) so the committed release `main.js` is not left stale — a version bump alone leaves `main.js` byte-identical, which is expected;
 - the **five** checks: `check` / `test` / `lint` / `format:check` / `build`, plus `git diff --exit-code -- main.js`;
 - simulate the workflow's own notes extraction, because a mistyped tag or heading fails the release job — the same `awk` program, with the tag substituted: `awk -v ver=X.Y.Z '/^## \[/ { if (found) exit; if ($0 ~ "\\[" ver "\\]") { found=1; next } } found { print }' CHANGELOG.md` must print the section. The `awk` alone exits 0 with empty output, so the workflow's real gate is the `[ ! -s release-notes.md ]` check right after it — an empty extraction is what fails the job;
-- `npm run build:release` succeeds, run **from the repository root** (then `npm run build` to restore the dev bundle, and confirm `git diff --exit-code -- main.js`). An out-of-repo `--outfile` produces a different bundle, because the inline sourcemap's `sources` are written relative to the output directory.
+- `npm run build:release` succeeds, run **from the repository root** (then `npm run build` to restore the committed release bundle, and confirm `git diff --exit-code -- main.js`). An out-of-repo `--outfile` produces a different bundle, because the inline sourcemap's `sources` are written relative to the output directory.
 
 **3. PR and hand it over** — branch → PR → the maintainer reviews and merges. Say explicitly in the PR body that this is the step you are leaving to them; do not self-merge a release PR, and do not tag before it is merged. (This is Rule 2's one exception: the review loop still runs, the merge does not.)
 
@@ -192,7 +192,7 @@ Tagging from the release branch tip puts the tag on a commit outside `main` (rel
 - `gh run list` / `gh run watch <run-id>` — the Release workflow (checks → `build:release` → attestation → create release) must be `success`;
 - `gh release view <version>` — three assets (`main.js`, `manifest.json`, `styles.css`), and `gh api repos/<owner>/<repo>/releases/latest` reports this version;
 - download the published `manifest.json` and check its `version`;
-- **prove the published bundle matches the source**: download the release's `main.js` and compare its `sha256` with a local `npm run build:release` run from the same tree — they are byte-identical, because the workflow builds from the tag and esbuild is deterministic for one lockfile. Report the hash, and **restore the dev bundle afterwards** (`npm run build`, then `git diff --exit-code -- main.js`): the comparison leaves the tracked `main.js` as the minified release artifact, which is exactly the stale state step 2 exists to prevent.
+- **prove the published bundle matches the source**: download the release's `main.js` and compare its `sha256` with a local `npm run build:release` run from the same tree — they are byte-identical, because the workflow builds from the tag and esbuild is deterministic for one lockfile. Report the hash, and **leave the committed release bundle in place** (`npm run build`, then `git diff --exit-code -- main.js`): the comparison writes the minified release artifact, and since `npm run build` _is_ the release build, that is exactly the state the tracked `main.js` must be in — the diff must be clean, and `npm run build:dev` is for a reload loop only.
 
 **6. If the tag landed in the wrong place**, re-point it (the tree and artifacts do not change):
 

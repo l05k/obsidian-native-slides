@@ -68,29 +68,14 @@
  * See docs/development.md#driving-the-running-app-over-cdp.
  */
 
-import { connect, sleep } from "./vault-cdp.mjs";
+import { connect, parseArgs, printVaultReminder, sleep } from "./vault-cdp.mjs";
 
-const args = { sizes: "10,12,18,23,30,40", note: "Grow the Deck", theme: [], tolerance: 0.5 };
-for (let i = 2; i < process.argv.length; i += 2) {
-  const flag = process.argv[i];
-  const value = process.argv[i + 1];
-  if (!flag?.startsWith("--")) {
-    console.error(`check-slide-geometry: unexpected argument ${flag}`);
-    process.exit(2);
-  }
-  const key = flag.slice(2);
-  if (value === undefined) {
-    console.error(`check-slide-geometry: --${key} needs a value`);
-    process.exit(2);
-  }
-  if (key === "theme") args.theme.push(value);
-  else if (key === "tolerance") args.tolerance = Number(value);
-  else if (key in args) args[key] = value;
-  else {
-    console.error(`check-slide-geometry: unknown flag --${key}`);
-    process.exit(2);
-  }
-}
+const { args } = parseArgs({
+  defaults: { sizes: "10,12,18,23,30,40", note: "Grow the Deck", theme: [], tolerance: 0.5 },
+  name: "check-slide-geometry",
+  numeric: ["tolerance"],
+  repeatable: ["theme"],
+});
 const SIZES = args.sizes.split(",").map(Number);
 if (SIZES.some((n) => !Number.isFinite(n) || n <= 0)) {
   console.error(`check-slide-geometry: --sizes must be positive numbers, got ${args.sizes}`);
@@ -392,20 +377,17 @@ function restore() {
 }
 
 /** The tracked files this run rewrites, and the one command that puts them back */
-function printVaultReminder() {
-  console.log(
-    "note: this run rewrote example-vault/.obsidian/appearance.json and\n" +
-      "      example-vault/.obsidian/plugins/native-slides/data.json (both tracked) — restore them\n" +
-      "      with `git restore -- example-vault/.obsidian`.",
-  );
-}
+const VAULT_FILES = [
+  "example-vault/.obsidian/appearance.json",
+  "example-vault/.obsidian/plugins/native-slides/data.json",
+];
 
 // Ctrl-C mid-run must not leave the vault mutated: the same restore the `finally`
 // runs, then a non-zero exit either way.
 process.on("SIGINT", () => {
   console.error("\ninterrupted — restoring the vault state before exiting");
   restore().then((ok) => {
-    printVaultReminder();
+    printVaultReminder(VAULT_FILES);
     process.exit(ok ? 130 : 1);
   });
 });
@@ -583,5 +565,5 @@ if (checked === 0) {
 if (exitCode === 0) {
   console.log(`\n${checked} measurements, no drift beyond ${args.tolerance}px`);
 }
-printVaultReminder();
+printVaultReminder(VAULT_FILES);
 process.exit(exitCode);

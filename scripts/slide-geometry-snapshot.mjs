@@ -20,44 +20,36 @@
  * It drives `example-vault/` through scripts/vault-cdp.mjs (see
  * docs/development.md#driving-the-running-app-over-cdp): the app must be
  * running with `--remote-debugging-port=9222` and that vault open. It opens the
- * notes it measures, leaves Slides mode and the theme as it found them, and
- * needs no vault writes.
+ * notes it measures, and leaves Slides mode, the theme, the font size, the
+ * right split and the open note as it found them. Two of those writes land in
+ * one **tracked** file — `example-vault/.obsidian/appearance.json` (theme, font
+ * size) — so the restore puts the values back while the file stays rewritten:
+ * `git restore -- example-vault/.obsidian` afterwards, as the reminder printed
+ * when the run ends says.
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
-import { connect, sleep } from "./vault-cdp.mjs";
+import {
+  captureVaultState,
+  connect,
+  parseArgs,
+  printVaultReminder,
+  restoreVaultState,
+  sleep,
+} from "./vault-cdp.mjs";
 
-const args = {
-  notes: "tests/typography-demo,Grow the Deck",
-  theme: "",
-  size: 23,
-  tolerance: 0.5,
-  out: "",
-  diff: "",
-};
-for (let i = 2; i < process.argv.length; i += 2) {
-  const flag = process.argv[i];
-  const value = process.argv[i + 1];
-  if (!flag?.startsWith("--")) {
-    console.error(`slide-geometry-snapshot: unexpected argument ${flag}`);
-    process.exit(2);
-  }
-  const key = flag.slice(2);
-  if (value === undefined) {
-    console.error(`slide-geometry-snapshot: --${key} needs a value`);
-    process.exit(2);
-  }
-  if (key === "notes") args.notes = value;
-  else if (key === "theme") args.theme = value;
-  else if (key === "size") args.size = Number(value);
-  else if (key === "tolerance") args.tolerance = Number(value);
-  else if (key === "out") args.out = value;
-  else if (key === "diff") args.diff = value;
-  else {
-    console.error(`slide-geometry-snapshot: unknown flag --${key}`);
-    process.exit(2);
-  }
-}
+const { args } = parseArgs({
+  defaults: {
+    notes: "tests/typography-demo,Grow the Deck",
+    theme: "",
+    size: 23,
+    tolerance: 0.5,
+    out: "",
+    diff: "",
+  },
+  name: "slide-geometry-snapshot",
+  numeric: ["size", "tolerance"],
+});
 
 /**
  * Everything the card's layout is made of, rounded to 0.01px so sub-pixel
@@ -184,16 +176,7 @@ const snapshot = { notes: {} };
 let restore = null;
 
 try {
-  restore = await cdp.eval(`(() => {
-    const plugin = app.plugins.plugins["native-slides"];
-    return {
-      theme: app.vault.getConfig("cssTheme"),
-      baseFontSize: app.vault.getConfig("baseFontSize"),
-      slidesMode: document.body.classList.contains("native-slides-mode"),
-      pane: app.workspace.rightSplit.collapsed ? "collapsed" : "expanded",
-      activeNote: app.workspace.getActiveFile()?.path ?? null,
-    };
-  })()`);
+  restore = await captureVaultState(cdp);
 
   await cdp.eval(`(async () => {
     app.customCss.setTheme(${JSON.stringify(args.theme)});
@@ -227,27 +210,13 @@ try {
   }
 } finally {
   if (restore) {
-    await cdp
-      .eval(
-        `(async () => {
-        const plugin = app.plugins.plugins["native-slides"];
-        app.customCss.setTheme(${JSON.stringify(restore.theme)});
-        app.vault.setConfig("baseFontSize", ${restore.baseFontSize});
-        if (!${restore.slidesMode} && document.body.classList.contains("native-slides-mode")) plugin.toggleSlides();
-        if (${restore.pane === "expanded"}) app.workspace.rightSplit.expand();
-        if (${JSON.stringify(restore.activeNote)} && ${JSON.stringify(restore.activeNote)} !== (app.workspace.getActiveFile()?.path ?? null)) {
-          const file = app.vault.getAbstractFileByPath(${JSON.stringify(restore.activeNote)});
-          if (file) await app.workspace.getLeaf(false).openFile(file);
-        }
-        plugin.refresh();
-        await new Promise((r) => setTimeout(r, 400));
-        return true;
-      })()`,
-      )
-      .catch((error) => console.error(`could not restore the vault state: ${String(error)}`));
+    await restoreVaultState(cdp, restore).catch((error) =>
+      console.error(`could not restore the vault state: ${String(error)}`),
+    );
   }
   cdp.ws.close();
 }
+printVaultReminder(["example-vault/.obsidian/appearance.json"]);
 
 if (args.diff) {
   const before = JSON.parse(readFileSync(args.diff, "utf8"));

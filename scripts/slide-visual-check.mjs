@@ -27,57 +27,46 @@
  * with `--remote-debugging-port=9222` and that vault open. The theme, font size,
  * plugin settings, Slides mode and the active note are restored afterwards; the
  * tracked `example-vault/.obsidian` files it rewrites are reported at the end.
+ *
+ * `--diff` shells out to `python3` with **Pillow** on `PATH` — the only part of
+ * the repository that needs Python — so a missing interpreter is an error, not
+ * a pass: an empty comparison (no `*.png` on either side) fails rather than
+ * reporting "no visual difference".
  */
 
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { connect, sleep } from "./vault-cdp.mjs";
+import {
+  captureVaultState,
+  connect,
+  parseArgs,
+  printVaultReminder,
+  restoreVaultState,
+  sleep,
+} from "./vault-cdp.mjs";
 
-const args = {
-  notes: "tests/typography-demo,tests/typography-sample-list,Grow the Deck",
-  schemes: "light,dark",
-  width: 1440,
-  height: 900,
-  theme: "",
-  size: 23,
-  out: "",
-  diff: "",
-  maxDiff: 0,
-  tolerance: 0,
-};
-const positional = [];
-for (let i = 2; i < process.argv.length; i += 2) {
-  const flag = process.argv[i];
-  const value = process.argv[i + 1];
-  if (!flag?.startsWith("--")) {
-    positional.push(flag);
-    i--;
-    continue;
-  }
-  const key = flag.slice(2);
-  if (value === undefined) {
-    console.error(`slide-visual-check: --${key} needs a value`);
-    process.exit(2);
-  }
-  if (
-    key === "width" ||
-    key === "height" ||
-    key === "size" ||
-    key === "maxDiff" ||
-    key === "tolerance"
-  ) {
-    args[key] = Number(value);
-  } else if (key in args) args[key] = value;
-  else {
-    console.error(`slide-visual-check: unknown flag --${key}`);
-    process.exit(2);
-  }
-}
+const { args, positional } = parseArgs({
+  defaults: {
+    notes: "tests/typography-demo,tests/typography-sample-list,Grow the Deck",
+    schemes: "light,dark",
+    width: 1440,
+    height: 900,
+    theme: "",
+    size: 23,
+    out: "",
+    diff: "",
+    maxDiff: 0,
+    tolerance: 0,
+  },
+  name: "slide-visual-check",
+  numeric: ["width", "height", "size", "maxDiff", "tolerance"],
+  allowPositional: true,
+});
 
 // ── diff mode: compare two capture directories with PIL ────────────────────
 if (args.diff) {
-  const [left, right] = [args.diff, positional[0] ?? process.argv[positional.length + 2]];
+  const [left, right] = [args.diff, positional[0]];
   if (!left || !right) {
     console.error("slide-visual-check: --diff <dirA> <dirB>");
     process.exit(2);
@@ -87,6 +76,19 @@ if (args.diff) {
       console.error(`slide-visual-check: no such capture directory: ${dir}`);
       process.exit(2);
     }
+  }
+  // An empty comparison is not a pass. The name set below is the *union* of
+  // both directories, so two empty directories would report "no visual
+  // difference" and exit 0 — the one silent way this gate could be satisfied
+  // without comparing anything.
+  const present = [left, right].flatMap((dir) =>
+    readdirSync(dir).filter((file) => file.endsWith(".png")),
+  );
+  if (present.length === 0) {
+    console.error(
+      `slide-visual-check: no *.png in ${left} or ${right} — refusing to report "no visual difference" for an empty comparison`,
+    );
+    process.exit(1);
   }
   const program = `
 import json, sys
@@ -180,7 +182,7 @@ if (!args.out) {
 
 const cdp = await connect();
 let restore = null;
-const shots = [];
+let captured = 0;
 
 try {
   // Pin everything the layout depends on, so a difference between two captures
@@ -191,18 +193,7 @@ try {
     deviceScaleFactor: 1,
     mobile: false,
   });
-  restore = await cdp.eval(`(() => {
-    const plugin = app.plugins.plugins["native-slides"];
-    return {
-      theme: app.vault.getConfig("cssTheme"),
-      baseFontSize: app.vault.getConfig("baseFontSize"),
-      slidesMode: document.body.classList.contains("native-slides-mode"),
-      pane: app.workspace.rightSplit.collapsed ? "collapsed" : "expanded",
-      activeNote: app.workspace.getActiveFile()?.path ?? null,
-      settings: { ...plugin.settings },
-      colorScheme: app.isDarkMode() ? "dark" : "light",
-    };
-  })()`);
+  restore = await captureVaultState(cdp, { pluginSettings: true });
 
   await cdp.eval(`(async () => {
     const plugin = app.plugins.plugins["native-slides"];
@@ -226,16 +217,15 @@ try {
 
   // Focus state is part of the visual: a `.cm-active` line carries a
   // background tint and one extra pixel of layout, so a previous run that
-  // left the caret on a task line will not match a run that did not. Clear it
-  // here so every capture starts from the same line in the same state.
+  // left the caret on a task line will not match a run that did not. Slides
+  // mode and the leaf set are settled once here; the caret is dropped out of
+  // the document **after every note is opened** (below), because the open
+  // itself focuses the editor again.
   await cdp.eval(`(async () => {
     const plugin = app.plugins.plugins["native-slides"];
-    // Make sure we are in Slides mode (the user may have left it), then drop
-    // the caret out of the document by moving focus to the body.
+    // Make sure we are in Slides mode (the user may have left it).
     if (!document.body.classList.contains("native-slides-mode")) plugin.toggleSlides();
     await new Promise((r) => setTimeout(r, 400));
-    document.body.focus();
-    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     // Collapse any extra leaves the test may have left open.
     for (const leaf of [...app.workspace.getLeavesOfType("markdown")]) {
       if (leaf !== app.workspace.activeLeaf) leaf.detach();
@@ -269,14 +259,22 @@ try {
     .map((s) => s.trim())
     .filter(Boolean)) {
     await cdp.open(note);
-    await cdp.eval(`(async () => {
+    await cdp.eval(
+      `(async () => {
       const plugin = app.plugins.plugins["native-slides"];
       if (!document.body.classList.contains("native-slides-mode")) plugin.toggleSlides();
       await new Promise((r) => setTimeout(r, 700));
       plugin.refresh();
       await new Promise((r) => setTimeout(r, 400));
+      // Opening the note focuses the editor and puts a caret on some line; the
+      // active line carries a background tint and one extra pixel of layout.
+      // Drop focus out of the document again so this shot starts from the same
+      // state as the last one.
+      document.body.focus();
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       return true;
-    })()`);
+    })()`,
+    );
 
     for (const scheme of args.schemes
       .split(",")
@@ -298,6 +296,7 @@ try {
       // out light: the shutter fired before `app.changeTheme` had landed.
       let previous = null;
       let settled = null;
+      let last = null;
       for (let i = 0; i < 80; i++) {
         const probe = await cdp.eval(
           `(() => {
@@ -312,9 +311,17 @@ try {
             // (what the styles key off) lands a moment later, so an app-state
             // predicate reports dark over a still-light page.
             const dark = document.body.classList.contains("theme-dark");
+            // Which note is open, too: a stale leaf or a leaf the open did not
+            // land in would otherwise be invisible to this predicate as long
+            // as the line count happened to be stable (the 221-pixel false
+            // drift this check was written to catch came from exactly that).
+            const note = app.workspace.getActiveFile()?.path ?? "(none)";
             return {
               dark,
+              note,
+              wantsNote: note === ${JSON.stringify(note)} || note === ${JSON.stringify(`${note}.md`)},
               key: [
+                note,
                 Math.round(r.width), Math.round(r.height), Math.round(r.top),
                 bar ? Math.round(bar.height) : -1,
                 document.querySelectorAll(".cm-line").length,
@@ -337,7 +344,8 @@ try {
           await sleep(200);
           continue;
         }
-        if (probe.key === previous && probe.dark === wantDark) {
+        last = probe;
+        if (probe.key === previous && probe.dark === wantDark && probe.wantsNote) {
           settled = probe;
           break;
         }
@@ -346,7 +354,7 @@ try {
       }
       if (!settled) {
         throw new Error(
-          `the ${scheme} scheme never settled on "${note}" — refusing to capture a shot whose scheme is not the one requested`,
+          `the ${scheme} scheme never settled on "${note}" (active note: ${last?.note ?? "(none)"}, dark: ${last?.dark ?? "?"}) — refusing to capture a shot that is not the note and scheme requested`,
         );
       }
       const shot = await cdp.send("Page.captureScreenshot", {
@@ -355,43 +363,32 @@ try {
       });
       const name = `${note.replace(/[^\w.-]+/g, "_")}__${scheme}.png`;
       writeFileSync(join(args.out, name), Buffer.from(shot.data, "base64"));
-      shots.push(name);
+      captured += 1;
       console.log(`captured ${name}`);
     }
   }
 } finally {
   if (restore) {
-    await cdp
-      .eval(
-        `(async () => {
-        const plugin = app.plugins.plugins["native-slides"];
-        document.getElementById("ns-visual-check-freeze")?.remove();
-        app.customCss.setTheme(${JSON.stringify(restore.theme)});
-        app.vault.setConfig("baseFontSize", ${restore.baseFontSize});
-        app.changeTheme(${JSON.stringify(restore.colorScheme === "dark" ? "obsidian" : "moonstone")});
-        plugin.settings = ${JSON.stringify(restore.settings)};
-        await plugin.saveSettings();
-        if (!${restore.slidesMode} && document.body.classList.contains("native-slides-mode")) plugin.toggleSlides();
-        if (${restore.pane === "expanded"}) app.workspace.rightSplit.expand();
-        if (${JSON.stringify(restore.activeNote)}) {
-          const file = app.vault.getAbstractFileByPath(${JSON.stringify(restore.activeNote)});
-          if (file) await app.workspace.getLeaf(false).openFile(file);
-        }
-        plugin.refresh();
-        await new Promise((r) => setTimeout(r, 500));
-        return true;
-      })()`,
-      )
-      .catch((error) => console.error(`could not restore the vault state: ${String(error)}`));
+    await cdp.eval(`document.getElementById("ns-visual-check-freeze")?.remove()`).catch(() => {});
+    await restoreVaultState(cdp, restore).catch((error) =>
+      console.error(`could not restore the vault state: ${String(error)}`),
+    );
   }
   await cdp.send("Emulation.clearDeviceMetricsOverride").catch(() => {});
   cdp.ws.close();
 }
 
 const written = readdirSync(args.out).filter((f) => f.endsWith(".png"));
-console.log(`\n${written.length} screenshot(s) in ${args.out}`);
 console.log(
-  "note: this run rewrote example-vault/.obsidian/appearance.json and\n" +
-    "      example-vault/.obsidian/plugins/native-slides/data.json (both tracked) — restore them\n" +
-    "      with `git restore -- example-vault/.obsidian`.",
+  `\n${captured} screenshot(s) written to ${args.out} (${written.length} *.png there now)`,
 );
+if (captured === 0) {
+  console.error(
+    `slide-visual-check: captured nothing into ${args.out} — refusing to report success`,
+  );
+  process.exit(1);
+}
+printVaultReminder([
+  "example-vault/.obsidian/appearance.json",
+  "example-vault/.obsidian/plugins/native-slides/data.json",
+]);

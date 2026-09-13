@@ -15,8 +15,8 @@
 
 ```sh
 npm ci             # 仅首次需要（下载 esbuild 等）
-npm run build      # 编译 main.ts → main.js（开发版：含 debug 命令）
-npm run build:release  # 发布版：压缩并移除 debug 命令
+npm run build:dev  # 编译 main.ts → main.js（开发版：含 debug 命令）
+npm run build      # 发布版：压缩并移除 debug 命令（= npm run build:release）
 npm run check      # 可选：TypeScript 类型检查（tsc --noEmit）
 npm run test       # 可选：vitest 单元测试
 npm run lint       # 可选：ESLint
@@ -39,7 +39,7 @@ npm run dev        # 监听 main.ts，变更时自动重建 main.js
 仓库根目录的**软链接**（`main.js`、`manifest.json`、`styles.css`），因此永远跑的就是你刚构建的版本。
 切勿让 agent、脚本或手工测试去碰存放真实笔记的库。
 
-- **循环**：`npm run build`（改代码时 `npm run dev`）→ 在 Obsidian 里重载插件
+- **循环**：`npm run build:dev`（改代码时 `npm run dev`）→ 在 Obsidian 里重载插件
   （`Cmd/Ctrl+P` → **Reload app without saving**）→ 验证。见上方「开发循环」。
 - **临时笔记**：验证需要时在 `example-vault/` 里新建，用完删掉 —— 不要把测试文件留在库里。
   `Probe*.md` / `test.md` / `untitled-slides.md` 是维护者的草稿幻灯片，不要去动。
@@ -188,9 +188,14 @@ triage 映射则位于 `docs/agents/triage-labels.md` 并由 `AGENTS.md` 指向�
 
 排版测量工具以**仅开发版**命令的形式提供，发布构建中不包含。
 
-- **开发构建**（`npm run build` / `npm run dev`）会注册 `Debug: Dump Typography Styles` 命令：在**编辑与阅读两种视图**各采样一次当前笔记、计算差异，并写入 vault 根目录的 `.native-slides-debug.json`（无需手动复制控制台输出）。在开启 Slides 模式的 deck 笔记上运行；`example-vault/` 里五个 `typography-sample-*.md` 是它的固定一页采样夹具——请勿改名或删除。
-- **发布构建**（`npm run build:release`）会压缩 `main.js`，并通过 `--define:DEV_MODE=false` + tree-shaking 彻底移除 debug 命令及其支撑代码。发布后执行 `npm run build` 即可恢复开发版产物。
+- **开发构建**（`npm run build:dev` / `npm run dev`）会注册 `Debug: Dump Typography Styles` 命令：在**编辑与阅读两种视图**各采样一次当前笔记、计算差异，并写入 vault 根目录的 `.native-slides-debug.json`（无需手动复制控制台输出）。在开启 Slides 模式的 deck 笔记上运行；`example-vault/` 里五个 `typography-sample-*.md` 是它的固定一页采样夹具——请勿改名或删除。
+- **发布构建**（`npm run build` / `npm run build:release`）会压缩 `main.js`，并通过 `--define:DEV_MODE=false` + tree-shaking 彻底移除 debug 命令及其支撑代码。发布后执行 `npm run build:dev` 即可恢复开发版产物；提交进仓库的 `main.js` 必须是 `npm run build`（发布版）。
 
 源码已拆分到 `src/` 模块（`types`、`mode`、`deck-service`、`panel`、`panel-drag`、`bar`、`commands`、`settings`、`debug`、`deck`、`createNext`、`deleteSlides`、`move`、`nav`、`capacity`、`capacity-core`、`confirm-delete`、`utils`），`main.ts` 仅作编排入口。
 
-`scripts/` 放的是**不属于插件**、也永远不会随发布产出的开发工具（Release 工作流只发布 `main.js`、`manifest.json` 与 `styles.css`）——`vault-cdp.mjs`（上方「通过 CDP 驱动运行中的 App」里的驱动脚本）与 `check-slide-geometry.mjs`（在运行中的 App 里测量卡片标题几何——#125 背后的不变量，单测看不到）。
+`scripts/` 放的是**不属于插件**、也永远不会随发布产出的开发工具（Release 工作流只发布 `main.js`、`manifest.json` 与 `styles.css`）：
+
+- **`vault-cdp.mjs`** —— 上方「通过 CDP 驱动运行中的 App」里的驱动脚本，也是各检查共用的参数解析 / vault 状态辅助模块。
+- **`check-slide-geometry.mjs`**（`npm run check:geometry`）—— 在运行中的 App 里跨字号、主题与窗格宽度测量卡片标题几何，任何漂移都以非零退出码报出（#125 背后的不变量，单测看不到）。
+- **`slide-geometry-snapshot.mjs`**（`npm run check:geometry-snapshot`）—— 导出卡片布局的每一个计算数值（卡片盒子与内边距、标题盒子、每一行、每张图片、Slides 模式隐藏的界面元素、正文光标），或对比两份导出并在超出 `--tolerance` 时报错。
+- **`slide-visual-check.mjs`**（`npm run check:visual`）—— 截取确定性的幻灯片截图（固定视口、主题、字号与配色，冻结动画与光标）并逐像素对比两个截图目录，超出 `--maxDiff` 即报错。其 `--diff` 模式需要 `PATH` 上有 **`python3` 与 Pillow** —— 这是仓库里唯一需要它们的地方，其它部分既不会安装也不声明该依赖。

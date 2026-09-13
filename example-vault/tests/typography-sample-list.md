@@ -14,3 +14,11 @@ deck: []
 
 - [ ] Task one
 - [x] Task two
+
+- A list item whose text continues on the next source line, which is a
+  marker-less continuation row that must not take the list pitch.
+
+- Top one
+  - Nested one
+    continued on a marker-less row at the nested level
+- Top two

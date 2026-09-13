@@ -31,7 +31,7 @@ Thanks for your interest in contributing! This guide explains how to set up, bui
 
 4. **Run checks before committing**:
    ```bash
-   npm run build      # bundle main.js (must be committed with source changes)
+   npm run build      # bundle main.js — the release build, committed with source changes
    npm run check      # TypeScript type-check
    npm test           # unit tests (vitest)
    npm run lint       # ESLint
