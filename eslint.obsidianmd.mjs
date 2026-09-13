@@ -17,7 +17,7 @@
  * And one deliberate exception:
  *
  * - `obsidianmd/commands/no-default-hotkeys` is off. The plugin ships five
- *   default hotkeys by design (README, HANDOFF), the scanner reports them as
+ *   default hotkeys by design (README), the scanner reports them as
  *   warnings, and the preset's own `eslint-comments/*` rules forbid silencing
  *   them inline — so the exception lives here, in one place, with this comment.
  *

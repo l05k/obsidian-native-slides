@@ -44,10 +44,11 @@ npm run check:scanner:css  # stylelint-config-obsidianmd over styles.css
   because the plugin ships five default hotkeys by design. With that exception the pass must be
   clean, so CI runs it with `--max-warnings 0`.
 - **`stylelint.config.mjs`** extends `stylelint-config-obsidianmd` — the scanner's CSS config — and
-  changes exactly two things: `stylelint-config-standard`'s formatting rules are off (Prettier owns
-  formatting here, and the scanner never sees those ~128 errors), and
-  `plugin/no-unsupported-browser-features` is pinned to `electron >= 25`, the plugin's declared
-  minimum Obsidian, which is what makes the scanner report `css-text-indent`.
+  changes exactly two things. Nine rules it inherits are off, because none of them is a **scorecard
+  category**: they fire 134 errors on this stylesheet, and the scorecard shows none of them (only
+  two of the nine are formatting Prettier owns). And `plugin/no-unsupported-browser-features` is
+  pinned to `electron >= 30` — the scanner targets Obsidian 1.6.5 (its own baseline, the version the
+  scorecard names), which ships Electron 30 — so it reports `css-text-indent` on the list geometry.
 - **The `--max-warnings 44` baseline** in `check:scanner:css` is not a target: it is 34
   `!important` (#133) + 6 `:has` (#135) + 4 `text-indent` (#134), the three tracked follow-ups.
   A new warning pushes the count over the baseline and fails CI. **Lower the number in the same PR

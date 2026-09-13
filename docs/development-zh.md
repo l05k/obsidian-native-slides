@@ -40,12 +40,15 @@ npm run check:scanner:css  # 用 stylelint-config-obsidianmd 检查 styles.css
   `obsidianmd/commands/no-default-hotkeys` 关掉了，因为本插件就是有意内置五个默认快捷键的。
   除该例外外这遍检查必须干净，所以 CI 用 `--max-warnings 0` 跑它。
 - **`stylelint.config.mjs`** 继承 `stylelint-config-obsidianmd`（扫描器的 CSS 配置），只改两处：
-  关掉 `stylelint-config-standard` 的格式化规则（格式化在这里归 Prettier，且扫描器从来看不到那
-  ~128 条错误），并把 `plugin/no-unsupported-browser-features` 固定为 `electron >= 25` —— 即插件
-  声明的最低 Obsidian 版本，也正是它让扫描器报出 `css-text-indent`。
-- **`check:scanner:css` 里的 `--max-warnings 44` 基线**不是目标：它是 34 个 `!important`（#133）
-  - 6 个 `:has`（#135）+ 4 个 `text-indent`（#134），即三个已登记的后继 issue。新增警告会把计数
-    推过基线并让 CI 失败。**关闭其中任一 issue 的同一个 PR 里，把这个数字降下来。**
+  关掉九条继承来的规则，因为它们**都不是评分卡上的类别**（它们在这里共报出 134 条错误，而评分卡
+  并不显示这些类别；九条里只有两条是 Prettier 负责的格式化规则）；并把
+  `plugin/no-unsupported-browser-features` 固定为 `electron >= 30` —— 扫描器的目标是 Obsidian
+  1.6.5（它自己的基线，也就是评分卡上写的版本），而 1.6.5 用的是 Electron 30 —— 所以它会对列表
+  几何报出 `css-text-indent`。
+- **`check:scanner:css` 里的 `--max-warnings 44` 基线**不是目标：它是 34 个
+  `!important`（#133）+ 6 个 `:has`（#135）+ 4 个 `text-indent`（#134），即三个已登记的后继
+  issue。新增警告会把计数推过基线并让 CI 失败。**关闭其中任一 issue 的同一个 PR 里，把这个数字
+  降下来。**
 - **`.github/workflows/ci.yml`** 把这两遍检查作为独立的 `scanner` job 运行，让回归在 pull request
   上就被抓到，而不是等到插件商店页面。它刻意**不**并入 `npm run lint` —— 两套规则各自调优，
   而且扫描器那套不是我们能改的。

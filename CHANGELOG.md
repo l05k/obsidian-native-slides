@@ -10,7 +10,7 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 ### Added
 
-- **The community scanner's two passes now run in CI**, so a scorecard regression is caught on the pull request instead of on the plugin's store page. `npm run check:scanner` runs both locally: `eslint.obsidianmd.mjs` wraps the scanner's own `eslint-plugin-obsidianmd` preset over `main.ts` + `src/`, and `stylelint.config.mjs` extends the scanner's `stylelint-config-obsidianmd` over `styles.css` with the formatting noise and the two documented deviations silenced. The CSS pass carries a `--max-warnings 44` baseline — the three tracked follow-ups (#133/#134/#135) — so a new warning fails; the TypeScript pass must be clean. `.github/workflows/ci.yml` runs both as a `scanner` job (#84).
+- **The community scanner's two passes now run in CI**, so a scorecard regression is caught on the pull request instead of on the plugin's store page. `npm run check:scanner` runs both locally: `eslint.obsidianmd.mjs` wraps the scanner's own `eslint-plugin-obsidianmd` preset over `main.ts` + `src/`, and `stylelint.config.mjs` extends the scanner's `stylelint-config-obsidianmd` over `styles.css` with nine non-scorecard rules and the two documented deviations silenced. The CSS pass carries a `--max-warnings 44` baseline — the three tracked follow-ups (#133/#134/#135) — so a new warning fails; the TypeScript pass must be clean. `.github/workflows/ci.yml` runs both as a `scanner` job (#84).
 
 ### Changed
 
