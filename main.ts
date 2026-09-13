@@ -399,12 +399,12 @@ export default class NativeSlidesPlugin extends Plugin {
 
   /** Move one step back/forward along the deck chain (entering Slides mode as needed) */
   async navigate(direction: "prev" | "next"): Promise<void> {
-    this.nav.push({ dir: direction });
+    await this.nav.push({ dir: direction });
   }
 
   /** Jump to a specific index in the deck chain (progress bar click) */
   async jumpTo(index: number): Promise<void> {
-    this.nav.push({ index });
+    await this.nav.push({ index });
   }
 
   // ── Bar rendering ─────────────────────────────────────────────────────
