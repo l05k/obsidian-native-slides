@@ -32,7 +32,7 @@ const SAMPLE_CJK = "一屏一卡幻灯片内容测量示例，每行可以排下
 
 /** Average char width (px) for a sample string at the given font settings */
 function avgCharWidth(font: string, sample: string): number {
-  const canvas = document.createElement("canvas");
+  const canvas = createEl("canvas");
   const ctx = canvas.getContext("2d");
   if (!ctx) return 24;
   ctx.font = font;
@@ -190,7 +190,7 @@ export function measureSlides(app: App): SlideMetrics | null {
 export async function copyCapacityPrompt(app: App): Promise<void> {
   const m = measureSlides(app);
   if (!m) {
-    new Notice("Native slides: could not measure the Slides layout");
+    new Notice("Native slides: could not measure the slides layout");
     return;
   }
   const prompt = formatCapacity(m, computeCapacity(m), promptLocale());

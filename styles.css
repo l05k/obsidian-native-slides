@@ -138,7 +138,35 @@ body.native-slides-pointer-hidden * {
   flex-shrink: 0;
 }
 .native-slides-nav-btn {
-  all: unset;
+  /* Explicit resets reproducing `all: unset`, which the community scanner
+     flags. `unset` means "inherit when the property inherits, otherwise the
+     initial value", so each line below is that property's own answer: the
+     inherited ones (letter-spacing, word-spacing, text-transform,
+     white-space, text-shadow, direction) take `inherit`, the rest their
+     initial value. `box-sizing: content-box` is called out because it is the
+     one Obsidian `button` default `all: unset` kept rather than replaced —
+     Obsidian sets `border-box`, and `unset` reset it to the initial
+     `content-box`. */
+  appearance: none;
+  box-sizing: content-box;
+  margin: 0;
+  border: none;
+  box-shadow: none;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  text-decoration: none;
+  letter-spacing: inherit;
+  word-spacing: inherit;
+  text-transform: inherit;
+  white-space: inherit;
+  text-shadow: inherit;
+  direction: inherit;
+  outline: none;
+  position: static;
+  vertical-align: baseline;
+  overflow: visible;
+  /* The button's own look follows. */
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -406,13 +434,13 @@ body.native-slides-mode
 body.native-slides-mode.native-slides-block-images
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
-  .cm-line:has(> img:not(.cm-widgetBuffer))
-  img:not(.cm-widgetBuffer),
+  .cm-line
+  > img:not(.cm-widgetBuffer),
 body.native-slides-mode.native-slides-block-images
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
   .cm-line
-  .internal-embed:has(img),
+  .internal-embed.image-embed,
 body.native-slides-mode.native-slides-block-images
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
@@ -793,11 +821,20 @@ body.native-slides-mode.native-slides-theme-jyy {
    → 4px between rows, 8px where the indent shallows back to the parent).
    Live Preview lines don't collapse margins, so pad each row ±0.125em
    (= 2px at the wiki's 16px base → 4px between adjacent rows) and add
-   another 0.125em below the row that precedes a shallower one (= 8px). */
+   another 0.125em below the row that precedes a shallower one (= 8px).
+   Two exclusions, both of which the `:has(.cm-formatting-list)` this
+   replaces never matched: `.HyperMD-task-line` carries a
+   `.cm-formatting-task` marker instead, and `.HyperMD-list-line-nobullet`
+   is what Obsidian's grammar adds (together with `.HyperMD-list-line`) to a
+   row inside a list that has no marker span at all — a whitespace-only row
+   (the blank row of a loose list, when it holds spaces rather than being
+   empty) or a marker-less continuation row. Neither has a marker to hang the
+   pitch on, so neither may take it. The `typography-sample-list` fixture in
+   `example-vault/tests/` pins both rows. */
 body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
-  .cm-line:has(.cm-formatting-list) {
+  .cm-line.HyperMD-list-line:not(.HyperMD-task-line):not(.HyperMD-list-line-nobullet) {
   padding-block: 0.125em !important;
 }
 body.native-slides-mode
@@ -956,11 +993,14 @@ body.native-slides-mode
   text-decoration: none;
 }
 /* List item pitch: the wiki's li runs 20px on 16px text (1.25); its 4px
-   item margins land nested lists ~1 line lower, which this also approximates */
+   item margins land nested lists ~1 line lower, which this also approximates.
+   Same two exclusions as the pitch rule above — a task row and a
+   `.HyperMD-list-line-nobullet` row (whitespace-only, or a marker-less
+   continuation row) have no marker and never took this line-height. */
 body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
-  .cm-line:has(.cm-formatting-list) {
+  .cm-line.HyperMD-list-line:not(.HyperMD-task-line):not(.HyperMD-list-line-nobullet) {
   line-height: 1.25;
 }
 /* Disc bullets: the wiki uses list-style-position: inside, so its disc sits
@@ -974,14 +1014,16 @@ body.native-slides-mode
 body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
-  .cm-line:not(.cm-active):has(.cm-formatting-list-ul)
+  .cm-line:not(.cm-active)
+  .cm-formatting-list-ul
   .list-bullet {
   position: relative;
 }
 body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
-  .cm-line:not(.cm-active):has(.cm-formatting-list-ul)
+  .cm-line:not(.cm-active)
+  .cm-formatting-list-ul
   .list-bullet
   .cm-formatting-list {
   color: transparent !important;
@@ -989,7 +1031,8 @@ body.native-slides-mode
 body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
-  .cm-line:not(.cm-active):has(.cm-formatting-list-ul)
+  .cm-line:not(.cm-active)
+  .cm-formatting-list-ul
   .list-bullet::before {
   display: none !important;
   content: none !important;
@@ -997,7 +1040,8 @@ body.native-slides-mode
 body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
-  .cm-line:not(.cm-active):has(.cm-formatting-list-ul)
+  .cm-line:not(.cm-active)
+  .cm-formatting-list-ul
   .list-bullet::after {
   content: "" !important;
   position: absolute;

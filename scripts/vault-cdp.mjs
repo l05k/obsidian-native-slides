@@ -42,6 +42,12 @@
  *   const expected = [before[3], before[0], before[1], before[2]];
  *   if (!sameArray(await cdp.order(), expected)) throw new Error("…");
  *
+ * The committed check scripts share three more primitives from here, so the
+ * shape lives once instead of once per script: `parseArgs()` for the `--flag
+ * value` pairs, `captureVaultState()` / `restoreVaultState()` for the vault
+ * state a check has to put back, and `printVaultReminder()` for the tracked
+ * files that stay rewritten even after a successful restore.
+ *
  * The running app must have been started with `--remote-debugging-port=9222`
  * (or another port via `OBSIDIAN_CDP_PORT`). A window that is occluded is
  * still drivable, but Chrome throttles it: `requestAnimationFrame` may never
@@ -63,6 +69,136 @@ export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Order-sensitive array comparison, for assertions in check scripts */
 export const sameArray = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+// ── Shared helpers for the committed check scripts ────────────────────────
+// `check-slide-geometry.mjs`, `slide-geometry-snapshot.mjs` and
+// `slide-visual-check.mjs` all parse `--flag value` pairs and all have to put
+// the vault back the way they found it, so those two shapes live here.
+
+/**
+ * Parse `--flag value` pairs into `defaults`.
+ *
+ * `numeric` names the flags coerced with `Number()`, `repeatable` the ones that
+ * collect every occurrence into an array. Anything that is not a flag is an
+ * error unless the caller sets `allowPositional` — the two directories of
+ * `--diff` are the one place that needs it — because a check that silently
+ * ignored a stray argument would report a pass it did not earn. An unknown flag
+ * or a flag with no value after it prints `name`'s usage error and exits 2.
+ * Returns `{ args, positional }`.
+ */
+export function parseArgs({
+  argv = process.argv.slice(2),
+  defaults,
+  name,
+  numeric = [],
+  repeatable = [],
+  allowPositional = false,
+}) {
+  const args = { ...defaults };
+  const positional = [];
+  for (let i = 0; i < argv.length; i++) {
+    const flag = argv[i];
+    if (!flag.startsWith("--")) {
+      if (!allowPositional) {
+        console.error(`${name}: unexpected argument ${flag}`);
+        process.exit(2);
+      }
+      positional.push(flag);
+      continue;
+    }
+    const key = flag.slice(2);
+    const value = argv[i + 1];
+    if (value === undefined) {
+      console.error(`${name}: --${key} needs a value`);
+      process.exit(2);
+    }
+    i++;
+    if (repeatable.includes(key)) args[key].push(value);
+    else if (numeric.includes(key)) args[key] = Number(value);
+    else if (key in args) args[key] = value;
+    else {
+      console.error(`${name}: unknown flag --${key}`);
+      process.exit(2);
+    }
+  }
+  return { args, positional };
+}
+
+/**
+ * Read the vault state a check changes, so `restoreVaultState()` can put it
+ * back. `pluginSettings: true` also captures the plugin's settings and the
+ * colour scheme — only the checks that change them ask for it, because
+ * restoring the scheme means calling `app.changeTheme`, which would replace a
+ * "follow the system" preference with an explicit light/dark choice.
+ */
+export async function captureVaultState(cdp, { pluginSettings = false } = {}) {
+  return cdp.eval(`(() => {
+    const plugin = app.plugins.plugins["native-slides"];
+    return {
+      theme: app.vault.getConfig("cssTheme"),
+      baseFontSize: app.vault.getConfig("baseFontSize"),
+      slidesMode: document.body.classList.contains("native-slides-mode"),
+      pane: app.workspace.rightSplit.collapsed ? "collapsed" : "expanded",
+      activeNote: app.workspace.getActiveFile()?.path ?? null,
+      ${
+        pluginSettings
+          ? `settings: { ...plugin.settings },
+      colorScheme: app.isDarkMode() ? "dark" : "light",`
+          : ""
+      }
+    };
+  })()`);
+}
+
+/**
+ * Put the vault back the way `captureVaultState()` found it. The theme, the font
+ * size and the plugin settings land in **tracked** files, so this puts the
+ * *values* back while the files stay rewritten — `printVaultReminder()` names
+ * what to run afterwards.
+ */
+export async function restoreVaultState(cdp, snapshot) {
+  await cdp.eval(`(async () => {
+    const plugin = app.plugins.plugins["native-slides"];
+    app.customCss.setTheme(${JSON.stringify(snapshot.theme)});
+    app.vault.setConfig("baseFontSize", ${snapshot.baseFontSize});
+    ${
+      snapshot.colorScheme
+        ? `app.changeTheme(${JSON.stringify(snapshot.colorScheme === "dark" ? "obsidian" : "moonstone")});`
+        : ""
+    }
+    ${
+      snapshot.settings
+        ? `if (JSON.stringify(plugin.settings) !== ${JSON.stringify(JSON.stringify(snapshot.settings))}) {
+      plugin.settings = ${JSON.stringify(snapshot.settings)};
+      await plugin.saveSettings();
+    }`
+        : ""
+    }
+    if (!${snapshot.slidesMode} && document.body.classList.contains("native-slides-mode")) plugin.toggleSlides();
+    if (${snapshot.pane === "expanded"}) app.workspace.rightSplit.expand();
+    if (${JSON.stringify(snapshot.activeNote)}) {
+      const file = app.vault.getAbstractFileByPath(${JSON.stringify(snapshot.activeNote)});
+      if (file && ${JSON.stringify(snapshot.activeNote)} !== (app.workspace.getActiveFile()?.path ?? null)) {
+        await app.workspace.getLeaf(false).openFile(file);
+      }
+    }
+    plugin.refresh();
+    await new Promise((r) => setTimeout(r, 500));
+    return true;
+  })()`);
+}
+
+/**
+ * Name the tracked files a run rewrote and the one command that puts them back.
+ * Obsidian's own config churn does this too (AGENTS.md Rule 3): the restore
+ * above restores the *values*, not the files.
+ */
+export function printVaultReminder(paths) {
+  console.log(
+    `note: this run rewrote ${paths.join(" and\n      ")}\n` +
+      "      (all tracked) — restore with `git restore -- example-vault/.obsidian`.",
+  );
+}
 
 /** `p` with symlinks resolved, or `p` itself when it cannot be resolved */
 function canonical(p) {

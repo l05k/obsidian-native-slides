@@ -17,8 +17,8 @@ Run the commands from the repository root:
 
 ```sh
 npm ci             # first time only (downloads esbuild etc.)
-npm run build      # compiles main.ts → main.js (dev build: debug command included)
-npm run build:release  # publish build: minified, debug command excluded
+npm run build:dev  # compiles main.ts → main.js (dev build: debug command included)
+npm run build      # release build: minified, debug command excluded (= npm run build:release)
 npm run check      # optional: TypeScript type-check (tsc --noEmit)
 npm run test       # optional: vitest unit tests
 npm run lint       # optional: ESLint
@@ -45,7 +45,7 @@ repository, its plugin folder holds **symlinks to the repository root** (`main.j
 `styles.css`), and it therefore always runs the build you just made. Never point an agent, a script
 or a manual test at a vault that holds real notes.
 
-- **Loop**: `npm run build` (or `npm run dev` while editing) → reload the plugin in Obsidian
+- **Loop**: `npm run build:dev` (or `npm run dev` while editing) → reload the plugin in Obsidian
   (`Cmd/Ctrl+P` → **Reload app without saving**) → check. See _Dev loop_ above.
 - **Scratch notes**: create them inside `example-vault/` when a check needs them and remove them when
   you are done — never leave test files behind. The `Probe*.md` / `test.md` / `untitled-slides.md`
@@ -224,17 +224,18 @@ directly; re-run the skill only to switch trackers or start over.
 The typography-measurement tooling ships as a **dev-only** command and is
 excluded from release builds.
 
-- **Dev build** (`npm run build` / `npm run dev`) registers the `Debug: Dump
+- **Dev build** (`npm run build:dev` / `npm run dev`) registers the `Debug: Dump
 Typography Styles` command: it samples the current note in **both** edit and
   reading views, computes an edit-vs-reading diff, and writes
   `.native-slides-debug.json` to the vault root (no manual console
   copy/paste). Run it on a deck note with Slides mode on; the five
   `typography-sample-*.md` notes in `example-vault/` are its fixed one-page
   fixtures — do not rename or remove them.
-- **Release build** (`npm run build:release`) minifies `main.js` and drops the
-  debug command (and its supporting code) entirely via
-  `--define:DEV_MODE=false` + tree-shaking. Run `npm run build` afterwards to
-  restore the dev artifact.
+- **Release build** (`npm run build` / `npm run build:release`) minifies `main.js`
+  and drops the debug command (and its supporting code) entirely via
+  `--define:DEV_MODE=false` + tree-shaking. Run `npm run build:dev` afterwards to
+  restore the dev artifact; `npm run build` (the release build) is what the
+  committed `main.js` must be.
 
 The source is split into `src/` modules (`types`, `mode`, `deck-service`,
 `panel`, `panel-drag`, `bar`, `commands`, `settings`, `debug`, `deck`,
@@ -242,7 +243,18 @@ The source is split into `src/` modules (`types`, `mode`, `deck-service`,
 `confirm-delete`, `utils`) with `main.ts` as the orchestration entry point.
 
 `scripts/` holds development tooling that is **not** part of the plugin and never ships in a release
-(the Release workflow publishes `main.js`, `manifest.json` and `styles.css` only) — `vault-cdp.mjs`,
-the CDP driver of _Driving the running app over CDP_ above, and `check-slide-geometry.mjs`, which
-measures the card-title geometry in the running app (the invariant behind #125, which no unit test can
-see).
+(the Release workflow publishes `main.js`, `manifest.json` and `styles.css` only):
+
+- **`vault-cdp.mjs`** — the CDP driver of _Driving the running app over CDP_ above, and the shared
+  arg-parsing / vault-state helpers the checks import.
+- **`check-slide-geometry.mjs`** (`npm run check:geometry`) — measures the card-title geometry in the
+  running app across font sizes, themes and pane widths, and exits non-zero on any drift (the
+  invariant behind #125, which no unit test can see).
+- **`slide-geometry-snapshot.mjs`** (`npm run check:geometry-snapshot`) — dumps every computed number
+  the card's layout is made of (card box and padding, title box, every line, every image, the chrome
+  Slides mode hides, the body cursor), or diffs two dumps and fails on drift beyond `--tolerance`.
+- **`slide-visual-check.mjs`** (`npm run check:visual`) — captures deterministic screenshots of the
+  slides (pinned viewport, theme, font size and scheme; animations and the caret frozen) and compares
+  two capture directories pixel by pixel, failing on anything beyond `--maxDiff` pixels. Its `--diff`
+  mode needs **`python3` with Pillow** on `PATH` — the only part of the repository that does; nothing
+  else installs or declares it.
