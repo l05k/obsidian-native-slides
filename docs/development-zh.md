@@ -21,7 +21,37 @@ npm run check      # 可选：TypeScript 类型检查（tsc --noEmit）
 npm run test       # 可选：vitest 单元测试
 npm run lint       # 可选：ESLint
 npm run format:check  # 可选：Prettier
+npm run check:scanner  # 可选：社区扫描器自己的两遍检查（见下）
 ```
+
+## 社区扫描器（CI）
+
+插件提交到社区目录时，Obsidian 的扫描器会对源码与样式表跑它自己的检查，插件页面上就是由此得到的
+评分卡。其中两遍检查在这里可以复现，`npm run check:scanner` 会同时跑这两遍：
+
+```sh
+npm run check:scanner      # 两遍都跑
+npm run check:scanner:ts   # 用 eslint-plugin-obsidianmd 的 configs.recommended 检查 main.ts + src/
+npm run check:scanner:css  # 用 stylelint-config-obsidianmd 检查 styles.css
+```
+
+- **`eslint.obsidianmd.mjs`** 原样包裹扫描器自己的预设。额外加的东西只有让它能跑起来所必需的
+  （`projectService`，给它的类型感知规则用，以及 `DEV_MODE` 构建标记），外加一处有记录的例外：
+  `obsidianmd/commands/no-default-hotkeys` 关掉了，因为本插件就是有意内置五个默认快捷键的。
+  除该例外外这遍检查必须干净，所以 CI 用 `--max-warnings 0` 跑它。
+- **`stylelint.config.mjs`** 继承 `stylelint-config-obsidianmd`（扫描器的 CSS 配置），只改两处：
+  关掉九条继承来的规则，因为它们**都不是评分卡上的类别**（它们在这里共报出 134 条错误，而评分卡
+  并不显示这些类别；九条里只有两条是 Prettier 负责的格式化规则）；并把
+  `plugin/no-unsupported-browser-features` 固定为 `electron >= 30` —— 扫描器的目标是 Obsidian
+  1.6.5（它自己的基线，也就是评分卡上写的版本），而 1.6.5 用的是 Electron 30 —— 所以它会对列表
+  几何报出 `css-text-indent`。
+- **`check:scanner:css` 里的 `--max-warnings 44` 基线**不是目标：它是 34 个
+  `!important`（#133）+ 6 个 `:has`（#135）+ 4 个 `text-indent`（#134），即三个已登记的后继
+  issue。新增警告会把计数推过基线并让 CI 失败。**关闭其中任一 issue 的同一个 PR 里，把这个数字
+  降下来。**
+- **`.github/workflows/ci.yml`** 把这两遍检查作为独立的 `scanner` job 运行，让回归在 pull request
+  上就被抓到，而不是等到插件商店页面。它刻意**不**并入 `npm run lint` —— 两套规则各自调优，
+  而且扫描器那套不是我们能改的。
 
 ## 开发循环（重建 + 重载）
 

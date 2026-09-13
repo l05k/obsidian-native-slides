@@ -138,13 +138,16 @@ body.native-slides-pointer-hidden * {
   flex-shrink: 0;
 }
 .native-slides-nav-btn {
-  /* Explicit resets reproducing `all: unset`, which the community scanner
+  /* Explicit resets standing in for `all: unset`, which the community scanner
      flags. `unset` means "inherit when the property inherits, otherwise the
-     initial value", so each line below is that property's own answer: the
-     inherited ones (letter-spacing, word-spacing, text-transform,
-     white-space, text-shadow, direction) take `inherit`, the rest their
-     initial value. `box-sizing: content-box` is called out because it is the
-     one Obsidian `button` default `all: unset` kept rather than replaced —
+     initial value", and each line below is that property's own answer: the
+     inherited ones (font, text-align, letter-spacing, word-spacing,
+     text-transform, white-space, text-shadow, direction) take `inherit`, the
+     rest their initial value. The inherited properties this list leaves out
+     (`color`, `font-size`, `line-height`) are answered by the button's own
+     declarations below, exactly as a declaration after `all: unset` would
+     have answered them. `box-sizing: content-box` is called out because it is
+     the one Obsidian `button` default `all: unset` kept rather than replaced —
      Obsidian sets `border-box`, and `unset` reset it to the initial
      `content-box`. */
   appearance: none;
@@ -153,7 +156,6 @@ body.native-slides-pointer-hidden * {
   border: none;
   box-shadow: none;
   font: inherit;
-  color: inherit;
   text-align: inherit;
   text-decoration: none;
   letter-spacing: inherit;
