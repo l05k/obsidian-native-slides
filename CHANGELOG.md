@@ -8,6 +8,10 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 ## [Unreleased]
 
+### Added
+
+- **The community scanner's two passes now run in CI**, so a scorecard regression is caught on the pull request instead of on the plugin's store page. `npm run check:scanner` runs both locally: `eslint.obsidianmd.mjs` wraps the scanner's own `eslint-plugin-obsidianmd` preset over `main.ts` + `src/`, and `stylelint.config.mjs` extends the scanner's `stylelint-config-obsidianmd` over `styles.css` with the formatting noise and the two documented deviations silenced. The CSS pass carries a `--max-warnings 44` baseline — the three tracked follow-ups (#133/#134/#135) — so a new warning fails; the TypeScript pass must be clean. `.github/workflows/ci.yml` runs both as a `scanner` job (#84).
+
 ### Changed
 
 - **`npm run build` now produces the release bundle** (minified, `DEV_MODE=false`) and the new **`npm run build:dev`** is the dev build (debug command included). The scanner rebuilds with `npm run build` and byte-diffs the result against the released `main.js`, so as long as `build` produced the dev bundle those two could never match — the committed `main.js` is now the release artifact the workflow publishes (#84).
@@ -17,6 +21,7 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 - **The marketplace scorecard's CSS warnings are cleared without moving a pixel**: `all: unset` on the slides bar's nav buttons became the equivalent list of explicit resets, and 8 of the 13 `:has` rules became plain selectors — the image-centering rules, the two list-item pitch rules and the four list-bullet rules — each verified against 1.1.0 by the new `slide-visual-check` pixel capture. The `!important` declarations are deliberately left alone (dropping them is a one-at-a-time job whose gate is that same pixel check), and the 5 remaining `:has` rules (next-sibling and blank-line-before-heading) and the 4 `text-indent` rules need a CodeMirror ViewPlugin — all three are filed separately (#133, #134, #135, from #84).
 - **Three findings from the scorecard's TypeScript pass**: the two `this.nav.push(...)` calls are now awaited (the floating-promise rule), `document.createElement("canvas")` became `createEl("canvas")`, and the capacity notice reads "the slides layout" (sentence case) (#84).
+- **A duplicate `color` declaration on the slides bar's nav buttons** — the `all: unset` replacement above kept it alongside the rule's own `color`, which the scanner reports as a duplicate property.
 
 ## [1.1.0] - 2026-09-12
 

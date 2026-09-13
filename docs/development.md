@@ -23,7 +23,39 @@ npm run check      # optional: TypeScript type-check (tsc --noEmit)
 npm run test       # optional: vitest unit tests
 npm run lint       # optional: ESLint
 npm run format:check  # optional: Prettier
+npm run check:scanner  # optional: the community scanner's own two passes (see below)
 ```
+
+## The community scanner (CI)
+
+When a plugin is submitted to the community catalogue, Obsidian's scanner runs its own passes over
+the source and the stylesheet, and the plugin's page carries the resulting scorecard. Two of those
+passes are reproducible here, and `npm run check:scanner` runs both:
+
+```sh
+npm run check:scanner      # both passes
+npm run check:scanner:ts   # eslint-plugin-obsidianmd's configs.recommended over main.ts + src/
+npm run check:scanner:css  # stylelint-config-obsidianmd over styles.css
+```
+
+- **`eslint.obsidianmd.mjs`** wraps the scanner's own preset unchanged. The two additions are the
+  ones needed to run it at all (`projectService`, for its type-aware rules, and the `DEV_MODE`
+  build flag), plus one documented exception: `obsidianmd/commands/no-default-hotkeys` is off
+  because the plugin ships five default hotkeys by design. With that exception the pass must be
+  clean, so CI runs it with `--max-warnings 0`.
+- **`stylelint.config.mjs`** extends `stylelint-config-obsidianmd` — the scanner's CSS config — and
+  changes exactly two things: `stylelint-config-standard`'s formatting rules are off (Prettier owns
+  formatting here, and the scanner never sees those ~128 errors), and
+  `plugin/no-unsupported-browser-features` is pinned to `electron >= 25`, the plugin's declared
+  minimum Obsidian, which is what makes the scanner report `css-text-indent`.
+- **The `--max-warnings 44` baseline** in `check:scanner:css` is not a target: it is 34
+  `!important` (#133) + 6 `:has` (#135) + 4 `text-indent` (#134), the three tracked follow-ups.
+  A new warning pushes the count over the baseline and fails CI. **Lower the number in the same PR
+  that closes one of those issues.**
+- **`.github/workflows/ci.yml`** runs both passes as its own `scanner` job, so a regression is
+  caught on the pull request instead of on the plugin's store page. It is deliberately _not_ part of
+  `npm run lint` — the two rule sets are tuned separately, and the scanner's set is not ours to
+  edit.
 
 ## Dev loop (rebuild + reload)
 

@@ -36,3 +36,28 @@ jobs:
 
       - name: Fail if main.js is stale
         run: git diff --exit-code -- main.js
+
+  # The community scanner's own passes, so a regression is caught here instead
+  # of on the plugin's store page. See stylelint.config.mjs and
+  # eslint.obsidianmd.mjs for what each mirrors and what it deliberately does
+  # not (the CSS side's `--max-warnings 44` baseline is the three tracked
+  # follow-ups, #133/#134/#135).
+  scanner:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Obsidian scanner — TypeScript
+        run: npm run check:scanner:ts
+
+      - name: Obsidian scanner — CSS
+        run: npm run check:scanner:css
