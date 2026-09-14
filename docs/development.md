@@ -69,7 +69,10 @@ npm run dev        # watch main.ts, rebuild main.js on change
 After editing `main.ts`, reload the plugin in Obsidian: open the command
 palette with `Cmd/Ctrl+P`, search for **Reload app without saving**, and run
 it (it has no default hotkey). Alternatively, disable/re-enable **Native
-Slides** under _Settings → Community plugins_.
+Slides** under _Settings → Community plugins_ — that re-reads `main.js` and
+`styles.css`, so it covers a code or stylesheet change, but **not**
+`manifest.json`: Obsidian reads the manifest once at startup, so a version
+bump (or any other manifest edit) needs the full reload.
 
 ## Testing in the example vault
 
