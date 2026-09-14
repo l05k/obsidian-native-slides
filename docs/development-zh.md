@@ -104,6 +104,24 @@ if (basePath !== EXPECTED_VAULT) throw new Error(`refusing to drive ${basePath}`
 `EXPECTED_VAULT` 就是本仓库的 `example-vault/`。`connect()` 会问遍端口上的每个 page target：匹配数为 0
 说明库没打开；**匹配数 >1 说明身份有歧义 —— 停下来，不要挑一个。** 两种情况都中止。
 
+**截图要在专用实例里跑，不要用你正在工作的那个。** 驱动 App 会把被驱动的窗口提到前台并抢走焦点，
+因此那一刻的击键会落进检查刚打开的那篇笔记里 —— 在 `example-vault/` 里那是被跟踪的 fixture，会把维护者
+的误击键变成工作树里的脏 diff。而且后台窗口会被节流，光栅化结果不可复现。用一个只装 `example-vault/`
+的第二实例即可同时解决：以非前台方式启动并关闭节流：
+
+```sh
+open -g -na Obsidian --args \
+  --user-data-dir=/tmp/ns-obsidian-profile --remote-debugging-port=9333 \
+  --disable-background-timer-throttling --disable-backgrounding-occluded-windows \
+  --disable-renderer-backgrounding --disable-features=CalculateNativeWinOcclusion
+OBSIDIAN_CDP_PORT=9333 npm run check:visual -- --out /tmp/ns-after
+```
+
+首次需要往 `/tmp/ns-obsidian-profile/obsidian.json` 里只写入本库。`-g` 让新窗口不抢前台；那几个 flag
+是让隐藏窗口也能确定性渲染的关键（实测：带它们时三次完整 14 张截图逐字节相同，不带时每次跑会有 1–3 个
+杂散像素）。所有检查脚本都认 `OBSIDIAN_CDP_PORT`，护栏依然生效 —— 只装 `example-vault/` 的专用实例
+恰好是一个匹配。
+
 **`scripts/vault-cdp.mjs` 做的就是这件事**，也是推荐的入口：除非恰好有一个窗口持有 `example-vault/`，
 否则它拒绝连接；并在每次派发输入前重新校验该身份。它是一个小型库 + 一次性命令的 CLI：
 

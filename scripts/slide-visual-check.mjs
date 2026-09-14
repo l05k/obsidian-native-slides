@@ -48,7 +48,14 @@ import {
 
 const { args, positional } = parseArgs({
   defaults: {
-    notes: "tests/typography-demo,tests/typography-sample-list,Grow the Deck",
+    // Every construct the stylesheet targets, so a rule change cannot hide
+    // behind a fixture that never renders it: the demo note plus the five
+    // `typography-sample-*` fixtures `src/debug.ts` already pins, plus a real
+    // deck note. `typography-sample-list` carries all four list levels.
+    notes:
+      "tests/typography-demo,tests/typography-sample-headings,tests/typography-sample-list," +
+      "tests/typography-sample-quote,tests/typography-sample-code,tests/typography-sample-media," +
+      "Grow the Deck",
     schemes: "light,dark",
     width: 1440,
     height: 900,
@@ -266,6 +273,13 @@ try {
       await new Promise((r) => setTimeout(r, 700));
       plugin.refresh();
       await new Promise((r) => setTimeout(r, 400));
+      // CodeMirror only renders lines in the viewport. A residual scrollTop
+      // from a previous note in this script run would change the rendered
+      // line set, so the next shot would be a different frame even with no
+      // other change. Reset to the top before the blur so the settle is
+      // always seeing the same content.
+      const scroller = document.querySelector(".cm-scroller");
+      if (scroller) scroller.scrollTop = 0;
       // Opening the note focuses the editor and puts a caret on some line; the
       // active line carries a background tint and one extra pixel of layout.
       // Drop focus out of the document again so this shot starts from the same

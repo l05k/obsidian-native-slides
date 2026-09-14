@@ -145,6 +145,27 @@ A multi-step check is a script that imports it — whether it belongs in `script
 outside the repository is the rule in
 [`.agents/skills/vault-cdp-testing/SKILL.md`](../.agents/skills/vault-cdp-testing/SKILL.md):
 
+**Run captures in a dedicated instance, not the one you are working in.** Driving the app raises and
+focuses the window it drives, so a keystroke made at that moment lands in the note the check just
+opened — in `example-vault/` that is a tracked fixture, which turns the maintainer's stray keystroke
+into a dirty diff. A backgrounded window is also throttled, so its rasterisation is not reproducible.
+Both go away with a second Obsidian that holds only `example-vault/`, launched out of the foreground
+and with throttling disabled:
+
+```sh
+open -g -na Obsidian --args \
+  --user-data-dir=/tmp/ns-obsidian-profile --remote-debugging-port=9333 \
+  --disable-background-timer-throttling --disable-backgrounding-occluded-windows \
+  --disable-renderer-backgrounding --disable-features=CalculateNativeWinOcclusion
+OBSIDIAN_CDP_PORT=9333 npm run check:visual -- --out /tmp/ns-after
+```
+
+Seed `/tmp/ns-obsidian-profile/obsidian.json` with just this vault the first time. `-g` keeps the new
+window out of the foreground; the flags are what make a hidden window render deterministically
+(measured: three full 14-shot runs byte-identical with them, 1–3 stray pixels per run without). Every
+check script honours `OBSIDIAN_CDP_PORT`, and the guard still applies — a dedicated instance holding
+only `example-vault/` is exactly one match.
+
 ```js
 import { connect, sameArray } from "<repo>/scripts/vault-cdp.mjs";
 const cdp = await connect();
