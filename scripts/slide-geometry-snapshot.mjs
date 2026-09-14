@@ -19,7 +19,8 @@
  *
  * It drives `example-vault/` through scripts/vault-cdp.mjs (see
  * docs/development.md#driving-the-running-app-over-cdp): the app must be
- * running with `--remote-debugging-port=9222` and that vault open. It opens the
+ * running with `--remote-debugging-port=9222` and that vault open, or another port
+ * via `OBSIDIAN_CDP_PORT` — the dedicated capture instance uses 9333. It opens the
  * notes it measures, and leaves Slides mode, the theme, the font size, the
  * right split and the open note as it found them. Two of those writes land in
  * one **tracked** file — `example-vault/.obsidian/appearance.json` (theme, font

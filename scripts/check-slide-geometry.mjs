@@ -38,8 +38,10 @@
  *   node scripts/check-slide-geometry.mjs --note "Grow the Deck"
  *
  * It drives `example-vault/` through scripts/vault-cdp.mjs, so the app must be
- * running with `--remote-debugging-port=9222` and that vault open; the guard
- * refuses anything else. Themes come from the vault's own `.obsidian/themes/`
+ * running with `--remote-debugging-port=9222` (or another port via
+ * `OBSIDIAN_CDP_PORT` — the dedicated capture instance uses 9333) and that vault
+ * open; the guard refuses anything else, including a window that has the user's
+ * focus. Themes come from the vault's own `.obsidian/themes/`
  * (gitignored): a theme that is not installed is a failure, never a silently
  * skipped row.
  *

@@ -26,7 +26,7 @@ The human opens **`example-vault/`** in Obsidian **once** and never needs to reo
   2. **Verify** — run `npm run check` / `npm run test` / `npm run lint` / `npm run format:check` / `npm run build` and confirm `main.js` is in sync (`git diff --exit-code -- main.js`).
 - `npm run dev` (esbuild watch) is only needed while **actively editing** `main.ts`; viewing a branch's behavior needs nothing but the switch + reload (each branch carries its own committed, in-sync `main.js`).
 
-**Never take the human's keyboard focus.** Driving the running app — a CDP capture, a `slide-visual-check` run, anything that opens a note — raises the window it drives, and a keystroke the human makes at that moment lands in the note the check just opened. In `example-vault/` that is a **tracked** fixture, so a stray keystroke becomes a dirty diff in their tree rather than a harmless interruption. Announce which window and moment you need, run it as **one burst**, and leave the focus where you found it; never loop captures while the human may be working. A backgrounded window is also throttled, so its rendering is not reproducible — a capture that needs the window visible needs a dedicated instance or an agreed moment, not a silent focus steal. See [vault-cdp-testing](../vault-cdp-testing/SKILL.md) for the mechanics.
+**Never drive the instance the human is working in.** A CDP capture or a `slide-visual-check` run belongs in the dedicated instance, never their own Obsidian — see [vault-cdp-testing](../vault-cdp-testing/SKILL.md) for the rule and the procedure.
 
 ## Workflow
 
