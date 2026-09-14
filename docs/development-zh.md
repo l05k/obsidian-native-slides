@@ -61,7 +61,7 @@ npm run check:scanner:css  # 用 stylelint-config-obsidianmd 检查 styles.css
 npm run dev        # 监听 main.ts，变更时自动重建 main.js
 ```
 
-编辑 `main.ts` 后，在 Obsidian 里重载插件：按 `Cmd/Ctrl+P` 打开命令面板，搜索 **Reload app without saving** 并执行（该命令默认没有绑定快捷键）。或者，在 _设置 → 第三方插件_ 里关闭再开启 **Native Slides**。
+编辑 `main.ts` 后，在 Obsidian 里重载插件：按 `Cmd/Ctrl+P` 打开命令面板，搜索 **Reload app without saving** 并执行（该命令默认没有绑定快捷键）。或者，在 _设置 → 第三方插件_ 里关闭再开启 **Native Slides** —— 这会重新读取 `main.js` 与 `styles.css`，因此足以应付改代码或改样式表，但**不包括** `manifest.json`：Obsidian 只在启动时读一次 manifest，所以"改了版本号却看不到效果"（或 manifest 里的任何改动）必须用 **Reload app without saving**。
 
 ## 在示例库中测试
 

@@ -11,7 +11,7 @@ A **behavioural check** drives the running Obsidian app against the build you ju
 
 ## Steps
 
-1. **Confirm the vault and the build.** `node scripts/vault-cdp.mjs state`. Done when `vaultPath` ends in `…/obsidian/example-vault` and `pluginVersion` matches `package.json` — a window still running an older bundle is the usual first surprise, and `reload` fixes it.
+1. **Confirm the vault and the build.** `node scripts/vault-cdp.mjs state`. Done when `vaultPath` ends in `…/obsidian/example-vault` and `pluginVersion` matches `package.json` — a window still running an older bundle is the usual first surprise. What fixes it depends on the file: `pluginVersion` reads the plugin's **in-memory** manifest, and `reload` (a plugin disable/enable) re-reads `main.js` and `styles.css` but **not** `manifest.json` — so for a version mismatch, and for any manifest edit, only the command palette's **Reload app without saving** works.
 2. **Build the starting state.** Create the deck the check needs (`create-deck`), open its head (`open`), leave Slides mode (it hides the panel), then poll until the panel and the deck the plugin resolves agree. Done when the precondition is **asserted**, not assumed.
 3. **Drive and assert.** One check per claim. Read through `app.*` wherever the claim allows it; synthesize input only for the gesture the claim is about. Done when every assertion compares against the **live truth** as well as the UI — after a reorder, that the frontmatter chain matches the panel order — rather than merely that something changed.
 4. **Clean up.** Delete the scratch notes, `git restore -- example-vault/.obsidian`, re-check `git status`. Done when nothing of yours is left in the vault.
