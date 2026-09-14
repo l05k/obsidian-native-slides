@@ -72,7 +72,8 @@ it (it has no default hotkey). Alternatively, disable/re-enable **Native
 Slides** under _Settings → Community plugins_ — that re-reads `main.js` and
 `styles.css`, so it covers a code or stylesheet change, but **not**
 `manifest.json`: Obsidian reads the manifest once at startup, so a version
-bump (or any other manifest edit) needs the full reload.
+bump that seems to have had no effect (or any other manifest edit) needs
+**Reload app without saving**.
 
 ## Testing in the example vault
 
