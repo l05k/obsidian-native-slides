@@ -49,10 +49,14 @@ npm run check:scanner:css  # stylelint-config-obsidianmd over styles.css
   two of the nine are formatting Prettier owns). And `plugin/no-unsupported-browser-features` is
   pinned to `electron >= 30` — the scanner targets Obsidian 1.6.5 (its own baseline, the version the
   scorecard names), which ships Electron 30 — so it reports `css-text-indent` on the list geometry.
-- **The `--max-warnings 44` baseline** in `check:scanner:css` is not a target: it is 34
-  `!important` (#133) + 6 `:has` (#135) + 4 `text-indent` (#134), the three tracked follow-ups.
-  A new warning pushes the count over the baseline and fails CI. **Lower the number in the same PR
-  that closes one of those issues.**
+- **The `--max-warnings 27` baseline** in `check:scanner:css` is not a target: it is 17
+  `!important` + 6 `:has` (#135) + 4 `text-indent` (#134), the two remaining follow-ups. The 17 that
+  remain are not one story: some fight inline styles Obsidian writes (the card's `padding`, the list
+  offsets), some beat this file's own `!important` (the card-title `padding-top`), some beat
+  Obsidian's own blockquote rule, and several only matter under a theme (the line width, the title's
+  `margin-inline`, the H1 `letter-spacing`) — so a computed-style probe on one theme alone will
+  report those as removable when they are not. A new warning pushes the count over the baseline and
+  fails CI. **Lower the number in the same PR that closes one of those issues.**
 - **`.github/workflows/ci.yml`** runs both passes as its own `scanner` job, so a regression is
   caught on the pull request instead of on the plugin's store page. It is deliberately _not_ part of
   `npm run lint` — the two rule sets are tuned separately, and the scanner's set is not ours to

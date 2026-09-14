@@ -45,10 +45,13 @@ npm run check:scanner:css  # 用 stylelint-config-obsidianmd 检查 styles.css
   `plugin/no-unsupported-browser-features` 固定为 `electron >= 30` —— 扫描器的目标是 Obsidian
   1.6.5（它自己的基线，也就是评分卡上写的版本），而 1.6.5 用的是 Electron 30 —— 所以它会对列表
   几何报出 `css-text-indent`。
-- **`check:scanner:css` 里的 `--max-warnings 44` 基线**不是目标：它是 34 个
-  `!important`（#133）+ 6 个 `:has`（#135）+ 4 个 `text-indent`（#134），即三个已登记的后继
-  issue。新增警告会把计数推过基线并让 CI 失败。**关闭其中任一 issue 的同一个 PR 里，把这个数字
-  降下来。**
+- **`check:scanner:css` 里的 `--max-warnings 27` 基线**不是目标：它是 17 个 `!important`
+  - 6 个 `:has`（#135）+ 4 个 `text-indent`（#134），即剩下两个后继 issue。留下的 17 个并非同一个
+    原因：有的在对抗 Obsidian 写的内联样式（卡片的 `padding`、列表缩进），有的要压过本文件自身的
+    `!important`（卡片标题的 `padding-top`），有的要压过 Obsidian 自己的引用块规则，还有几个只在特定
+    主题下才起作用（行宽、标题的 `margin-inline`、H1 的 `letter-spacing`）—— 所以只在单一主题上跑计算
+    样式探针，会把后几类误报成可移除。新增警告会把计数推过基线并让 CI 失败。**关闭其中任一 issue 的
+    同一个 PR 里，把这个数字降下来。**
 - **`.github/workflows/ci.yml`** 把这两遍检查作为独立的 `scanner` job 运行，让回归在 pull request
   上就被抓到，而不是等到插件商店页面。它刻意**不**并入 `npm run lint` —— 两套规则各自调优，
   而且扫描器那套不是我们能改的。
