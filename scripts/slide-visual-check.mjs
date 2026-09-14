@@ -24,7 +24,9 @@
  *
  * It drives `example-vault/` through scripts/vault-cdp.mjs (see
  * docs/development.md#driving-the-running-app-over-cdp): the app must be running
- * with `--remote-debugging-port=9222` and that vault open. The theme, font size,
+ * with `--remote-debugging-port=9222` and that vault open, or another port via
+ * `OBSIDIAN_CDP_PORT` — the dedicated capture instance uses 9333, and a window
+ * that has the user's focus is refused. The theme, font size,
  * plugin settings, Slides mode and the active note are restored afterwards; the
  * tracked `example-vault/.obsidian` files it rewrites are reported at the end.
  *
@@ -48,7 +50,14 @@ import {
 
 const { args, positional } = parseArgs({
   defaults: {
-    notes: "tests/typography-demo,tests/typography-sample-list,Grow the Deck",
+    // Every construct the stylesheet targets, so a rule change cannot hide
+    // behind a fixture that never renders it: the demo note plus the five
+    // `typography-sample-*` fixtures `src/debug.ts` already pins, plus a real
+    // deck note. `typography-sample-list` carries all four list levels.
+    notes:
+      "tests/typography-demo,tests/typography-sample-headings,tests/typography-sample-list," +
+      "tests/typography-sample-quote,tests/typography-sample-code,tests/typography-sample-media," +
+      "Grow the Deck",
     schemes: "light,dark",
     width: 1440,
     height: 900,
@@ -170,7 +179,7 @@ if (!args.out) {
     [
       "usage: slide-visual-check.mjs --out <dir> | --diff <dirA> <dirB>",
       "",
-      "  --notes <a,b>      notes to shoot (default: the typography demo, the list sample, a deck note)",
+      "  --notes <a,b>      notes to shoot (default: the demo note, the five typography-sample-* fixtures, a deck note)",
       "  --schemes <a,b>    colour schemes (default: light,dark)",
       "  --width/--height   the pinned viewport (default: 1440x900)",
       "  --theme/--size     the pinned theme and base font size",
@@ -258,6 +267,26 @@ try {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean)) {
+    // `openLinkText` **creates** a note when its target does not resolve, and
+    // the settle predicate below would then accept that empty note as the one
+    // requested — so a renamed or misspelled fixture would capture a blank
+    // frame, report a pass, and leave a stray file in the tracked vault. Check
+    // membership first and fail, rather than capture the wrong note.
+    const exists = await cdp.eval(
+      `(() => {
+        const direct = app.vault.getAbstractFileByPath(${JSON.stringify(note)});
+        const withExt = app.vault.getAbstractFileByPath(${JSON.stringify(note)} + ".md");
+        const link = app.metadataCache.getFirstLinkpathDest(${JSON.stringify(note)}, "");
+        return !!(direct || withExt || link);
+      })()`,
+    );
+    if (!exists) {
+      throw new Error(
+        `refusing to capture "${note}": it does not resolve to a file in example-vault/. ` +
+          `openLinkText would create an empty note, and the settle would accept it as the ` +
+          `requested one — so the run would report a pass over a blank frame.`,
+      );
+    }
     await cdp.open(note);
     await cdp.eval(
       `(async () => {
@@ -266,6 +295,17 @@ try {
       await new Promise((r) => setTimeout(r, 700));
       plugin.refresh();
       await new Promise((r) => setTimeout(r, 400));
+      // CodeMirror only renders lines in the viewport, so a residual scrollTop
+      // from a previous note in this script run would change the rendered line
+      // set and the next shot would be a different frame with nothing changed.
+      // Reset it on the **active leaf's** scroller — the same element the settle
+      // predicate reads — because a bare document query can hit another editor
+      // in the DOM and leave the one we shoot unscrolled.
+      const scroller = document
+        .querySelector(".workspace-leaf.mod-active .markdown-source-view.mod-cm6.is-live-preview")
+        ?.querySelector(".cm-scroller");
+      if (!scroller) throw new Error("no .cm-scroller in the active leaf — cannot reset the scroll position");
+      scroller.scrollTop = 0;
       // Opening the note focuses the editor and puts a caret on some line; the
       // active line carries a background tint and one extra pixel of layout.
       // Drop focus out of the document again so this shot starts from the same
@@ -316,6 +356,12 @@ try {
             // as the line count happened to be stable (the 221-pixel false
             // drift this check was written to catch came from exactly that).
             const note = app.workspace.getActiveFile()?.path ?? "(none)";
+            // The scroll position decides which lines CodeMirror paints at all,
+            // so it belongs in the key: a scroll-only change can leave the line
+            // count and the text length identical and still be a different
+            // frame. Read it from the active leaf, like the scoped view above, so
+            // a second editor in the DOM cannot mask it.
+            const scroller = view?.querySelector(".cm-scroller");
             return {
               dark,
               note,
@@ -325,6 +371,7 @@ try {
                 Math.round(r.width), Math.round(r.height), Math.round(r.top),
                 bar ? Math.round(bar.height) : -1,
                 document.querySelectorAll(".cm-line").length,
+                scroller ? Math.round(scroller.scrollTop) : -1,
                 document.activeElement?.tagName ?? "(none)",
                 (() => {
                   const c = document.querySelector(".cm-content");

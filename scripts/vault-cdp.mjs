@@ -49,10 +49,12 @@
  * files that stay rewritten even after a successful restore.
  *
  * The running app must have been started with `--remote-debugging-port=9222`
- * (or another port via `OBSIDIAN_CDP_PORT`). A window that is occluded is
- * still drivable, but Chrome throttles it: `requestAnimationFrame` may never
- * fire and Obsidian's `Menu` mounts no DOM — assert on behaviour and on
- * handlers rather than on rendered pixels, and say so in the report.
+ * (or another port via `OBSIDIAN_CDP_PORT` — the dedicated capture instance uses
+ * 9333, see docs/development.md#driving-the-running-app-over-cdp). A window that
+ * is occluded is still drivable, but Chrome throttles it: `requestAnimationFrame`
+ * may never fire and Obsidian's `Menu` mounts no DOM — assert on behaviour and on
+ * handlers rather than on rendered pixels, and say so in the report. A window that
+ * has the user's focus is refused outright; `NS_ALLOW_FOCUSED_WINDOW=1` overrides.
  */
 
 import { realpathSync } from "node:fs";
@@ -384,6 +386,13 @@ class Cdp {
  * repository's `example-vault/`. Zero matches means the vault is not open (or
  * the port is a different app); several means the identity is ambiguous. Both
  * throw — never fall back to "the first target".
+ *
+ * Identity is **not** enough on its own (AGENTS.md Rule 3): if `example-vault/`
+ * is open in the window the user is typing in, the right vault is the wrong
+ * instance, and driving it swaps the note under their cursor — their next
+ * keystroke lands in the note this check opened. So a matched window that
+ * reports `document.hasFocus()` is refused too, unless `NS_ALLOW_FOCUSED_WINDOW=1`
+ * says a human deliberately means to watch this one run.
  */
 export async function connect(port = Number(process.env.OBSIDIAN_CDP_PORT ?? 9222)) {
   const targets = await pageTargets(port);
@@ -402,8 +411,10 @@ export async function connect(port = Number(process.env.OBSIDIAN_CDP_PORT ?? 922
       const title = await probe.evalRaw(`document.title`);
       seen.push(`${title} → ${basePath}`);
       if (sameVault(basePath, EXPECTED_VAULT)) {
-        // the probe is already connected to the right window — reuse it
-        matches.push(probe);
+        // the probe is already connected to the right window — reuse it. The
+        // focus probe runs here, in the loop, so a throw cannot be swallowed
+        // by the `catch` below (which exists for unreadable targets).
+        matches.push({ probe, focused: await probe.evalRaw(`document.hasFocus()`) });
         continue;
       }
     } catch (error) {
@@ -424,7 +435,20 @@ export async function connect(port = Number(process.env.OBSIDIAN_CDP_PORT ?? 922
         `Windows seen: ${seen.join("; ")}`,
     );
   }
-  return matches[0];
+
+  const [{ probe, focused }] = matches;
+  // Right vault, wrong instance: the user is typing in the window we matched,
+  // so opening a note here would move their caret into a tracked fixture.
+  if (focused && process.env.NS_ALLOW_FOCUSED_WINDOW !== "1") {
+    throw new Error(
+      `refusing to drive: the window holding ${EXPECTED_VAULT} has the user's focus. Driving it ` +
+        `would swap the note under their cursor, and their next keystroke would land in the note ` +
+        `this check opens. Use the dedicated capture instance ` +
+        `(docs/development.md#driving-the-running-app-over-cdp), or set ` +
+        `NS_ALLOW_FOCUSED_WINDOW=1 if you deliberately mean to drive this one.`,
+    );
+  }
+  return probe;
 }
 
 // ── CLI ────────────────────────────────────────────────────────────────────
@@ -451,7 +475,9 @@ function usage() {
     "  delete-notes <name...>    remove scratch notes",
     "",
     "The vault must be open in an Obsidian started with --remote-debugging-port=9222,",
+    "(or another port via OBSIDIAN_CDP_PORT — the dedicated capture instance uses 9333),",
     "and it must be this repository's example-vault — see docs/development.md.",
+    "A window that has the user's focus is refused; NS_ALLOW_FOCUSED_WINDOW=1 overrides.",
   ].join("\n");
 }
 

@@ -26,6 +26,8 @@ The human opens **`example-vault/`** in Obsidian **once** and never needs to reo
   2. **Verify** — run `npm run check` / `npm run test` / `npm run lint` / `npm run format:check` / `npm run build` and confirm `main.js` is in sync (`git diff --exit-code -- main.js`).
 - `npm run dev` (esbuild watch) is only needed while **actively editing** `main.ts`; viewing a branch's behavior needs nothing but the switch + reload (each branch carries its own committed, in-sync `main.js`).
 
+**Never drive the instance the human is working in.** A CDP capture or a `slide-visual-check` run belongs in the dedicated instance, never their own Obsidian — see [vault-cdp-testing](../vault-cdp-testing/SKILL.md) for the rule and the procedure.
+
 ## Workflow
 
 ### 1. Create / enter a branch (single checkout)

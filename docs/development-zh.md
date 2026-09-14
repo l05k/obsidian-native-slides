@@ -80,8 +80,8 @@ npm run dev        # 监听 main.ts，变更时自动重建 main.js
 - **配置扰动**：Obsidian 运行时会改写库里**被追踪**的配置（`appearance.json`、
   `community-plugins.json`、`core-plugins.json`）。切分支或开 PR 前用
   `git restore -- example-vault/.obsidian` 还原，之后再确认一次 `git status`。
-- **驱动 App**（例如通过 CDP 的 `--remote-debugging-port=9222`）是允许的，而且往往是验证「手势类行为」
-  的唯一手段 —— 见下方「通过 CDP 驱动运行中的 App」，它才是把脚本限制在 `example-vault/` 里的机制。
+- **驱动 App**（例如通过 CDP）是允许的，而且往往是验证「手势类行为」的唯一手段 —— 见下方
+  「通过 CDP 驱动运行中的 App」，它才是把脚本限制在 `example-vault/` 里的机制。
 
 ### 通过 CDP 驱动运行中的 App
 
@@ -121,6 +121,33 @@ node scripts/vault-cdp.mjs delete-notes "Check A" "Check B"
 
 多步验证写在 `import` 它的脚本里 —— 它该放在 `scripts/` 还是仓库之外的临时文件，规则见
 [`.agents/skills/vault-cdp-testing/SKILL.md`](../.agents/skills/vault-cdp-testing/SKILL.md)：
+
+**截图要在专用实例里跑，不要用你正在工作的那个。** 两个彼此独立的原因，而且都跟「把窗口提到前台」无关
+—— 采集路径里没有任何一步会聚焦或提升 OS 窗口，`Page.bringToFront` 在本机甚至不足以把窗口抬起来
+（见下文的三次事故）。
+
+- **输入风险的关键是「哪个窗口」，而不是「是否提升」。** CDP 靠库身份选目标 —— `connect()` 问的是每个
+  窗口的 `app.vault.adapter.getBasePath()`，从不看 OS 焦点 —— 所以如果 `example-vault/` 恰好开在用户
+  *正在输入*的那个窗口里，`connect()` 会成功（库对、实例错），检查的 `openLinkText` 就会把那个窗口的
+  当前笔记换掉。用户的下一记击键于是落进检查刚打开的那篇笔记，而在 `example-vault/` 里那是被跟踪的
+  fixture。`tests/typography-sample-media.md` 里多出来的那个回车就是这么来的。
+- **可复现性风险是另一回事。** 后台或被遮挡的窗口会被 Chromium 节流，光栅化结果不可复现。
+
+两者由同一个补救办法解决：另起一个只装 `example-vault/` 的 Obsidian，以非前台方式启动并关闭节流。
+
+```sh
+open -g -na Obsidian --args \
+  --user-data-dir=/tmp/ns-obsidian-profile --remote-debugging-port=9333 \
+  --disable-background-timer-throttling --disable-backgrounding-occluded-windows \
+  --disable-renderer-backgrounding --disable-features=CalculateNativeWinOcclusion
+OBSIDIAN_CDP_PORT=9333 npm run check:visual -- --out /tmp/ns-after
+```
+
+首次需要往 `/tmp/ns-obsidian-profile/obsidian.json` 里只写入本库 —— 否则新 profile 会弹出库选择器，
+`connect()` 会因为匹配数为 0 而中止。`-g` 管的是**启动**而不是采集：它让 `open` 不激活新实例，因此
+它永远不会跑到前台。所有检查脚本都认 `OBSIDIAN_CDP_PORT`，护栏依然生效 —— 只装 `example-vault/` 的
+专用实例恰好是一个匹配。`connect()` 还会**拒绝一个报告 `document.hasFocus() === true` 的窗口**
+—— 这就是把输入风险从约定变成机制 —— 当人有意要看着检查跑时，用 `NS_ALLOW_FOCUSED_WINDOW=1` 覆盖。
 
 ```js
 import { connect, sameArray } from "<repo>/scripts/vault-cdp.mjs";

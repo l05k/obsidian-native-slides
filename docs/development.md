@@ -95,9 +95,9 @@ or a manual test at a vault that holds real notes.
   (`appearance.json`, `community-plugins.json`, `core-plugins.json`). Restore it with
   `git restore -- example-vault/.obsidian` before switching branches or opening a PR, and re-check
   `git status` afterwards.
-- **Driving the app** over CDP with `--remote-debugging-port=9222` is allowed and often the only
-  way to check a behaviour that is a gesture — see _Driving the running app over CDP_ below, which is
-  what keeps such a script on `example-vault/`.
+- **Driving the app** over CDP is allowed and often the only way to check a behaviour that is a
+  gesture — see _Driving the running app over CDP_ below, which is what keeps such a script on
+  `example-vault/`.
 
 ### Driving the running app over CDP
 
@@ -144,6 +144,40 @@ node scripts/vault-cdp.mjs delete-notes "Check A" "Check B"
 A multi-step check is a script that imports it — whether it belongs in `scripts/` or in a scratch file
 outside the repository is the rule in
 [`.agents/skills/vault-cdp-testing/SKILL.md`](../.agents/skills/vault-cdp-testing/SKILL.md):
+
+**Run captures in a dedicated instance, not the one you are working in.** Two independent reasons,
+and neither is about raising a window — nothing in the capture path focuses or raises an OS window,
+and `Page.bringToFront` has not even been enough to lift one here (see the incidents below).
+
+- **The input hazard is about _which window_, not about raising it.** CDP drives by vault identity —
+  `connect()` asks each window `app.vault.adapter.getBasePath()`, never the OS focus — so if
+  `example-vault/` happens to be open in the window the user is _already_ typing in, `connect()`
+  succeeds (right vault, wrong instance) and the check's `openLinkText` swaps that window's active
+  note. The user's next keystroke then lands in the note the check just opened, which in
+  `example-vault/` is a tracked fixture. That is exactly how an `Enter` got into
+  `tests/typography-sample-media.md`.
+- **The reproducibility hazard is separate.** A backgrounded or occluded window is throttled by
+  Chromium, so its rasterisation is not reproducible.
+
+Both are answered by the same remedy: a second Obsidian holding only `example-vault/`, launched out
+of the foreground and with throttling disabled.
+
+```sh
+open -g -na Obsidian --args \
+  --user-data-dir=/tmp/ns-obsidian-profile --remote-debugging-port=9333 \
+  --disable-background-timer-throttling --disable-backgrounding-occluded-windows \
+  --disable-renderer-backgrounding --disable-features=CalculateNativeWinOcclusion
+OBSIDIAN_CDP_PORT=9333 npm run check:visual -- --out /tmp/ns-after
+```
+
+Seed `/tmp/ns-obsidian-profile/obsidian.json` with just this vault the first time — otherwise a fresh
+profile opens the vault chooser and `connect()` aborts on zero matches. `-g` is about the **launch**,
+not the capture: it keeps `open` from activating the new instance, so it never comes to the
+foreground. Every check script honours `OBSIDIAN_CDP_PORT`, and the guard still applies — a dedicated
+instance holding only `example-vault/` is exactly one match. `connect()` also **refuses a window that
+reports `document.hasFocus() === true`** — the input hazard enforced mechanically instead of by
+convention — and `NS_ALLOW_FOCUSED_WINDOW=1` overrides that when a human deliberately wants to watch
+the check run.
 
 ```js
 import { connect, sameArray } from "<repo>/scripts/vault-cdp.mjs";
