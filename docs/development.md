@@ -49,10 +49,18 @@ npm run check:scanner:css  # stylelint-config-obsidianmd over styles.css
   two of the nine are formatting Prettier owns). And `plugin/no-unsupported-browser-features` is
   pinned to `electron >= 30` — the scanner targets Obsidian 1.6.5 (its own baseline, the version the
   scorecard names), which ships Electron 30 — so it reports `css-text-indent` on the list geometry.
-- **The `--max-warnings 44` baseline** in `check:scanner:css` is not a target: it is 34
-  `!important` (#133) + 6 `:has` (#135) + 4 `text-indent` (#134), the three tracked follow-ups.
-  A new warning pushes the count over the baseline and fails CI. **Lower the number in the same PR
-  that closes one of those issues.**
+- **The `--max-warnings 24` baseline** in `check:scanner:css` is not a target: it is 14
+  `!important` (#133) + 6 `:has` (#135) + 4 `text-indent` (#134), the three tracked follow-ups. The 14
+  are not one story, which is why "it fights an inline style Obsidian writes" is the wrong split: 9
+  fight inline styles Obsidian writes (the card's `padding`, the eight list offsets), 1 has to outrank
+  this file's own `!important` (the card-title `padding-top`), 1 hides the pointer (`cursor`), and 3
+  only bind under a theme — the `.cm-line` `width`/`margin-right` pair (measured load-bearing under
+  Minimal, a no-op under Obsidian's own theme and Blue Topaz) and the title's `margin-inline`, whose
+  competing rule is Minimal's `margin-inline: var(--content-margin) !important`. **A computed-style
+  probe on one theme therefore reports the last group as removable**, so run
+  `npm run check:style-snapshot` against both installed themes before believing it. A new warning
+  pushes the count over the baseline and fails CI. **Lower the number in the same PR that closes one
+  of those issues.**
 - **`.github/workflows/ci.yml`** runs both passes as its own `scanner` job, so a regression is
   caught on the pull request instead of on the plugin's store page. It is deliberately _not_ part of
   `npm run lint` — the two rule sets are tuned separately, and the scanner's set is not ours to
@@ -324,8 +332,17 @@ The source is split into `src/` modules (`types`, `mode`, `deck-service`,
 - **`slide-geometry-snapshot.mjs`** (`npm run check:geometry-snapshot`) — dumps every computed number
   the card's layout is made of (card box and padding, title box, every line, every image, the chrome
   Slides mode hides, the body cursor), or diffs two dumps and fails on drift beyond `--tolerance`.
+- **`slide-style-snapshot.mjs`** (`npm run check:style-snapshot`) — **the primary gate for a CSS change
+  whose rendered result must not move**: dumps the full computed style of every element Slides mode
+  renders (every property, plus the `::before`/`::after` boxes, across all seven notes), or diffs two
+  dumps and fails on any difference beyond `--tolerance` (default 0). Capture the two dumps
+  **back-to-back in one session on one instance** — it pins the theme, scheme, font size, plugin
+  settings and tab-bar height, but a capture that follows someone else's driving of the app can still
+  start from a different environment. The pixel check below is the backstop, not the gate.
 - **`slide-visual-check.mjs`** (`npm run check:visual`) — captures deterministic screenshots of the
   slides (pinned viewport, theme, font size and scheme; animations and the caret frozen) and compares
   two capture directories pixel by pixel, failing on anything beyond `--maxDiff` pixels. Its `--diff`
   mode needs **`python3` with Pillow** on `PATH` — the only part of the repository that does; nothing
-  else installs or declares it.
+  else installs or declares it. **`--tolerance` is informational, not a gate**: the rasteriser flakes
+  on an unchanged tree (measured: 4 pixels of Δ3/255 at a glyph edge), so a tolerance small enough to
+  be safe does not absorb it, and one large enough to absorb it hides any real change of that size.

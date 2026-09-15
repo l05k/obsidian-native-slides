@@ -6,7 +6,7 @@
    The slides bar takes the status bar's spot; native modes keep
    Obsidian's default status bar untouched. */
 body.native-slides-mode .status-bar {
-  display: none !important;
+  display: none;
 }
 
 /* ── 2. Slides mode: hide in-note properties in Live Preview ──
@@ -17,7 +17,7 @@ body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
   .metadata-container {
-  display: none !important;
+  display: none;
 }
 
 /* ── 3. Slides mode: immersive layout ─────────────────────
@@ -28,7 +28,7 @@ body.native-slides-mode .workspace-ribbon,
 body.native-slides-mode .workspace-split.mod-left-split,
 body.native-slides-mode .workspace-split.mod-right-split,
 body.native-slides-mode .workspace-tabs.mod-top .workspace-tab-header-container {
-  display: none !important;
+  display: none;
 }
 
 /* ── 4. The slides bar: takes over the status bar spot ── */
@@ -62,7 +62,13 @@ body.native-slides-mode .workspace-tabs.mod-top .workspace-tab-header-container 
 
 /* Presentation pointer hiding: every cursor in the window disappears
    (toggled by the Toggle Mouse Pointer command; the body class is cleared
-   automatically outside Slides mode). */
+   automatically outside Slides mode). `!important` is load-bearing: Obsidian
+   and CodeMirror set `cursor` on these elements themselves, so a plain
+   `* { cursor: none }` loses wherever they do — images revert to `zoom-in`,
+   collapse indicators to `default`. Measured on a scratch note in the
+   example vault: 0 of the 339 elements in the active leaf kept a visible
+   cursor with the `!important`, 58 of them without it (the count tracks the
+   note, so treat it as an order of magnitude, not a fixed number). */
 body.native-slides-pointer-hidden,
 body.native-slides-pointer-hidden * {
   cursor: none !important;
@@ -502,14 +508,14 @@ body.native-slides-mode
   .cm-scroller {
   background: var(--ns-backdrop, var(--background-secondary));
   padding-top: 40px;
-  padding-bottom: 0 !important;
+  padding-bottom: 0;
 }
 body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
   .cm-sizer {
-  min-height: 0 !important;
-  padding-bottom: 0 !important;
+  min-height: 0;
+  padding-bottom: 0;
   max-width: none;
 }
 /* Shared slide typography constants resolve on the card AND on the card
@@ -587,7 +593,10 @@ body.native-slides-mode
   flex-grow: 0;
   margin-left: auto;
   margin-right: auto;
-  min-height: 0 !important; /* wrap content → visible bottom edge */
+  min-height: 0; /* wrap content → visible bottom edge */
+  /* Load-bearing: Obsidian's layout writes the editor's own padding inline on
+     this element (measured `padding-bottom: 421px`), so only `!important`
+     beats it. */
   padding: var(--ns-pad-y, 0.5em) var(--ns-pad-x, 1em) !important;
   background-color: var(--ns-card-bg, var(--background-primary));
   border: var(--ns-card-border, none);
@@ -604,7 +613,14 @@ body.native-slides-mode
   /* With "readable line width" on, app styling sizes every line for the
      full-width editor (explicit width + negative right margin), which
      pushes each line past the card's right border. Lines are plain blocks
-     inside the card. */
+     inside the card. Both declarations are load-bearing only under a theme
+     that sets a line width: under Minimal, dropping `width` alone hands the
+     line to the theme's 920px box (measured: 1104px → 920px, shifted right,
+     `margin-left` 0 → 184px), while dropping `margin-right` alone changes
+     nothing because `width` still holds the line at the card's full width
+     (with both gone the 920px box is centred instead, 92px each side). Under
+     Obsidian's own theme and under Blue Topaz neither declaration moves
+     anything — so a probe on those alone reports them as removable. */
   width: auto !important;
   margin-right: 0 !important;
 }
@@ -631,6 +647,11 @@ body.native-slides-mode
   .markdown-source-view.mod-cm6.is-live-preview
   .cm-content[data-slides-title-native] {
   position: relative;
+  /* The one declaration here that must stay `!important`: the `.cm-content`
+     rule above pins the card's padding with a `padding` shorthand that is
+     itself `!important`, and importance beats specificity — without this the
+     shorthand's `padding-top` wins and the reserved title space collapses
+     (measured: 64.73px → 11.5px). */
   padding-top: calc(
     var(--ns-pad-y, 0.5em) + var(--ns-title-spacing, var(--p-spacing, 1rem)) +
       var(--h1-line-height, 1.3) * var(--h1-size, 2em) + var(--ns-title-rule-h, 0px)
@@ -690,6 +711,15 @@ body.native-slides-mode
      because the theme's own is `!important` and only `!important` beats it. */
   width: auto;
   max-width: none;
+  /* Load-bearing, and only under a theme: Minimal styles the readable line
+     width on this element too (`margin-inline: var(--content-margin)
+     !important`, with `--content-margin: auto`), and only `!important` beats
+     it. With the `width: auto` above holding the box between this rule's own
+     `left` and `right`, that `auto` would resolve to 0 either way — the box is
+     identical without the priority under Obsidian's own theme, Minimal and
+     Blue Topaz — so what this guards is the case where a theme's own `width`
+     wins and the box would otherwise re-centre, not a difference either
+     installed theme produces today. */
   margin-inline: 0 !important;
   padding-top: calc(var(--ns-title-spacing, var(--p-spacing, 1rem)) / 1.4);
   padding-bottom: calc(var(--ns-title-rule-pad, 0px) / 1.4);
@@ -710,12 +740,14 @@ body.native-slides-mode
    Themes often tighten heading letter-spacing (here -0.015em); the generated
    ::before title can't inherit it cleanly, so instead we relax the body H1 to
    `normal` in Slides mode. Both then render with the same spacing (digits and
-   punctuation included). */
+   punctuation included). No `!important`: this selector's (0,7,1) specificity
+   already outranks the theme's heading rules, and dropping the priority moved
+   nothing under Obsidian's own theme, Minimal or Blue Topaz. */
 body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
   .cm-header-1 {
-  letter-spacing: normal !important;
+  letter-spacing: normal;
 }
 
 /* ── 10. Style templates (Settings → Style template) ────────
@@ -837,7 +869,7 @@ body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
   .cm-line.HyperMD-list-line:not(.HyperMD-task-line):not(.HyperMD-list-line-nobullet) {
-  padding-block: 0.125em !important;
+  padding-block: 0.125em;
 }
 body.native-slides-mode
   .workspace-leaf.mod-active
@@ -853,7 +885,13 @@ body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
   .cm-line.HyperMD-list-line-4:has(+ .cm-line:not(.HyperMD-list-line-4)) {
-  padding-bottom: 0.25em !important;
+  /* No `!important`: it was load-bearing only while the row-pitch rule above
+     carried one of its own — importance beats specificity, so that rule used
+     to win this tie. With the pitch plain (this change) the tie is decided by
+     source order, and this rule is the later one (measured: `padding-bottom`
+     5.75px with and without the priority, under Obsidian's own theme, Minimal
+     and Blue Topaz). */
+  padding-bottom: 0.25em;
 }
 /* List geometry: pin every level to the wiki's measured text offsets
    (35 / 55.4 / 75.8 / … px from the card edge, −16.8px content offset).
@@ -940,8 +978,15 @@ body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
   .HyperMD-quote {
-  border-inline-start: 1px solid var(--background-modifier-border) !important;
-  border-left: 1px solid var(--background-modifier-border) !important;
+  /* The same edge twice: `border-inline-start` is `border-left` in this
+     horizontal left-to-right layout. Either declaration alone keeps the
+     border (measured under Obsidian's own theme, Minimal and Blue Topaz:
+     `border-left-style`/`-width` stay `solid`/1px with either one removed);
+     only removing both drops it to `none`/0px. No rule in those themes sets
+     `border-left-style` at all, so the pair is belt-and-braces rather than a
+     fight with an app rule. */
+  border-inline-start: 1px solid var(--background-modifier-border);
+  border-left: 1px solid var(--background-modifier-border);
   line-height: 1.625;
 }
 /* The wiki shows plain nested lists (no indent guides) and links without
@@ -962,7 +1007,7 @@ body.native-slides-mode
   .markdown-source-view.mod-cm6.is-live-preview
   .cm-content
   .cm-url {
-  text-decoration: none !important;
+  text-decoration: none;
 }
 body.native-slides-mode
   .workspace-leaf.mod-active
@@ -984,8 +1029,8 @@ body.native-slides-mode
   .markdown-source-view.mod-cm6.is-live-preview
   .cm-content
   .cm-underline::after {
-  display: none !important;
-  content: none !important;
+  display: none;
+  content: none;
 }
 body.native-slides-mode
   .workspace-leaf.mod-active
@@ -1028,7 +1073,7 @@ body.native-slides-mode
   .cm-formatting-list-ul
   .list-bullet
   .cm-formatting-list {
-  color: transparent !important;
+  color: transparent;
 }
 body.native-slides-mode
   .workspace-leaf.mod-active
@@ -1036,8 +1081,8 @@ body.native-slides-mode
   .cm-line:not(.cm-active)
   .cm-formatting-list-ul
   .list-bullet::before {
-  display: none !important;
-  content: none !important;
+  display: none;
+  content: none;
 }
 body.native-slides-mode
   .workspace-leaf.mod-active
@@ -1045,7 +1090,7 @@ body.native-slides-mode
   .cm-line:not(.cm-active)
   .cm-formatting-list-ul
   .list-bullet::after {
-  content: "" !important;
+  content: "";
   position: absolute;
   left: 0;
   top: 50%;
@@ -1075,7 +1120,7 @@ body.native-slides-mode
   padding-top: 12px;
   padding-bottom: calc(
     var(--native-slides-bar-height, var(--native-slides-tabbar-height, 38px)) + 12px
-  ) !important;
+  );
 }
 body.native-slides-mode
   .workspace-leaf.mod-active
