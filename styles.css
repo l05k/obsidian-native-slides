@@ -63,9 +63,12 @@ body.native-slides-mode .workspace-tabs.mod-top .workspace-tab-header-container 
 /* Presentation pointer hiding: every cursor in the window disappears
    (toggled by the Toggle Mouse Pointer command; the body class is cleared
    automatically outside Slides mode). `!important` is load-bearing: Obsidian
-   and CodeMirror set `cursor` on these elements themselves, so without it the
-   pointer comes back on 67 of the 262 elements in the active leaf (measured:
-   images revert to `zoom-in`, collapse indicators to `default`). */
+   and CodeMirror set `cursor` on these elements themselves, so a plain
+   `* { cursor: none }` loses wherever they do — images revert to `zoom-in`,
+   collapse indicators to `default`. Measured on a scratch note in the
+   example vault: 0 of the 339 elements in the active leaf kept a visible
+   cursor with the `!important`, 58 of them without it (the count tracks the
+   note, so treat it as an order of magnitude, not a fixed number). */
 body.native-slides-pointer-hidden,
 body.native-slides-pointer-hidden * {
   cursor: none !important;
@@ -610,10 +613,14 @@ body.native-slides-mode
   /* With "readable line width" on, app styling sizes every line for the
      full-width editor (explicit width + negative right margin), which
      pushes each line past the card's right border. Lines are plain blocks
-     inside the card. Both declarations are load-bearing under a theme that
-     sets a line width (Minimal: measured `width` 920px → 971.5px and
-     `margin-right` 0 → 92px without them), though not under the default
-     theme — so a probe on one theme reports them as removable. */
+     inside the card. Both declarations are load-bearing only under a theme
+     that sets a line width: under Minimal, dropping `width` alone hands the
+     line to the theme's 920px box (measured: 1104px → 920px, shifted right,
+     `margin-left` 0 → 184px), while dropping `margin-right` alone changes
+     nothing because `width` still holds the line at the card's full width
+     (with both gone the 920px box is centred instead, 92px each side). Under
+     Obsidian's own theme and under Blue Topaz neither declaration moves
+     anything — so a probe on those alone reports them as removable. */
   width: auto !important;
   margin-right: 0 !important;
 }
@@ -704,11 +711,15 @@ body.native-slides-mode
      because the theme's own is `!important` and only `!important` beats it. */
   width: auto;
   max-width: none;
-  /* Load-bearing, and only under a theme: a theme that styles the readable
-     line width restyles this element too (Minimal: `margin-inline:
-     var(--content-margin) !important`), and only `!important` beats it. The
-     default theme does not set it, so a computed-style probe on the default
-     theme reports this as removable — it is not. */
+  /* Load-bearing, and only under a theme: Minimal styles the readable line
+     width on this element too (`margin-inline: var(--content-margin)
+     !important`, with `--content-margin: auto`), and only `!important` beats
+     it. With the `width: auto` above holding the box between this rule's own
+     `left` and `right`, that `auto` would resolve to 0 either way — the box is
+     identical without the priority under Obsidian's own theme, Minimal and
+     Blue Topaz — so what this guards is the case where a theme's own `width`
+     wins and the box would otherwise re-centre, not a difference either
+     installed theme produces today. */
   margin-inline: 0 !important;
   padding-top: calc(var(--ns-title-spacing, var(--p-spacing, 1rem)) / 1.4);
   padding-bottom: calc(var(--ns-title-rule-pad, 0px) / 1.4);
@@ -729,16 +740,14 @@ body.native-slides-mode
    Themes often tighten heading letter-spacing (here -0.015em); the generated
    ::before title can't inherit it cleanly, so instead we relax the body H1 to
    `normal` in Slides mode. Both then render with the same spacing (digits and
-   punctuation included).
-   Kept `!important`: the purpose is to override what a theme did, and only the
-   two themes installed here (Minimal, Blue Topaz) were verified — under both,
-   this selector's (0,7,1) specificity already wins, but a theme that sets
-   heading letter-spacing with `!important` of its own would need this. */
+   punctuation included). No `!important`: this selector's (0,7,1) specificity
+   already outranks the theme's heading rules, and dropping the priority moved
+   nothing under Obsidian's own theme, Minimal or Blue Topaz. */
 body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
   .cm-header-1 {
-  letter-spacing: normal !important;
+  letter-spacing: normal;
 }
 
 /* ── 10. Style templates (Settings → Style template) ────────
@@ -876,11 +885,13 @@ body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
   .cm-line.HyperMD-list-line-4:has(+ .cm-line:not(.HyperMD-list-line-4)) {
-  /* Load-bearing: the wiki gives a list item 4px below it only where the
-     indent shallows back out. The sibling rules above are the only way to say
-     that in CSS, and their specificity ties with the row rules that would
-     otherwise win. */
-  padding-bottom: 0.25em !important;
+  /* No `!important`: it was load-bearing only while the row-pitch rule above
+     carried one of its own — importance beats specificity, so that rule used
+     to win this tie. With the pitch plain (this change) the tie is decided by
+     source order, and this rule is the later one (measured: `padding-bottom`
+     5.75px with and without the priority, under Obsidian's own theme, Minimal
+     and Blue Topaz). */
+  padding-bottom: 0.25em;
 }
 /* List geometry: pin every level to the wiki's measured text offsets
    (35 / 55.4 / 75.8 / … px from the card edge, −16.8px content offset).
@@ -967,11 +978,15 @@ body.native-slides-mode
   .workspace-leaf.mod-active
   .markdown-source-view.mod-cm6.is-live-preview
   .HyperMD-quote {
+  /* The same edge twice: `border-inline-start` is `border-left` in this
+     horizontal left-to-right layout. Either declaration alone keeps the
+     border (measured under Obsidian's own theme, Minimal and Blue Topaz:
+     `border-left-style`/`-width` stay `solid`/1px with either one removed);
+     only removing both drops it to `none`/0px. No rule in those themes sets
+     `border-left-style` at all, so the pair is belt-and-braces rather than a
+     fight with an app rule. */
   border-inline-start: 1px solid var(--background-modifier-border);
-  /* Load-bearing: Obsidian's own blockquote rule wins on specificity, so
-     without `!important` the border disappears (measured: `border-left-style`
-     solid → none, width 0.76px → 1.14px). */
-  border-left: 1px solid var(--background-modifier-border) !important;
+  border-left: 1px solid var(--background-modifier-border);
   line-height: 1.625;
 }
 /* The wiki shows plain nested lists (no indent guides) and links without

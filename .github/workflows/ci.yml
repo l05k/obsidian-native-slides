@@ -40,7 +40,7 @@ jobs:
   # The community scanner's own passes, so a regression is caught here instead
   # of on the plugin's store page. See stylelint.config.mjs and
   # eslint.obsidianmd.mjs for what each mirrors and what it deliberately does
-  # not (the CSS side's `--max-warnings 27` baseline is the three tracked
+  # not (the CSS side's `--max-warnings 24` baseline is the three tracked
   # follow-ups, #133/#134/#135).
   scanner:
     runs-on: ubuntu-latest

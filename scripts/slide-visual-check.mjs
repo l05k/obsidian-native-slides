@@ -22,6 +22,13 @@
  * first prove the capture is stable by diffing a directory against a second
  * capture of the same tree, and only then trust a before/after comparison.
  *
+ * `--tolerance` is **informational, not a gate**. The rasteriser flakes on an
+ * unchanged tree (measured: 4 pixels of Δ3/255 at a glyph edge), so a tolerance
+ * small enough to be safe does not absorb it, and one large enough to absorb it
+ * hides any real change of that size. The gate for a change whose rendered
+ * result must not move is `npm run check:style-snapshot`, which compares exact
+ * computed values instead of pixels.
+ *
  * It drives `example-vault/` through scripts/vault-cdp.mjs (see
  * docs/development.md#driving-the-running-app-over-cdp): the app must be running
  * with `--remote-debugging-port=9222` and that vault open, or another port via
@@ -184,6 +191,10 @@ if (!args.out) {
       "  --width/--height   the pinned viewport (default: 1440x900)",
       "  --theme/--size     the pinned theme and base font size",
       "  --maxDiff <n>      differing pixels allowed in --diff (default: 0)",
+      "  --tolerance <n>    per-channel grey absorbed as rasteriser flake — informational,",
+      "                     not a gate: the flake is 4 px at Δ3/255 on an unchanged tree,",
+      "                     so 2 does not absorb it and hides any real change of that size.",
+      "                     Use `npm run check:style-snapshot` to gate a must-not-move change.",
     ].join("\n"),
   );
   process.exit(2);
