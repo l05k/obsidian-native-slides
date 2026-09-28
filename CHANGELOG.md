@@ -8,15 +8,7 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 ## [Unreleased]
 
-### Added
-
-- **The community scanner's two passes now run in CI**, so a scorecard regression is caught on the pull request instead of on the plugin's store page. `npm run check:scanner` runs both locally: `eslint.obsidianmd.mjs` wraps the scanner's own `eslint-plugin-obsidianmd` preset over `main.ts` + `src/`, and `stylelint.config.mjs` extends the scanner's `stylelint-config-obsidianmd` over `styles.css` with nine non-scorecard rules and the two documented deviations silenced. The CSS pass carries a `--max-warnings 24` baseline — the three tracked follow-ups (#133/#134/#135) — so a new warning fails; the TypeScript pass must be clean. `.github/workflows/ci.yml` runs both as a `scanner` job (#84).
-
-### Changed
-
-- **CDP captures now run in a dedicated Obsidian instance, never the one you are working in.** `connect()` refuses a window that has the user's focus, because driving it would swap the note under their cursor and their next keystroke would land in the note the check opened; `OBSIDIAN_CDP_PORT` points the checks at a second instance launched with `-g` and background throttling disabled, which also makes a hidden window render deterministically. `slide-visual-check` now resets and keys on the scroll position, refuses a note that does not resolve (instead of capturing a blank one), and captures all six `typography-sample-*` fixtures — 14 shots, up from 6 (#139).
-- **`npm run build` now produces the release bundle** (minified, `DEV_MODE=false`) and the new **`npm run build:dev`** is the dev build (debug command included). The scanner rebuilds with `npm run build` and byte-diffs the result against the released `main.js`, so as long as `build` produced the dev bundle those two could never match — the committed `main.js` is now the release artifact the workflow publishes (#84).
-- **esbuild `^0.24` → `^0.28.2`**, closing GHSA-gv7w-rqvm-qjhr (HIGH) — the known root cause of `Build output does not match` for plugins built on the older version (#84).
+## [1.1.1] - 2026-09-28
 
 ### Fixed
 
