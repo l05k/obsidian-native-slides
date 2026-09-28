@@ -21,13 +21,14 @@ body.native-slides-mode
 }
 
 /* ── 3. Slides mode: immersive layout ─────────────────────
-   Hides the ribbon, sidebars and the top tab bar so the card fills
-   the window; the slides bar takes the tab bar's height (measured
-   at runtime → --native-slides-tabbar-height). */
+   Hides the ribbon, sidebars, top tab bar and the backlink panel
+   so the card fills the window; the slides bar takes the tab bar's
+   height (measured at runtime → --native-slides-tabbar-height). */
 body.native-slides-mode .workspace-ribbon,
 body.native-slides-mode .workspace-split.mod-left-split,
 body.native-slides-mode .workspace-split.mod-right-split,
-body.native-slides-mode .workspace-tabs.mod-top .workspace-tab-header-container {
+body.native-slides-mode .workspace-tabs.mod-top .workspace-tab-header-container,
+body.native-slides-mode .backlink-container {
   display: none;
 }
 
