@@ -100,3 +100,14 @@ describe("theme line-width caps", () => {
     expect(flat).toMatch(/\.inline-title\s*\{[^{}]*?[{;]\s*margin-inline\s*:\s*0\s*!important\s*;/);
   });
 });
+
+describe("backlink panel hidden in Slides mode", () => {
+  it("hides .backlink-container when body has native-slides-mode class", () => {
+    // Backlink panel from the core plugin must not appear during presentation.
+    // Scoped to body.native-slides-mode so it only applies in Slides mode
+    // and leaves the backlink panel untouched elsewhere.
+    expect(flat).toMatch(
+      /body\.native-slides-mode\s*\.backlink-container\s*\{[^{}]*?display\s*:\s*none\s*;/,
+    );
+  });
+});
