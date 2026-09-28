@@ -27,7 +27,7 @@ body.native-slides-mode
    takes the tab bar's height (measured at runtime →
    --native-slides-tabbar-height).
 
-   `.backlink-container` was here until 1.1.1 and matched nothing:
+   `.backlink-container` shipped in 1.1.1 and matched nothing:
    Obsidian 1.9.10 has no such element, so the rule was dead CSS and
    the panel stayed visible in Slides mode (#141). */
 body.native-slides-mode .workspace-ribbon,

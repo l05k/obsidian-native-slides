@@ -183,6 +183,10 @@ if (!sameArray(chain, [...linked, []]))
 App 正在运行，因此故意不进 CI。改动涉及卡片几何时直接跑它，下一个「只有真实布局引擎才看得到」的不变量
 也可以照它的形状写。
 
+**`scripts/check-slides-chrome.mjs` 是同一形状、但锁定的是 DOM 不变量而非几何不变量**：`styles.css` 声称在
+Slides 模式里隐藏的界面元素，必须真的渲染为隐藏 —— 这是 CSS 文本断言看不到的（#141）。用
+`npm run check:chrome` 运行。
+
 **一次行为检查遵循的流程**——它的步骤、每步的完成标准，以及把检查留在这个库上的规则——在
 [`.agents/skills/vault-cdp-testing/SKILL.md`](../.agents/skills/vault-cdp-testing/SKILL.md)；本节是它背后的机制。
 其中三条规则之所以存在，是因为下面三件事各自出过一次：
@@ -260,6 +264,7 @@ triage 映射则位于 `docs/agents/triage-labels.md` 并由 `AGENTS.md` 指向�
 
 - **`vault-cdp.mjs`** —— 上方「通过 CDP 驱动运行中的 App」里的驱动脚本，也是各检查共用的参数解析 / vault 状态辅助模块。
 - **`check-slide-geometry.mjs`**（`npm run check:geometry`）—— 在运行中的 App 里跨字号、主题与窗格宽度测量卡片标题几何，任何漂移都以非零退出码报出（#125 背后的不变量，单测看不到）。
+- **`check-slides-chrome.mjs`**（`npm run check:chrome`）—— 在运行中的 App 里断言 Slides 模式声称隐藏的界面元素是**真的**隐藏：核心插件 Backlinks 的文档内面板（`.embedded-backlinks`）在 Slides 模式之外可见，在 Slides 模式内计算值为 `display: none`、盒子高度为 0，退出 Slides 模式后重新出现。若该面板在原生模式下就不在屏幕上，或卡片与 slides 栏未布局，它会失败而不会空过（#141 背后的不变量，CSS 文本断言看不到）。
 - **`slide-geometry-snapshot.mjs`**（`npm run check:geometry-snapshot`）—— 导出卡片布局的每一个计算数值（卡片盒子与内边距、标题盒子、每一行、每张图片、Slides 模式隐藏的界面元素、正文光标），或对比两份导出并在超出 `--tolerance` 时报错。
 - **`slide-style-snapshot.mjs`**（`npm run check:style-snapshot`）—— **「渲染结果不得移动」的 CSS 改动的主闸门**：导出 Slides 模式渲染出的每个元素的完整计算样式（全部属性，外加 `::before`/`::after` 盒子，覆盖全部七张笔记），或对比两份导出、超出 `--tolerance`（默认 0）即报错。两份导出必须**同一次会话、同一个实例内连续采集** —— 它会固定主题、配色、字号、插件设置与标签栏高度，但紧跟在别人驱动过 App 之后的一次采集仍可能从不同的环境起步。下方的像素检查是后备，不是闸门。
 - **`slide-visual-check.mjs`**（`npm run check:visual`）—— 截取确定性的幻灯片截图（固定视口、主题、字号与配色，冻结动画与光标）并逐像素对比两个截图目录，超出 `--maxDiff` 即报错。其 `--diff` 模式需要 `PATH` 上有 **`python3` 与 Pillow** —— 这是仓库里唯一需要它们的地方，其它部分既不会安装也不声明该依赖。**`--tolerance` 只是参考信息，不是闸门**：光栅化在同一棵树上就会抖动（实测：字形边缘 4 个像素、Δ3/255），所以小到安全的容差吸不住它，而大到能吸住它的容差又会把同等大小的真实改动一并藏起来。

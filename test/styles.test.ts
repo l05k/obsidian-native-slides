@@ -136,20 +136,38 @@ describe("chrome hidden in Slides mode", () => {
         "cannot be asserted vacuously",
     );
   }
-  const watched = [...chromeMap[1].matchAll(/^\s*\w+:\s*"([^"]+)",\s*$/gm)].map((m) => m[1]);
+  // Line comments inside the map may name a selector in prose, so drop them
+  // before harvesting entries; and let an entry wrap across lines, so a
+  // hand-wrapped one cannot silently vanish from `watched` (the loop below would
+  // then pass without ever asserting it).
+  const watched = [...chromeMap[1].replace(/\/\/[^\n]*/g, "").matchAll(/(\w+):\s*"([^"]+)"/g)].map(
+    (m) => m[2],
+  );
   const rules: [string[], string][] = [...flat.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => [
     m[1].split(",").map((selector) => selector.trim()),
     m[2],
   ]);
-  /** The rule that hides `selector` in Slides mode, if the CSS has one */
+  /**
+   * The rule that hides `selector` in Slides mode, if the CSS has one.
+   *
+   * The candidate must both start with `body.native-slides-mode ` and end with
+   * the watched selector. The first half is what makes this a *Slides mode*
+   * contract — a rule that hides the panel in native mode is not a pass — and the
+   * second is what lets the ancestor-chain rules match: `.metadata-container` and
+   * `.cm-fold-indicator` are hidden through
+   * `.workspace-leaf.mod-active .markdown-source-view…` between the two ends.
+   *
+   * The declaration is matched with a whitespace-tolerant pattern rather than the
+   * literal `display: none;`, so a `<declaration>` written `display:none` in the
+   * CSS is still recognised as hiding the element.
+   */
   const hidingRule = (selector: string) =>
     rules.find(
       ([selectors, declarations]) =>
-        declarations.includes("display: none;") &&
+        /display\s*:\s*none\s*;/.test(declarations) &&
         selectors.some(
           (candidate) =>
-            candidate === `body.native-slides-mode ${selector}` ||
-            candidate.endsWith(` ${selector}`),
+            candidate.startsWith("body.native-slides-mode ") && candidate.endsWith(` ${selector}`),
         ),
     );
 
