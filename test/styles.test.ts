@@ -101,13 +101,78 @@ describe("theme line-width caps", () => {
   });
 });
 
-describe("backlink panel hidden in Slides mode", () => {
-  it("hides .backlink-container when body has native-slides-mode class", () => {
-    // Backlink panel from the core plugin must not appear during presentation.
-    // Scoped to body.native-slides-mode so it only applies in Slides mode
-    // and leaves the backlink panel untouched elsewhere.
-    expect(flat).toMatch(
-      /body\.native-slides-mode\s*\.backlink-container\s*\{[^{}]*?display\s*:\s*none\s*;/,
+/**
+ * Contract for the chrome Slides mode hides (#141).
+ *
+ * `styles.css` §1/§2/§3 hide Obsidian's own UI while Slides mode is on, and
+ * `scripts/slide-geometry-snapshot.mjs` watches the same set — its `chrome` map
+ * is the repository's list of "the UI Slides mode hides". The two drifted apart
+ * once already: the CSS hid `.backlink-container`, a selector Obsidian 1.9.10
+ * does not have anywhere in its DOM, while the snapshot watched
+ * `.embedded-backlinks`, the element the core Backlinks plugin actually renders
+ * — so the panel stayed on screen in Slides mode for a whole release while
+ * every check stayed green (a CSS-text assertion cannot see that a selector
+ * names nothing).
+ *
+ * This asserts the direction that catches that: every selector the snapshot
+ * watches as chrome must be hidden by a `body.native-slides-mode` rule that
+ * declares `display: none`. The watched list stays the single source of truth,
+ * and adding a chrome element to it without hiding it in the CSS fails here.
+ *
+ * The rule splitting below reads the *flattened* file (comments stripped,
+ * whitespace collapsed) with a plain `{…}` regex, which only works because
+ * styles.css declares no at-rules — the absence of `@media`/`@supports` is part
+ * of this contract.
+ */
+describe("chrome hidden in Slides mode", () => {
+  const snapshot = readFileSync(
+    fileURLToPath(new URL("../scripts/slide-geometry-snapshot.mjs", import.meta.url)),
+    "utf8",
+  );
+  const chromeMap = snapshot.match(/const chrome = \{([\s\S]*?)\n {2}\};/);
+  if (!chromeMap) {
+    throw new Error(
+      "scripts/slide-geometry-snapshot.mjs: the `chrome` map was not found — this contract " +
+        "cannot be asserted vacuously",
     );
+  }
+  const watched = [...chromeMap[1].matchAll(/^\s*\w+:\s*"([^"]+)",\s*$/gm)].map((m) => m[1]);
+  const rules: [string[], string][] = [...flat.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => [
+    m[1].split(",").map((selector) => selector.trim()),
+    m[2],
+  ]);
+  /** The rule that hides `selector` in Slides mode, if the CSS has one */
+  const hidingRule = (selector: string) =>
+    rules.find(
+      ([selectors, declarations]) =>
+        declarations.includes("display: none;") &&
+        selectors.some(
+          (candidate) =>
+            candidate === `body.native-slides-mode ${selector}` ||
+            candidate.endsWith(` ${selector}`),
+        ),
+    );
+
+  it("lists the chrome the snapshot watches", () => {
+    // A parse that silently found nothing would make the loop below vacuous.
+    expect(watched).toContain(".status-bar");
+  });
+
+  it("hides the core Backlinks plugin's in-document panel", () => {
+    // #141: `.embedded-backlinks` is the element that renders, at the bottom of
+    // the note, when the core Backlinks plugin's "Backlinks in document" is on.
+    // Naming it in both places is the cheapest guard against the drift above.
+    expect(watched).toContain(".embedded-backlinks");
+    expect(hidingRule(".embedded-backlinks")).toBeDefined();
+  });
+
+  it("hides every chrome element the geometry snapshot watches", () => {
+    for (const selector of watched) {
+      expect(
+        hidingRule(selector),
+        `${selector} is watched as chrome by slide-geometry-snapshot.mjs but no ` +
+          "body.native-slides-mode rule hides it",
+      ).toBeDefined();
+    }
   });
 });
