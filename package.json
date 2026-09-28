@@ -9,6 +9,7 @@
     "build:release": "esbuild main.ts --bundle --format=cjs --external:obsidian --outfile=main.js --sourcemap=inline --minify --define:DEV_MODE=false",
     "dev": "esbuild main.ts --bundle --format=cjs --external:obsidian --outfile=main.js --sourcemap=inline --watch=forever --define:DEV_MODE=true",
     "check": "tsc --noEmit",
+    "check:chrome": "node scripts/check-slides-chrome.mjs",
     "check:geometry": "node scripts/check-slide-geometry.mjs",
     "check:geometry-snapshot": "node scripts/slide-geometry-snapshot.mjs",
     "check:scanner": "npm run check:scanner:ts && npm run check:scanner:css",

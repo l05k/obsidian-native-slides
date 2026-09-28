@@ -216,6 +216,10 @@ drift. Run it with `npm run check:geometry` — dev-only, because it needs the r
 deliberately not part of CI. Reach for it when a change touches the card's geometry, and copy its shape
 for the next invariant that only a real layout engine can see.
 
+**`scripts/check-slides-chrome.mjs` is the same shape for a DOM invariant rather than a geometric
+one**: the chrome `styles.css` claims to hide in Slides mode has to really render hidden, which a
+CSS-text assertion cannot see (#141). Run it with `npm run check:chrome`.
+
 **The procedure a check follows** — its steps, their completion criteria and the rules that keep it on
 this vault — is [`.agents/skills/vault-cdp-testing/SKILL.md`](../.agents/skills/vault-cdp-testing/SKILL.md);
 this section is the mechanism behind it. Three incidents are why three of those rules exist:
@@ -329,6 +333,12 @@ The source is split into `src/` modules (`types`, `mode`, `deck-service`,
 - **`check-slide-geometry.mjs`** (`npm run check:geometry`) — measures the card-title geometry in the
   running app across font sizes, themes and pane widths, and exits non-zero on any drift (the
   invariant behind #125, which no unit test can see).
+- **`check-slides-chrome.mjs`** (`npm run check:chrome`) — asserts in the running app that the chrome
+  Slides mode hides really renders hidden: the core Backlinks plugin's in-document panel
+  (`.embedded-backlinks`) is on screen outside Slides mode, computes `display: none` with a zero-height
+  box inside it, and comes back when Slides mode is left. It fails rather than passing vacuously when
+  the panel is not on screen natively, or the card and the slides bar are not laid out (the invariant
+  behind #141, which a CSS-text assertion cannot see).
 - **`slide-geometry-snapshot.mjs`** (`npm run check:geometry-snapshot`) — dumps every computed number
   the card's layout is made of (card box and padding, title box, every line, every image, the chrome
   Slides mode hides, the body cursor), or diffs two dumps and fails on drift beyond `--tolerance`.

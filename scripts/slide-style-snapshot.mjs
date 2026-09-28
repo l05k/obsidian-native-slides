@@ -202,6 +202,9 @@ const COLLECT = `(() => {
     ),
     "<view-header>": root.querySelector(".view-header"),
     "<metadata-container>": root.querySelector(".metadata-container"),
+    // Inside the leaf, so the walk above already covers it — labelled so a diff
+    // names the panel Slides mode hides (#141) instead of a CodeMirror identity.
+    "<embedded-backlinks>": root.querySelector(".embedded-backlinks"),
   };
   for (const [label, el] of Object.entries(chrome)) if (el) scan(el, label);
 

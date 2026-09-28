@@ -115,6 +115,15 @@ const MEASURE = `(() => {
   };
   // The UI Slides mode hides, and the cursor it suppresses: the targets of the
   // display:none / cursor:none rules, which no card-geometry number would catch.
+  //
+  // This map is the list the CSS contract asserts against: test/styles.test.ts
+  // requires a body.native-slides-mode rule hiding every selector listed here,
+  // so adding an element without hiding it fails the contract — the drift that
+  // let .embedded-backlinks stay on screen while the CSS hid a
+  // .backlink-container that Obsidian does not have (#141).
+  // slide-style-snapshot.mjs keeps a chrome list of its own for its
+  // computed-style dumps; the two are maintained by hand, not derived from each
+  // other.
   const chrome = {
     statusBar: ".status-bar",
     ribbon: ".workspace-ribbon",

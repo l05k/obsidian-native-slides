@@ -21,14 +21,20 @@ body.native-slides-mode
 }
 
 /* ── 3. Slides mode: immersive layout ─────────────────────
-   Hides the ribbon, sidebars, top tab bar and the backlink panel
-   so the card fills the window; the slides bar takes the tab bar's
-   height (measured at runtime → --native-slides-tabbar-height). */
+   Hides the ribbon, sidebars, top tab bar and the core Backlinks
+   plugin's in-document panel (`.embedded-backlinks`, the "Backlinks
+   in document" feature) so the card fills the window; the slides bar
+   takes the tab bar's height (measured at runtime →
+   --native-slides-tabbar-height).
+
+   `.backlink-container` shipped in 1.1.1 and matched nothing:
+   Obsidian 1.9.10 has no such element, so the rule was dead CSS and
+   the panel stayed visible in Slides mode (#141). */
 body.native-slides-mode .workspace-ribbon,
 body.native-slides-mode .workspace-split.mod-left-split,
 body.native-slides-mode .workspace-split.mod-right-split,
 body.native-slides-mode .workspace-tabs.mod-top .workspace-tab-header-container,
-body.native-slides-mode .backlink-container {
+body.native-slides-mode .embedded-backlinks {
   display: none;
 }
 

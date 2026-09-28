@@ -50,7 +50,7 @@ README 中功能背后的具体机制：
 | 部分                             | 原理                                                                                                                                                                                       |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 隐藏状态栏（Slides 模式）        | `body.native-slides-mode .status-bar { display: none }`——原生模式保留 Obsidian 默认状态栏                                                                                                  |
-| 沉浸布局（Slides 模式）          | `body.native-slides-mode` 隐藏丝带/侧边栏/tab 栏/反向链接面板；slides 栏高度对齐 tab bar 实测高度（`--native-slides-tabbar-height`）                                                       |
+| 沉浸布局（Slides 模式）          | `body.native-slides-mode` 隐藏丝带/侧边栏/tab 栏/核心插件 Backlinks 的文档内面板（`.embedded-backlinks`）；slides 栏高度对齐 tab bar 实测高度（`--native-slides-tabbar-height`）           |
 | 隐藏笔记内属性面板               | `.markdown-source-view.mod-cm6.is-live-preview .metadata-container { display: none }`——属性改由 slides 栏展示                                                                              |
 | 套件解析                         | `computeDeck()` 读取每页唯一的 next 链接 → 经 `deck` 反向索引回溯到链头 → 向前遍历整条链（有防环保护）→ 返回完整链 + 当前索引                                                              |
 | 页号                             | 链中的位置，从 1 开始（链头 = 第 1 页）；不需要存储 `page-number`                                                                                                                          |
