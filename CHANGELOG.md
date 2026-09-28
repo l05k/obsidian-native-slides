@@ -8,6 +8,8 @@ Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any categ
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-09-28
+
 ### Fixed
 
 - **The core Backlinks plugin's in-document panel is hidden in Slides mode**: with that plugin enabled and **Backlinks in document** on, the panel used to render at the bottom of the card during presentation. `body.native-slides-mode .embedded-backlinks { display: none; }` now hides it, and it is untouched everywhere else (#141). The rule 1.1.1 added for this named `.backlink-container`, which Obsidian 1.9.10 does not have anywhere in its DOM, so it was dead CSS and the panel stayed on screen; `test/styles.test.ts` now cross-checks the hidden set against the `chrome` list `scripts/slide-geometry-snapshot.mjs` watches, so the two hand-maintained lists cannot drift apart; whether a selector names an element that exists at all is what the snapshot's `"(missing)"` entry reports.
