@@ -154,9 +154,9 @@ export async function captureVaultState(cdp, { pluginSettings = false } = {}) {
 
 /**
  * Put the vault back the way `captureVaultState()` found it. The theme, the font
- * size and the plugin settings land in **tracked** files, so this puts the
- * *values* back while the files stay rewritten — `printVaultReminder()` names
- * what to run afterwards.
+ * size and the plugin settings land in files the vault owns, so this puts the
+ * *values* back while a **tracked** file (the plugin's `data.json`) can stay
+ * rewritten — `printVaultReminder()` names what to run afterwards.
  */
 export async function restoreVaultState(cdp, snapshot) {
   await cdp.eval(`(async () => {
@@ -191,14 +191,16 @@ export async function restoreVaultState(cdp, snapshot) {
 }
 
 /**
- * Name the tracked files a run rewrote and the one command that puts them back.
- * Obsidian's own config churn does this too (AGENTS.md Rule 3): the restore
- * above restores the *values*, not the files.
+ * Name the tracked files a run may have rewritten and the one command that puts
+ * them back. The restore above restores the *values*, not the files, so a file
+ * whose formatting Obsidian or the plugin rewrites can still show in
+ * `git status`. Most of the vault's Obsidian configuration is untracked; what is
+ * left tracked is the plugin's demo `data.json`.
  */
 export function printVaultReminder(paths) {
   console.log(
-    `note: this run rewrote ${paths.join(" and\n      ")}\n` +
-      "      (all tracked) — restore with `git restore -- example-vault/.obsidian`.",
+    `note: this run may have rewritten ${paths.join(" and\n      ")}\n` +
+      `      (tracked) — if \`git status\` shows a change, restore it with \`git restore -- ${paths.join(" ")}\`.`,
   );
 }
 

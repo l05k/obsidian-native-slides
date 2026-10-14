@@ -22,7 +22,7 @@ The human opens **`example-vault/`** in Obsidian **once** and never needs to reo
 
 - After a **branch switch** or a **code change**, the human reloads with: `Cmd/Ctrl+P` → **Reload app without saving** (this reloads the whole vault in place — notes, config and plugins — per the official "Build a plugin" docs). The vault folder never changes, so Obsidian never needs "Open another vault".
 - The agent announces "**ready to reload**" only after doing its part:
-  1. **Clean Obsidian runtime noise** — Obsidian rewrites `example-vault/.obsidian/` configs (`core-plugins.json`, `community-plugins.json`, …) while running; revert those (`git checkout -- example-vault/.obsidian/`) so `git switch` is never blocked by a dirty tree.
+  1. **Check the tree for vault churn** — Obsidian's own configuration in `example-vault/.obsidian/` (enabled plugins, theme, font size, workspace) is ignored (listed in `.gitignore`), so it does not show in `git status`. The one tracked file a CDP check can rewrite is the plugin's demo `example-vault/.obsidian/plugins/native-slides/data.json`; if `git status` shows it, put it back (`git restore -- example-vault/.obsidian/plugins/native-slides/data.json`) so `git switch` is never blocked. If the harness's permission guard refuses the restore, report it to the user instead of routing around it.
   2. **Verify** — run `npm run check` / `npm run test` / `npm run lint` / `npm run format:check` / `npm run build` and confirm `main.js` is in sync (`git diff --exit-code -- main.js`).
 - `npm run dev` (esbuild watch) is only needed while **actively editing** `main.ts`; viewing a branch's behavior needs nothing but the switch + reload (each branch carries its own committed, in-sync `main.js`).
 

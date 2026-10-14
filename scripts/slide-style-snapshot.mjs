@@ -51,11 +51,11 @@
  * `OBSIDIAN_CDP_PORT` — the dedicated capture instance uses 9333, and a window
  * that has the user's focus is refused. The theme, colour scheme, font size,
  * plugin settings, Slides mode, the right split and the active note are restored
- * afterwards; two of those writes land in **tracked** files
- * (`example-vault/.obsidian/appearance.json` and
- * `example-vault/.obsidian/plugins/native-slides/data.json`), so the restore puts
- * the values back while the files stay rewritten: `git restore --
- * example-vault/.obsidian` afterwards, as the reminder printed at the end says.
+ * afterwards; one of those writes lands in a **tracked** file
+ * (`example-vault/.obsidian/plugins/native-slides/data.json`), so the restore puts
+ * the value back while the file stays rewritten: `git restore` it if `git status`
+ * shows it, as the reminder printed at the end says. The theme and font size land
+ * in the vault's untracked `appearance.json`.
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
@@ -415,10 +415,7 @@ if (cdp) {
     await cdp.send("Emulation.clearDeviceMetricsOverride").catch(() => {});
     cdp.ws.close();
   }
-  printVaultReminder([
-    "example-vault/.obsidian/appearance.json",
-    "example-vault/.obsidian/plugins/native-slides/data.json",
-  ]);
+  printVaultReminder(["example-vault/.obsidian/plugins/native-slides/data.json"]);
 }
 
 if (args.diff) {

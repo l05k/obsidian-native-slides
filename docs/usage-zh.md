@@ -114,6 +114,8 @@ Obsidian 1.13.0 及以上，各项设置都可被设置搜索索引。
 
 库里的插件目录中，`main.js`、`manifest.json` 与 `styles.css` 是指向仓库根目录的符号链接，因此示例库始终运行当前构建。符号链接需要文件系统支持：macOS 与 Linux 开箱即用，Windows 需开启开发者模式。无法使用时，把这三个文件复制到 `example-vault/.obsidian/plugins/native-slides/` 即可。插件的演示设置（_Lecture (jyy)_ 模板与 `series, level, date` bar properties）保存在该目录下被追踪的 `data.json` 中。
 
+Obsidian 对这个库的自身配置（启用了哪些插件、主题、字号）属于每台机器、不随仓库提供，所以第一次打开时：在 _设置 → 第三方插件_ 中开启第三方插件（即关闭受限模式），再启用 **Native Slides**。演示用的外观是 23 px 基础字号并隐藏了丝带与视图标题；想要同样的效果，请到 _设置 → 外观_ 中设置。
+
 ## 已知限制
 
 - **仅桌面端**，暂不支持移动端。

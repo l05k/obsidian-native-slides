@@ -46,26 +46,16 @@
  *
  * Everything it changes is restored afterwards — on success, on failure and on
  * Ctrl-C — through the shared `captureVaultState` / `restoreVaultState` pair,
- * plus the Backlinks toggle when this run used it. The reminder printed at the
- * end names `example-vault/.obsidian/appearance.json` because the shared restore
- * re-applies the theme and font size through the app, and those values live in
- * that tracked file; measured, a vault already on those values does not move the
- * file's bytes, so the reminder is about the config Obsidian owns (AGENTS.md
- * Rule 3) rather than a diff you will necessarily see. The Backlinks toggle
- * lives in the vault's untracked `example-vault/.obsidian/backlink.json` and is
- * put back by value.
+ * plus the Backlinks toggle when this run used it. The shared restore re-applies
+ * the theme and font size through the app; those values live in the vault's
+ * untracked `example-vault/.obsidian/appearance.json`, and the Backlinks toggle
+ * in the untracked `example-vault/.obsidian/backlink.json` — so this check
+ * leaves no tracked file rewritten and prints no reminder.
  *
  * See docs/development.md#driving-the-running-app-over-cdp.
  */
 
-import {
-  captureVaultState,
-  connect,
-  parseArgs,
-  printVaultReminder,
-  restoreVaultState,
-  sleep,
-} from "./vault-cdp.mjs";
+import { captureVaultState, connect, parseArgs, restoreVaultState, sleep } from "./vault-cdp.mjs";
 
 const { args } = parseArgs({
   defaults: { note: "Grow the Deck" },
@@ -126,9 +116,6 @@ let turnedPanelOn = false;
 /** The one in-flight restore — the `finally` and the SIGINT handler share it */
 let restoring = null;
 
-/** The tracked file whose values the shared restore re-applies, for the reminder */
-const VAULT_FILES = ["example-vault/.obsidian/appearance.json"];
-
 /**
  * Put the vault back the way the snapshot found it, at most once. Resolves to
  * whether it succeeded: a run that leaves the vault mutated must not exit 0.
@@ -162,7 +149,6 @@ function restore() {
 process.on("SIGINT", () => {
   console.error("\ninterrupted — restoring the vault state before exiting");
   restore().then((ok) => {
-    printVaultReminder(VAULT_FILES);
     process.exit(ok ? 130 : 1);
   });
 });
@@ -292,15 +278,15 @@ try {
   // worst outcome there is.
   if (!(await restore())) {
     console.error(
-      "\nthe vault state could not be restored — do not commit example-vault/.obsidian",
+      "\nthe vault state could not be restored — inspect example-vault/.obsidian before committing",
     );
     exitCode = 1;
   }
   cdp.ws.close();
 }
 
-// One exit point, so the reminder about the tracked vault config is always the
-// last thing a run prints.
+// One exit point, so the restore has always run and the exit code is decided in
+// one place.
 for (const claim of claims) console.log(`  · ${claim}`);
 if (failures.length > 0) {
   console.error(`\n${failures.length} failure(s):`);
@@ -316,5 +302,4 @@ if (exitCode === 0) {
     "\nthe panel is on screen outside Slides mode, hidden in it, and back on screen after",
   );
 }
-printVaultReminder(VAULT_FILES);
 process.exit(exitCode);

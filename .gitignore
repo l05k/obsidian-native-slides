@@ -152,12 +152,14 @@ vite.config.ts.timestamp-*
 **/.obsidian/appearance.json
 **/.obsidian/app.json
 **/.obsidian/hotkeys.json
+**/.obsidian/community-plugins.json
+**/.obsidian/core-plugins.json
+**/.obsidian/backlink.json
 **/.obsidian/plugins/*/data.json
 # image-converter keeps per-machine alignment state beside the vault config
 **/.obsidian/image-converter-image-alignments.json
-# The example vault ships its look & demo settings so a fresh clone
-# opens exactly as documented (font size 23, plugin demo configuration)
-!example-vault/.obsidian/appearance.json
+# The example vault's Obsidian config is per-machine like any other vault's;
+# only the plugin's demo settings are shipped, so a fresh clone gets them
 !example-vault/.obsidian/plugins/native-slides/data.json
 # Third-party plugin installs & downloaded themes are per-machine artifacts
 **/.obsidian/plugins/obsidian42-brat/

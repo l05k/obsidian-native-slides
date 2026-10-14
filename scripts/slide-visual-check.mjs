@@ -35,7 +35,8 @@
  * `OBSIDIAN_CDP_PORT` — the dedicated capture instance uses 9333, and a window
  * that has the user's focus is refused. The theme, font size,
  * plugin settings, Slides mode and the active note are restored afterwards; the
- * tracked `example-vault/.obsidian` files it rewrites are reported at the end.
+ * tracked `example-vault/.obsidian/plugins/native-slides/data.json` it rewrites is
+ * reported at the end.
  *
  * `--diff` shells out to `python3` with **Pillow** on `PATH` — the only part of
  * the repository that needs Python — so a missing interpreter is an error, not
@@ -446,7 +447,4 @@ if (captured === 0) {
   );
   process.exit(1);
 }
-printVaultReminder([
-  "example-vault/.obsidian/appearance.json",
-  "example-vault/.obsidian/plugins/native-slides/data.json",
-]);
+printVaultReminder(["example-vault/.obsidian/plugins/native-slides/data.json"]);

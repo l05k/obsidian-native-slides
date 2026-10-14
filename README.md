@@ -22,7 +22,7 @@ Requires Obsidian 1.7.2 or later, on desktop.
 3. Press `Cmd/Ctrl+Shift+N` (**Create next slide**) to add a slide after the current one. The `deck` links are wired for you.
 4. Flip with `Cmd/Ctrl+Shift+←/→`, and run **Show slides panel** to see and reorder the whole deck.
 
-To see a finished deck first, open the repository's [`example-vault/`](example-vault/) and read `Welcome.md`.
+To see a finished deck first, open the repository's [`example-vault/`](example-vault/) as a vault, turn on community plugins and enable **Native Slides** there once ([details](docs/usage.md#example-vault)), then read `Welcome.md`.
 
 ## Features
 

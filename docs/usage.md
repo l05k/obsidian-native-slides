@@ -114,6 +114,8 @@ File names match the slide titles on the cards. A `demo-image.png` is used by th
 
 The plugin folder in the vault holds symlinks to `main.js`, `manifest.json` and `styles.css` at the repository root, so the vault always runs the current build. Symlinks need filesystem support: macOS and Linux work out of the box, and Windows needs Developer Mode. Without them, copy those three files into `example-vault/.obsidian/plugins/native-slides/`. The plugin's demo settings (the _Lecture (jyy)_ template and the `series, level, date` bar properties) are the tracked `data.json` in that folder.
 
+Obsidian's own configuration for the vault (which plugins are enabled, the theme, the font size) is per-machine and not shipped, so on the first open: turn on community plugins under _Settings → Community plugins_ (this switches Restricted mode off), then enable **Native Slides**. The demo look uses a 23 px base font size and hides the ribbon and the view header; set those under _Settings → Appearance_ if you want the same look.
+
 ## Known limitations
 
 - **Desktop only.** Mobile is not supported.

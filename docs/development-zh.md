@@ -83,9 +83,11 @@ npm run dev        # 监听 main.ts，变更时自动重建 main.js
   的采样夹具（`src/debug.ts` 硬编码了其中五个名字）—— 请勿改名或删除。演示套件是
   `Welcome.md` → `Make it yours.md` → `Grow the Deck.md`，README 的快速开始与[使用指南](usage-zh.md#示例库)依赖这三个名字与
   `demo-image.png`。
-- **配置扰动**：Obsidian 运行时会改写库里**被追踪**的配置（`appearance.json`、
-  `community-plugins.json`、`core-plugins.json`）。切分支或开 PR 前用
-  `git restore -- example-vault/.obsidian` 还原，之后再确认一次 `git status`。
+- **库配置**：`example-vault/.obsidian/` 里 Obsidian 自己的配置（`appearance.json`、
+  `community-plugins.json`、`core-plugins.json`、工作区文件）属于每台机器，不被追踪，因此新克隆的
+  库以 Obsidian 默认设置打开：关闭「受限模式」并启用一次 **Native Slides** 即可。这里唯一被追踪、且检查脚本
+  可能改写的文件是插件的演示设置 `plugins/native-slides/data.json`；若 `git status` 显示它被改动，
+  只对这一个路径执行 `git restore`。若权限守卫拒绝该还原，请上报而不是绕过。
 - **驱动 App**（例如通过 CDP）是允许的，而且往往是验证「手势类行为」的唯一手段 —— 见下方
   「通过 CDP 驱动运行中的 App」，它才是把脚本限制在 `example-vault/` 里的机制。
 
