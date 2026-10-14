@@ -7,7 +7,7 @@
 ## 1. 对笔记内容零侵入
 
 笔记在**源码模式**与**实时预览**下保持完全可读。插件从不改写、重排或在笔记内容中
-注入任何标记——它只**读取**（通过 `metadataCache`）并**渲染 UI**（底部栏、CSS 覆盖）。
+注入任何标记——它只**读取**（通过 `metadataCache`）并**渲染 UI**（slides 栏、CSS 覆盖）。
 笔记正文一概不动；插件唯一会写的界面是 `deck` 这个 frontmatter 属性，且只由维护链的
 操作写入——Create Next Slide、Delete slide(s) 与移动幻灯片。它本身就是普通、可读的 YAML。
 
@@ -21,7 +21,7 @@
 
 - 从笔记推导的一切（套件链、页号）都**即时计算**自 `metadataCache`，推导结果
   绝不落盘缓存。
-- 唯一持久化的是**配置**（◀ ▶ 按钮、页号显示、隐藏底栏、自动进入 Slides 模式），经
+- 唯一持久化的是**配置**（◀ ▶ 按钮、页号显示、隐藏 slides 栏、自动进入 Slides 模式），经
   `loadData/saveData` 保存。
 - 所需数据本身就是**笔记结构的一部分**——套件就是每页唯一的 next 链接串成的链；
   反向解析（找链头）按需扫描 frontmatter，不存在需要创建、同步或可能损坏的独立
@@ -38,30 +38,28 @@
 
 ## 权衡
 
-- Slides 模式在其 Live Preview 下隐藏笔记内属性面板（纯 CSS），避免与底部栏重复——笔记文件本身从不改动。
+- Slides 模式在其 Live Preview 下隐藏笔记内属性面板（纯 CSS），避免与 slides 栏重复——笔记文件本身从不改动。
 - `deck` 链式解析每次刷新会读取链上所有笔记的 frontmatter；由于 `metadataCache`
   在内存中、且套件通常很小，这是可接受的。按原则 4，链缓存的记忆化方案被刻意
   推迟到性能分析证明确有必要之时。
 
 ## 工作原理
 
-README 中功能背后的具体机制：
+[使用指南](usage-zh.md)中功能背后的具体机制：
 
-| 部分                             | 原理                                                                                                                                                                                       |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 隐藏状态栏（Slides 模式）        | `body.native-slides-mode .status-bar { display: none }`——原生模式保留 Obsidian 默认状态栏                                                                                                  |
-| 沉浸布局（Slides 模式）          | `body.native-slides-mode` 隐藏丝带/侧边栏/tab 栏/核心插件 Backlinks 的文档内面板（`.embedded-backlinks`）；slides 栏高度对齐 tab bar 实测高度（`--native-slides-tabbar-height`）           |
-| 隐藏笔记内属性面板               | `.markdown-source-view.mod-cm6.is-live-preview .metadata-container { display: none }`——属性改由 slides 栏展示                                                                              |
-| 套件解析                         | `computeDeck()` 读取每页唯一的 next 链接 → 经 `deck` 反向索引回溯到链头 → 向前遍历整条链（有防环保护）→ 返回完整链 + 当前索引                                                              |
-| 页号                             | 链中的位置，从 1 开始（链头 = 第 1 页）；不需要存储 `page-number`                                                                                                                          |
-| PPT 翻页                         | `navigate()` 把按键排队，每次只走一步（等待一次打开完成），从原生模式触发时会先进入 Slides 模式                                                                                            |
-| Slides 进入/退出                 | `enterSlides()` 记录当前视图状态并强制切到 Live Preview；`exitSlides()` 精确还原该视图状态（Source / Live Preview / Reading）                                                              |
-| Create Next Slide                | `planCreateNext()`（纯逻辑核心）算出新文件名、新笔记的 `deck` 链接与改写方案；命令用 `vault.create` + `fileManager.processFrontMatter` 执行，并在编辑模式打开新笔记。仅 deck 笔记可用      |
-| Create New Slide                 | `planCreateNew()`（纯逻辑核心）为新 deck 第一页命名（`untitled-slides`，防重名）；在"新笔记默认位置"以 `deck: []` 创建，其余一概不动。不属于任何 deck 的笔记、空白标签页可用               |
-| Initialize slides with this note | `planMakeFirstSlide()`（纯逻辑核心）以 `deckService.isMember` 把关；命令用 `fileManager.processFrontMatter` 写入 `deck: []`（其余属性原样），等 metadataCache 落盘后再自动进入 Slides 模式 |
-| 移动幻灯片（拖动、Move up/down） | `planMove()`（纯逻辑核心）把「移动哪些、插到哪个间隙」算成要改写的 `deck`；`executeMove()` 写入                                                                                            |
-| Slides 面板滚动                  | 条目挂在 Obsidian 自己会滚动的 view content 里（`min-height: 0` 使其可收缩）；deck 高于侧边栏时在面板内部滚动而不是被裁切——拖动到面板边缘时滚动的正是它                                    |
-| 设置                             | 声明式设置 API（Obsidian ≥ 1.13.0，可被设置搜索索引）+ 传统 `PluginSettingTab` 回退；`loadData/saveData` 持久化开关；快捷键走 Obsidian 原生命令系统                                        |
+- **隐藏状态栏（Slides 模式）**：`body.native-slides-mode .status-bar { display: none }`——原生模式保留 Obsidian 默认状态栏
+- **沉浸布局（Slides 模式）**：`body.native-slides-mode` 隐藏丝带/侧边栏/tab 栏/核心插件 Backlinks 的文档内面板（`.embedded-backlinks`）；slides 栏高度对齐 tab bar 实测高度（`--native-slides-tabbar-height`）
+- **隐藏笔记内属性面板**：`.markdown-source-view.mod-cm6.is-live-preview .metadata-container { display: none }`——属性改由 slides 栏展示
+- **套件解析**：`computeDeck()` 读取每页唯一的 next 链接 → 经 `deck` 反向索引回溯到链头 → 向前遍历整条链（有防环保护）→ 返回完整链 + 当前索引
+- **页号**：链中的位置，从 1 开始（链头 = 第 1 页）；不需要存储 `page-number`
+- **PPT 翻页**：`navigate()` 把按键排队，每次只走一步（等待一次打开完成），从原生模式触发时会先进入 Slides 模式
+- **Slides 进入/退出**：`enterSlides()` 记录当前视图状态并强制切到 Live Preview；`exitSlides()` 精确还原该视图状态（Source / Live Preview / Reading）
+- **Create Next Slide**：`planCreateNext()`（纯逻辑核心）算出新文件名、新笔记的 `deck` 链接与改写方案；命令用 `vault.create` + `fileManager.processFrontMatter` 执行，并在编辑模式打开新笔记。仅 deck 笔记可用
+- **Create New Slide**：`planCreateNew()`（纯逻辑核心）为新 deck 第一页命名（`untitled-slides`，防重名）；在"新笔记默认位置"以 `deck: []` 创建，其余一概不动。不属于任何 deck 的笔记、空白标签页可用
+- **Initialize slides with this note**：`planMakeFirstSlide()`（纯逻辑核心）以 `deckService.isMember` 把关；命令用 `fileManager.processFrontMatter` 写入 `deck: []`（其余属性原样），等 metadataCache 落盘后再自动进入 Slides 模式
+- **移动幻灯片（拖动、Move up/down）**：`planMove()`（纯逻辑核心）把「移动哪些、插到哪个间隙」算成要改写的 `deck`；`executeMove()` 写入
+- **Slides 面板滚动**：条目挂在 Obsidian 自己会滚动的 view content 里（`min-height: 0` 使其可收缩）；deck 高于侧边栏时在面板内部滚动而不是被裁切——拖动到面板边缘时滚动的正是它
+- **设置**：声明式设置 API（Obsidian ≥ 1.13.0，可被设置搜索索引）+ 传统 `PluginSettingTab` 回退；`loadData/saveData` 持久化开关；快捷键走 Obsidian 原生命令系统
 
 **移动幻灯片（#124 起）。** 套件本身不存顺序——顺序**就是** next 链接链——所以一次移动只是重连被移动幻灯片周围的 `deck` 链接：`planMove()`（纯逻辑核心）把「这些页、这个间隙」算成「每张 next 链接真的变了的页一条改写」，`DeckService.executeMove()` 负责写入。也正因如此，翻页、页号与 slides 面板都不需要知道发生过移动（[ADR 0001](adr/0001-slide-order-is-the-next-link-chain.md)）。手势本体在 `src/panel-drag.ts`，基于 pointer 事件——4px 阈值让「按下」仍然是点击、浮动副本与间隙指示线、`Escape` 与窗口失焦取消、边缘自动滚动——因为 Obsidian 公开 API 里没有自定义视图可用的拖动移动能力（声明式设置列表的 `onReorder` 只在设置弹窗里渲染）。手势进行中链若已改变则放弃投放；不产生变化的投放不写盘。
 

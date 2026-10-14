@@ -98,7 +98,8 @@ or a manual test at a vault that holds real notes.
 - **Fixtures**: `example-vault/tests/typography-*.md` are consumed by the dev-only
   `Debug: Dump Typography Styles` command (`src/debug.ts` hard-codes five of the names) — do not
   rename or remove them. The demo deck is `Welcome.md` → `Make it yours.md` → `Grow the Deck.md`;
-  the README's tour depends on those three names and on `demo-image.png`.
+  the README's quick start and the [usage guide](usage.md#example-vault) depend on those three
+  names and on `demo-image.png`.
 - **Config churn**: Obsidian rewrites the vault's tracked configuration while it runs
   (`appearance.json`, `community-plugins.json`, `core-plugins.json`). Restore it with
   `git restore -- example-vault/.obsidian` before switching branches or opening a PR, and re-check

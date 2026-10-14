@@ -9,7 +9,7 @@ with one of them, the change needs a strong justification.
 
 Notes stay perfectly readable in **source mode** and **live preview**. The plugin
 never rewrites, reorders, or injects markers into note content — it only _reads_
-(via `metadataCache`) and _renders UI_ (the bottom bar, CSS overrides). Note
+(via `metadataCache`) and _renders UI_ (the slides bar, CSS overrides). Note
 content is never touched at all; the one surface the plugin writes is the `deck`
 frontmatter property, and only through the operations that maintain the chain —
 Create Next Slide, Delete slide(s) and moving a slide. It stays plain, readable YAML.
@@ -46,7 +46,7 @@ has them. Demo notes keep this footprint to the bare minimum (no decorative
 ## Trade-offs
 
 - Slides mode hides the in-note properties panel (CSS only) in its Live Preview
-  to avoid duplicating what the bottom bar shows — the note file itself is never touched.
+  to avoid duplicating what the slides bar shows — the note file itself is never touched.
 - The `deck` chain walk reads the frontmatter of every note in the chain on each
   refresh; acceptable because `metadataCache` is in-memory and decks are small.
   Per principle 4, a memoized chain cache is deliberately deferred until profiling
@@ -54,23 +54,21 @@ has them. Demo notes keep this footprint to the bare minimum (no decorative
 
 ## How it works
 
-The concrete mechanisms behind the features in the README:
+The concrete mechanisms behind the features in the [usage guide](usage.md):
 
-| Piece                             | Mechanism                                                                                                                                                                                                                                    |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Hide the status bar (Slides mode) | `body.native-slides-mode .status-bar { display: none }` — native modes keep Obsidian's default status bar                                                                                                                                    |
-| Immersive layout (Slides mode)    | `body.native-slides-mode` hides the ribbon / sidebars / tab bar / the core Backlinks plugin's in-document panel (`.embedded-backlinks`); the slides bar takes the tab bar's measured height (`--native-slides-tabbar-height`)                |
-| Hide in-note properties           | `.markdown-source-view.mod-cm6.is-live-preview .metadata-container { display: none }` — properties live in the slides bar instead                                                                                                            |
-| Deck resolution                   | `computeDeck()` reads each slide's single next link → walks backward via a reverse `deck`-link index to the chain head → walks the chain forward (cycle-guarded) → returns the chain + current index                                         |
-| Page number                       | position in the chain, 1-based (head slide = page 1); no stored `page-number` property                                                                                                                                                       |
-| PPT navigation                    | `navigate()` queues presses, steps along the chain one awaited open at a time and enters Slides mode first when invoked from a native mode                                                                                                   |
-| Slides enter / exit               | `enterSlides()` records the current view state and forces the Live Preview; `exitSlides()` restores that exact view state (Source / Live Preview / Reading)                                                                                  |
-| Create Next Slide                 | `planCreateNext()` (pure core) computes the new file name, the new note's `deck` links and the rewrites; the command applies them via `vault.create` + `fileManager.processFrontMatter` and opens the new note in edit mode. Deck notes only |
-| Create New Slide                  | `planCreateNew()` (pure core) names a fresh first-page note (`untitled-slides`, collision-aware); created with `deck: []` in the default new-note location — nothing else is touched. Any note not part of a deck, blank tab included        |
-| Initialize slides with this note  | `planMakeFirstSlide()` (pure core) guards on `deckService.isMember`; the command writes `deck: []` via `fileManager.processFrontMatter` (every other property stays), waits for the metadata cache to index it, then auto-enters Slides mode |
-| Move slides (drag, Move up/down)  | `planMove()` (pure core) turns a moving set plus a gap into the `deck` rewrites it implies; `executeMove()` writes them                                                                                                                      |
-| Slides panel scrolling            | the entries live in the view content Obsidian already scrolls (`min-height: 0` so it may shrink); a deck taller than the sidebar scrolls inside the panel rather than being clipped — and that is what a drag at the edge scrolls            |
-| Settings                          | Declarative settings API (Obsidian ≥ 1.13.0, searchable in Settings) with a classic `PluginSettingTab` fallback; `loadData/saveData` persist the toggles; hotkeys use Obsidian's native command system                                       |
+- **Hide the status bar (Slides mode)**: `body.native-slides-mode .status-bar { display: none }` — native modes keep Obsidian's default status bar
+- **Immersive layout (Slides mode)**: `body.native-slides-mode` hides the ribbon / sidebars / tab bar / the core Backlinks plugin's in-document panel (`.embedded-backlinks`); the slides bar takes the tab bar's measured height (`--native-slides-tabbar-height`)
+- **Hide in-note properties**: `.markdown-source-view.mod-cm6.is-live-preview .metadata-container { display: none }` — properties live in the slides bar instead
+- **Deck resolution**: `computeDeck()` reads each slide's single next link → walks backward via a reverse `deck`-link index to the chain head → walks the chain forward (cycle-guarded) → returns the chain + current index
+- **Page number**: position in the chain, 1-based (head slide = page 1); no stored `page-number` property
+- **PPT navigation**: `navigate()` queues presses, steps along the chain one awaited open at a time and enters Slides mode first when invoked from a native mode
+- **Slides enter / exit**: `enterSlides()` records the current view state and forces the Live Preview; `exitSlides()` restores that exact view state (Source / Live Preview / Reading)
+- **Create Next Slide**: `planCreateNext()` (pure core) computes the new file name, the new note's `deck` links and the rewrites; the command applies them via `vault.create` + `fileManager.processFrontMatter` and opens the new note in edit mode. Deck notes only
+- **Create New Slide**: `planCreateNew()` (pure core) names a fresh first-page note (`untitled-slides`, collision-aware); created with `deck: []` in the default new-note location — nothing else is touched. Any note not part of a deck, blank tab included
+- **Initialize slides with this note**: `planMakeFirstSlide()` (pure core) guards on `deckService.isMember`; the command writes `deck: []` via `fileManager.processFrontMatter` (every other property stays), waits for the metadata cache to index it, then auto-enters Slides mode
+- **Move slides (drag, Move up/down)**: `planMove()` (pure core) turns a moving set plus a gap into the `deck` rewrites it implies; `executeMove()` writes them
+- **Slides panel scrolling**: the entries live in the view content Obsidian already scrolls (`min-height: 0` so it may shrink); a deck taller than the sidebar scrolls inside the panel rather than being clipped — and that is what a drag at the edge scrolls
+- **Settings**: Declarative settings API (Obsidian ≥ 1.13.0, searchable in Settings) with a classic `PluginSettingTab` fallback; `loadData/saveData` persist the toggles; hotkeys use Obsidian's native command system
 
 **Moving slides (since #124).** A deck stores no order of its own — the order _is_ the next-link chain — so a move rewires the `deck` links around the slides being moved: `planMove()` (pure core) turns "these slides, this gap" into one rewrite per slide whose next link changed, and `DeckService.executeMove()` applies them. That is why navigation, page numbers and the slides panel itself need to know nothing about a move ([ADR 0001](adr/0001-slide-order-is-the-next-link-chain.md)). The gesture lives in `src/panel-drag.ts` and is built on pointer events — a 4 px threshold so a press stays a click, a ghost plus a gap line, `Escape` and window blur as cancels, edge auto-scroll — because Obsidian's public API offers no drag-to-move helper a custom view could use (the declarative settings list's `onReorder` renders inside the settings modal only). A drop is refused when the chain changed under the gesture, and a move that changes nothing writes nothing.
 
