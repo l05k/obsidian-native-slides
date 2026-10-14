@@ -22,7 +22,7 @@ Mechanics: [dev-workflow §4](.agents/skills/dev-workflow/SKILL.md#4-review-loop
 ### Cleanup after a merge: local is the agent's, remote is the user's
 
 - **Agent**: after a merge, in this order: delete the **local** branch of the PR it just merged with the non-force `git branch -d <branch>`, sync `main`, and close the Herdr panes it spawned for that PR's review. These are normal steps and need no permission.
-- **User**: every remote ref, including the merged PR's head branch, plus tags and anything forced. Never delete a remote ref, never hand over a command that would, and never use `git branch -D`, `git tag -d`, `git push --delete` / `-d`, `git push origin :<ref>`, `gh pr merge --delete-branch` or `gh api -X DELETE`. Say which remote branches remain.
+- **User**: every remote ref, including the merged PR's head branch, plus deleting tags and anything forced. Say which remote branches remain and leave them to the user. Never delete a remote ref, never hand over a command that would, and never use, for example, `git branch -D`, `git tag -d`, `git push --delete` / `-d`, `git push origin :<ref>`, `gh pr merge --delete-branch` or `gh api -X DELETE`.
 - **Order matters**: delete the local branch before anything prunes `origin/<branch>`. See [dev-workflow §5](.agents/skills/dev-workflow/SKILL.md#5-after-the-pr-is-merged-delete-the-local-branch-sync-close-the-panes).
 - **If a guard refuses one of the agent's steps**, report which branch or pane remains and stop.
 
