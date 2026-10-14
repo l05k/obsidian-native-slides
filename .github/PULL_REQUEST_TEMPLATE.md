@@ -7,6 +7,7 @@ Fixes #(issue number)
 ## Changes
 
 - [ ] List the main changes here
+- [ ] Include test updates if applicable
 
 ## Test plan
 

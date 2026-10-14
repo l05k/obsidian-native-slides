@@ -258,18 +258,20 @@ session off. They are plain Markdown you own and may edit.
   `code-review` keeps its upstream text (so `npx skills update` can still refresh
   it) and is **not** what Rule 2 uses: `code-review-herdr` is the fork that runs.
   Port upstream fixes into the fork by hand when it changes.
-- **Which vendored skills this repository names** — the repo-owned files
-  (`AGENTS.md`, `dev-workflow`, `docs/agents/`) point at `ask-matt`, `code-review`,
-  `domain-modeling`, `grill-with-docs`, `grilling`, `implement`,
-  `improve-codebase-architecture`, `prototype`, `research`,
-  `setup-matt-pocock-skills`, `tdd`, `triage` and `wayfinder`. The other twelve
-  (`codebase-design`, `diagnosing-bugs`, `grill-me`, `handoff`,
+- **Which vendored skills this repository names** — the repo-owned files outside
+  the vendored set (`AGENTS.md`, `docs/`, and the four repo-owned skills
+  `dev-workflow`, `herdr-subagent`, `code-review-herdr`, `vault-cdp-testing`)
+  point at `ask-matt`, `code-review`, `domain-modeling`, `grill-with-docs`,
+  `grilling`, `implement`, `improve-codebase-architecture`, `prototype`,
+  `research`, `setup-matt-pocock-skills`, `tdd`, `triage` and `wayfinder`. The
+  other twelve (`codebase-design`, `diagnosing-bugs`, `grill-me`, `handoff`,
   `resolving-merge-conflicts`, `teach`, `to-questionnaire`, `to-spec`,
   `to-tickets`, `wait-what`, `wizard`, `writing-for-agents`) are installed but
-  named by nothing here; an agent finds them through their descriptions. They are
-  kept on purpose: the vendored files cross-reference each other (`ask-matt`
-  routes to most of them), so removing one leaves dangling pointers in files that
-  must stay unedited to remain diffable against upstream.
+  named by nothing here; an agent finds them through their descriptions. This
+  list is a snapshot — `ls .agents/skills` / `npx skills list` is authoritative.
+  They are kept on purpose: the vendored files cross-reference each other
+  (`ask-matt` routes to most of them), so removing one leaves dangling pointers
+  in files that must stay unedited to remain diffable against upstream.
 - **Canonical location**: `.agents/skills/<name>/SKILL.md`. Agents that share the
   canonical directory (Pi, Amp, Codex, Copilot, …) discover it as-is; an
   agent-specific directory (`.claude/skills`, `.cursor/skills`, …) is a

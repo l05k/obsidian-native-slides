@@ -14,7 +14,7 @@ An agent never reviews its own work. A **round** is one review plus the fixes it
 
 - **Review**: spawn a Herdr pane (agent kind `pi`) that runs [`code-review-herdr`](.agents/skills/code-review-herdr/SKILL.md) over the PR, fixed at the `origin/main` merge-base. Not the vendored `code-review`: Pi has no native sub-agent tool. Findings carry file:line and severity, with blockers apart from nits.
 - **Publish and fix**: post the findings as a PR comment labelled `review round 1`. Blockers are fixed in the same subagent, never in the main session, and never by two agents writing the tree at once. The orchestrating agent is the only git writer.
-- **Verify, then merge**: re-run `npm run check` / `test` / `lint` / `format:check` / `build`, `git diff --exit-code -- main.js`, and `gh pr checks <pr> --watch`. Comment the outcome, then `gh pr merge <pr> --squash`.
+- **Verify, then merge**: re-run `npm run check` / `test` / `lint` / `format:check` / `build` / `check:scanner`, `git diff --exit-code -- main.js`, and `gh pr checks <pr> --watch`. Comment the outcome, then `gh pr merge <pr> --squash`.
 - **Open blocker after the fixes**: stop, leave the PR open, hand it to the human. Never merge over a blocker and never start a second round.
 
 Mechanics: [dev-workflow §4](.agents/skills/dev-workflow/SKILL.md#4-review-loop-a-herdr-subagent-runs-code-review-herdr-one-round) and [herdr-subagent](.agents/skills/herdr-subagent/SKILL.md). The merge gate (what the `protect-main` ruleset enforces and what it leaves to you) is in [dev-workflow §4, step 6](.agents/skills/dev-workflow/SKILL.md#4-review-loop-a-herdr-subagent-runs-code-review-herdr-one-round).
@@ -29,7 +29,7 @@ This is policy, not a deduction from what a local guard happens to block. Do not
 
 ## Rule 3 — Test in `example-vault/`, never in another vault
 
-Every behavioural check runs against this repository's `example-vault/`, never against a vault that holds real notes. It is wired to the repository root by symlinks, so `npm run build:dev` plus a plugin reload is the whole loop.
+Every behavioural check runs against this repository's `example-vault/` — the only vault anything here may be tested against, never another vault, and in particular never one that holds real notes. It is wired to the repository root by symlinks, so `npm run build:dev` plus a plugin reload is the whole loop.
 
 - Scratch notes go inside `example-vault/` and are removed afterwards. The `Probe*.md` / `test.md` / `untitled-slides.md` slides and the `tests/typography-*.md` fixtures are not yours to delete.
 - Driving the app over CDP is fine, through `scripts/vault-cdp.mjs`, which refuses to connect unless exactly one window holds `example-vault/`. Identify the target by asking the app, not by window title.

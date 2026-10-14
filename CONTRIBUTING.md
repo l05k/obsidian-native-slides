@@ -10,7 +10,7 @@ cd obsidian-native-slides
 npm ci
 ```
 
-Test in the repository's own **`example-vault/`**: open it in Obsidian (_Open another vault_). Its plugin folder already holds symlinks to `main.js`, `styles.css` and `manifest.json` at the repository root, so you do not link anything yourself. Never test against a vault that holds real notes.
+Test in the repository's own **`example-vault/`**: open it in Obsidian (_Open another vault_). Its plugin folder already holds symlinks to `main.js`, `styles.css` and `manifest.json` at the repository root, so you do not link anything yourself. That is the only vault anything here may be tested against — never another vault, and in particular never one that holds real notes.
 
 Build, then reload the plugin:
 
@@ -63,7 +63,7 @@ Use the issue templates: **Bug report** for crashes, unexpected behaviour or vis
 
 - **TypeScript** for all source (`main.ts`, `src/`). ESLint and Prettier enforce style: `npm run lint:fix`, `npm run format`.
 - **CSS**: `styles.css` is hand-written, with no preprocessor. Theme-scoped values go through the existing `--ns-*` variables, and selectors stay under `body.native-slides-mode` so native modes are never affected.
-- **Tests**: `test/` uses Vitest, for pure logic (deck navigation, page numbers, theme registry). Visual and CSS behaviour is checked by hand in `example-vault/`. A layout invariant that would regress silently can also be locked with a contract test over `styles.css`.
+- **Tests**: `test/` uses Vitest, for pure logic (deck navigation, page numbers, theme registry). Visual and CSS behaviour is checked by hand in `example-vault/` — the only vault anything here may be tested against, never another vault, and in particular never one that holds real notes. A layout invariant that would regress silently can also be locked with a contract test over `styles.css`.
 
 ## Project structure
 

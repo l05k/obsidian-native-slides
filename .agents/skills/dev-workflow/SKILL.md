@@ -55,6 +55,7 @@ git merge origin/main
   npm run lint         # ESLint
   npm run format:check # Prettier
   npm run build        # the release build → the committed main.js
+  npm run check:scanner # the community scanner's two passes
   ```
 
 - Never open a PR that is behind or in conflict with `origin/main`.
@@ -64,7 +65,7 @@ git merge origin/main
 **Docs check (before committing):** if the change is user-visible, update the affected documentation **in the same commit** — `README.md` / `README-zh.md` (both languages), `docs/*.md`, and `CHANGELOG.md` ([Unreleased] section). Never commit code without its docs.
 
 ```sh
-git add -A
+git add <files>                       # stage the files you changed, by name
 git commit -m "type: short summary"   # conventional commits
 git push -u origin feat/my-change
 gh pr create --base main --head feat/my-change --title "..." --body "..."
@@ -101,20 +102,20 @@ The authoring agent never reviews its own work. A **round** is one review plus t
 
    ```sh
    herdr agent prompt review-pr-<n> "Fix the blockers you reported: <list>. Touch nothing else." --wait --timeout 600000
-   git add -A && git commit -m "fix: address review round 1" && git push
+   git add <files> && git commit -m "fix: address review round 1" && git push
    ```
 
 5. **Re-verify** — the same checks as step 2 (before opening a PR), plus CI, then comment the round's outcome on the PR:
 
    ```sh
-   npm run check && npm run test && npm run lint && npm run format:check && npm run build
+   npm run check && npm run test && npm run lint && npm run format:check && npm run build && npm run check:scanner
    git diff --exit-code -- main.js
    gh pr checks <pr> --watch
    ```
 
-   **The five checks are not the whole re-verification when the PR touched behaviour.** A review fix is a change like any other, and the checks above are blind to it: they would pass on a fix that breaks the feature. So when the diff has behaviour that a unit test cannot reach — a drag, a click, a menu action, anything in a running Obsidian — re-run the PR's behavioural checks too, in `example-vault/` over CDP, following [../vault-cdp-testing/SKILL.md](../vault-cdp-testing/SKILL.md). That is not a formality: a review fix in this repository's own history moved a flag-clearing statement below a new early return, and the CDP suite caught the regression (a Mod+click selecting one slide instead of two) while all five checks stayed green. Report the behavioural result in the round's PR comment alongside the checks, or say plainly that the change had no behaviour to re-check.
+   **The six checks are not the whole re-verification when the PR touched behaviour.** A review fix is a change like any other, and the checks above are blind to it: they would pass on a fix that breaks the feature. So when the diff has behaviour that a unit test cannot reach — a drag, a click, a menu action, anything in a running Obsidian — re-run the PR's behavioural checks too, in `example-vault/` over CDP, following [../vault-cdp-testing/SKILL.md](../vault-cdp-testing/SKILL.md). That is not a formality: a review fix in this repository's own history moved a flag-clearing statement below a new early return, and the CDP suite caught the regression (a Mod+click selecting one slide instead of two) while the checks stayed green. Report the behavioural result in the round's PR comment alongside the checks, or say plainly that the change had no behaviour to re-check.
 
-6. **Merge or stop** — merge only once no blocker is open. The `protect-main` ruleset requires a PR, allows **squash only** (linear history), forbids deleting or force-pushing `main`, and requires **no approving review**: for agent-authored PRs the loop plus green CI is the whole gate. Re-check the live rules with `gh api repos/<owner>/<repo>/rulesets` rather than trusting this text. Unless `build` and `scanner` are listed there as required status checks, nothing stops a merge while CI is still running, so waiting for `gh pr checks <pr> --watch` is your job. A repository role is also a bypass actor (`bypass_mode: pull_request`); that is inert while no approving review is required. Plain `--squash` only; then clean up: sync, delete the **local** branch, and leave the remote one to the user ([§5](#5-after-the-pr-is-merged-local-delete-then-sync)).
+6. **Merge or stop** — merge only once no blocker is open. The `protect-main` ruleset requires a PR, allows **squash only** (linear history), forbids deleting or force-pushing `main`, and requires **no approving review**: for agent-authored PRs the loop plus green CI is the whole gate. Re-check the live rules with `gh api repos/<owner>/<repo>/rulesets` for the ids and `gh api repos/<owner>/<repo>/rulesets/<id>` for the rules, rather than trusting this text. Unless `build` and `scanner` are listed there as required status checks, nothing stops a merge while CI is still running, so waiting for `gh pr checks <pr> --watch` is your job. A repository role is also a bypass actor (`bypass_mode: pull_request`); that is inert while no approving review is required. Plain `--squash` only; then clean up: sync, delete the **local** branch, and leave the remote one to the user ([§5](#5-after-the-pr-is-merged-local-delete-then-sync)).
 
    ```sh
    gh pr merge <pr> --squash
