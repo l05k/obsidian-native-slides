@@ -21,7 +21,7 @@
 3. 按 `Cmd/Ctrl+Shift+N`（**Create next slide**）在当前页之后加一页，`deck` 链接会自动接好。
 4. 用 `Cmd/Ctrl+Shift+←/→` 翻页，运行 **Show slides panel** 可纵览并重排整套 deck。
 
-想先看一套成品，把本仓库的 [`example-vault/`](example-vault/) 作为库打开，在其中启用一次 **Native Slides**（[详情](docs/usage-zh.md#示例库)），再读 `Welcome.md`。
+想先看一套成品，把本仓库的 [`example-vault/`](example-vault/) 作为库打开，开启第三方插件并在其中启用一次 **Native Slides**（[详情](docs/usage-zh.md#示例库)），再读 `Welcome.md`。
 
 ## 功能特性
 

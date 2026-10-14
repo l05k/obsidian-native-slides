@@ -38,7 +38,7 @@ CI runs the same set and also fails if the committed `main.js` differs from a fr
 - **One logical change per commit**, with its docs and tests in the same commit.
 - **Message format**: a short imperative subject with a type prefix (`feat:`, `fix:`, `docs:`, `chore:`). No scope is required.
 - **User-visible changes** get a line under `[Unreleased]` in `CHANGELOG.md`, and `README.md` / `README-zh.md` are updated together. Tooling and docs-only changes do not go in the changelog.
-- **Stage files by name** rather than with `git add -A`. Obsidian's own configuration in `example-vault/.obsidian/` is untracked, so it cannot slip in; the one tracked file a check can rewrite is the plugin's `example-vault/.obsidian/plugins/native-slides/data.json`, which should not appear in your diff unless you changed the demo settings on purpose.
+- **Stage files by name** rather than with `git add -A`. Obsidian's own configuration in `example-vault/.obsidian/` is ignored (listed in `.gitignore`), so `git add -A` would not pick it up either; the one tracked file a check can rewrite is the plugin's `example-vault/.obsidian/plugins/native-slides/data.json`, which should not appear in your diff unless you changed the demo settings on purpose.
 
 ## Pull requests
 

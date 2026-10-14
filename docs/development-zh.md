@@ -85,9 +85,9 @@ npm run dev        # 监听 main.ts，变更时自动重建 main.js
   `demo-image.png`。
 - **库配置**：`example-vault/.obsidian/` 里 Obsidian 自己的配置（`appearance.json`、
   `community-plugins.json`、`core-plugins.json`、工作区文件）属于每台机器，不被追踪，因此新克隆的
-  库以 Obsidian 默认设置打开：关闭「安全模式」并启用一次 **Native Slides** 即可。这里唯一被追踪、且检查脚本
+  库以 Obsidian 默认设置打开：关闭「受限模式」并启用一次 **Native Slides** 即可。这里唯一被追踪、且检查脚本
   可能改写的文件是插件的演示设置 `plugins/native-slides/data.json`；若 `git status` 显示它被改动，
-  只对这一个路径执行 `git restore`。
+  只对这一个路径执行 `git restore`。若权限守卫拒绝该还原，请上报而不是绕过。
 - **驱动 App**（例如通过 CDP）是允许的，而且往往是验证「手势类行为」的唯一手段 —— 见下方
   「通过 CDP 驱动运行中的 App」，它才是把脚本限制在 `example-vault/` 里的机制。
 

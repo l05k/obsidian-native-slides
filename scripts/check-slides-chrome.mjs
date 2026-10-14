@@ -285,8 +285,8 @@ try {
   cdp.ws.close();
 }
 
-// One exit point, so the reminder about the tracked vault config is always the
-// last thing a run prints.
+// One exit point, so the restore has always run and the exit code is decided in
+// one place.
 for (const claim of claims) console.log(`  · ${claim}`);
 if (failures.length > 0) {
   console.error(`\n${failures.length} failure(s):`);

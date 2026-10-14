@@ -191,15 +191,15 @@ export async function restoreVaultState(cdp, snapshot) {
 }
 
 /**
- * Name the tracked files a run rewrote and the one command that puts them back.
- * The restore above restores the *values*, not the files, so a file whose
- * formatting Obsidian or the plugin rewrites can still show in `git status`.
- * Most of the vault's Obsidian configuration is untracked; what is left tracked
- * is the plugin's demo `data.json`.
+ * Name the tracked files a run may have rewritten and the one command that puts
+ * them back. The restore above restores the *values*, not the files, so a file
+ * whose formatting Obsidian or the plugin rewrites can still show in
+ * `git status`. Most of the vault's Obsidian configuration is untracked; what is
+ * left tracked is the plugin's demo `data.json`.
  */
 export function printVaultReminder(paths) {
   console.log(
-    `note: this run rewrote ${paths.join(" and\n      ")}\n` +
+    `note: this run may have rewritten ${paths.join(" and\n      ")}\n` +
       `      (tracked) — if \`git status\` shows a change, restore it with \`git restore -- ${paths.join(" ")}\`.`,
   );
 }

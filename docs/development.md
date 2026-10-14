@@ -105,6 +105,7 @@ or a manual test at a vault that holds real notes.
   and untracked, so a fresh clone opens with Obsidian's defaults: turn off Restricted mode and enable
   **Native Slides** once. The only tracked file there that a check can rewrite is the plugin's demo
   `plugins/native-slides/data.json`; if `git status` shows it, restore that one path with `git restore`.
+  If the permission guard refuses the restore, report it instead of working around it.
 - **Driving the app** over CDP is allowed and often the only way to check a behaviour that is a
   gesture — see _Driving the running app over CDP_ below, which is what keeps such a script on
   `example-vault/`.
