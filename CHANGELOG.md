@@ -6,13 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any category with no entries. On release, rename [Unreleased] to the version with its date and start a fresh empty [Unreleased] above it.
 
-What belongs here, from 1.1.1 on:
+What belongs here, for new entries:
 
 - **Only what a user of the plugin can notice**: a feature, a behaviour change, a fix to something they could see or do. Lint and scanner counts, test and CI changes, agent tooling and docs-only changes go in the pull request, not here.
 - **One to three sentences per entry**, plus the issue or PR number. Say what changed for the user and, for a fix, what was wrong. Mechanism and measurements belong in the PR or in `docs/`.
 - **Do not repeat an entry across versions.** If a fix did not work, say so in the entry that finally fixes it.
 
-Entries for 1.1.0 and earlier predate these rules and are kept as released.
+The 1.1.1 and 1.1.2 sections were condensed when these rules were adopted; the GitHub release notes for those tags keep the original text. Entries for 1.1.0 and earlier are kept as released.
 
 ## [Unreleased]
 
@@ -26,14 +26,13 @@ Entries for 1.1.0 and earlier predate these rules and are kept as released.
 
 ### Fixed
 
-- **Internal CSS and TypeScript cleanup for the marketplace scorecard, no visible change**: computed styles and a pixel capture were verified unchanged (#133, #84).
-- **Backlinks panel in Slides mode (ineffective)**: an attempt to hide the core Backlinks plugin's panel (#141) targeted an element Obsidian does not have, so the panel stayed visible. The working fix is in 1.1.2.
+- **Internal CSS and TypeScript cleanup for the marketplace scorecard**: no visible change except the capacity notice, which now reads "the slides layout" (#133, #84).
 
 ## [1.1.0] - 2026-09-12
 
 ### Added
 
-- **Move slides in the slides panel**: drag an entry to a gap in the list — or use the context menu's **Move slide up** / **Move slide down**, shown as **Move N slides up** / **Move N slides down** when a selection is being moved — and the deck is reordered. A 2px accent line marks the gap the slide would land in (above the first entry and below the last one included), the entries being moved dim while a copy follows the pointer, `Escape` cancels the drag, and a drop that changes nothing writes nothing. Dragging an entry that belongs to the selection moves the whole selection as one block, keeping the relative order of the slides you did not pick; dragging one outside the selection moves just that slide and clears the selection. A move rewrites the `deck` links of the slides whose next link actually changed and touches nothing else, so the panel, the slides bar's page number and ◀ ▶ navigation follow the new order immediately (#124). Two consequences are documented in the README: a move writes frontmatter, which Obsidian's undo (`Cmd/Ctrl+Z`) does not cover, and the panel has to be visible — Slides mode hides both sidebars.
+- **Move slides in the slides panel**: drag an entry to a gap in the list — or use the context menu's **Move slide up** / **Move slide down**, shown as **Move N slides up** / **Move N slides down** when a selection is being moved — and the deck is reordered. A 2px accent line marks the gap the slide would land in (above the first entry and below the last one included), the entries being moved dim while a copy follows the pointer, `Escape` cancels the drag, and a drop that changes nothing writes nothing. Dragging an entry that belongs to the selection moves the whole selection as one block, keeping the relative order of the slides you did not pick; dragging one outside the selection moves just that slide and clears the selection. A move rewrites the `deck` links of the slides whose next link actually changed and touches nothing else, so the panel, the slides bar's page number and ◀ ▶ navigation follow the new order immediately (#124). Two consequences are documented in the [usage guide](docs/usage.md#slides-panel): a move writes frontmatter, which Obsidian's undo (`Cmd/Ctrl+Z`) does not cover, and the panel has to be visible — Slides mode hides both sidebars.
 
 ### Fixed
 

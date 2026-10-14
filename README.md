@@ -17,10 +17,10 @@ Requires Obsidian 1.7.2 or later, on desktop.
 
 ## Quick start
 
-1. In a note, add the reserved property `deck: []` to its frontmatter, or run the **Initialize Slides with This Note** command. The note is now a one-slide deck.
-2. Press `Cmd/Ctrl+Shift+E` (**Toggle Slides Mode**) to enter Slides mode, and again to leave it.
-3. Press `Cmd/Ctrl+Shift+N` (**Create Next Slide**) to add a slide after the current one. The `deck` links are wired for you.
-4. Flip with `Cmd/Ctrl+Shift+←/→`, and run **Show Slides Panel** to see and reorder the whole deck.
+1. In a note, add the reserved property `deck: []` to its frontmatter, or run the **Initialize slides with this note** command. The note is now a one-slide deck.
+2. Press `Cmd/Ctrl+Shift+E` (**Toggle slides mode**) to enter Slides mode, and again to leave it.
+3. Press `Cmd/Ctrl+Shift+N` (**Create next slide**) to add a slide after the current one. The `deck` links are wired for you.
+4. Flip with `Cmd/Ctrl+Shift+←/→`, and run **Show slides panel** to see and reorder the whole deck.
 
 To see a finished deck first, open the repository's [`example-vault/`](example-vault/) and read `Welcome.md`.
 

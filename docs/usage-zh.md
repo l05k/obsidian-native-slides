@@ -23,7 +23,7 @@ deck: []
 
 Slides 模式是对一张幻灯片的沉浸式、可编辑的卡片视图（"一屏一卡"），仅作用于 deck 笔记。
 
-- **进入与退出**：用 **Toggle Slides Mode**（`Mod+Shift+E`）。退出时还原进入前的视图（Source、Live Preview 或 Reading）。
+- **进入与退出**：用 **Toggle slides mode**（`Mod+Shift+E`）。退出时还原进入前的视图（Source、Live Preview 或 Reading）。
 - **隐藏的内容**：丝带、左右侧边栏、tab 栏，以及核心插件 Backlinks 的文档内面板。
 - **卡片**居中，宽 80vw，最宽不超过编辑区，因此不会溢出，并随主题自适应。外观可从**六套样式模板**中选择：_Lecture (jyy)_（默认）、_虚线边框_、_纸片卡片_、_极简_、_强调边_、_磨砂玻璃_。每套模板同时重绘卡片与 slides 栏。
 - **卡片标题**：默认隐藏文件名。**Slides title** 设置可以选择显示任意 frontmatter 属性，或 `filename`，作为标题。filename 标题可直接在卡片上编辑（点击后输入，会重命名笔记，与原生 inline title 一致）；属性类标题在卡片上只读，请在属性面板中修改属性。
@@ -34,29 +34,38 @@ Slides 模式是对一张幻灯片的沉浸式、可编辑的卡片视图（"一
 
 Slides 模式底部的栏显示已配置的属性、◀ ▶ 按钮与页号。
 
-- **Bar properties**（设置 → Bar properties）：逗号分隔的列表，如 `series, level, date`。每个值占一个等宽列，列之间的分隔条可拖拽调整宽度（宽度会保存）。留空表示没有属性列，缺失的属性会被静默跳过。
-- **翻页**：用 ◀ ▶，或用 **Previous Page** / **Next Page**（`Mod+Shift+←/→`，可在 设置 → 快捷键 中重新绑定）。在原生模式下按下会先进入 Slides 模式。两个箭头始终显示，无法移动的那一个为浅灰色禁用态。
+- **Bar properties**（设置 → Bar properties）：逗号分隔的列表，如 `series, level, date`。每个值占一个等宽列，列之间的分隔条可拖拽调整宽度（宽度会保存）。留空表示没有属性列，缺失的属性会被静默跳过。属性列的排版与页号一致（都随 slides 栏高度缩放）；属性列为灰色弱化显示，页号保持醒目。
+- **翻页**：用 ◀ ▶，或用 **Previous page** / **Next page**（`Mod+Shift+←/→`，可在 设置 → 快捷键 中重新绑定）。在原生模式下按下会先进入 Slides 模式。两个箭头始终显示，无法移动的那一个为浅灰色禁用态。页号默认隐藏，需在设置中选择 **Page number style**。
 - **断链**：`deck` 链接指向不存在的笔记时，slides 栏显示 ⚠ 警告标签。
 
 ## 创建幻灯片
 
-- **Create Next Slide**（仅 deck 笔记，`Mod+Shift+N`）：在当前笔记之后创建新幻灯片，命名为 `<当前名>-next`（重名自动追加 `-2`、`-3`），自动改写 `deck` 链接并打开新笔记。若当前笔记的 `deck` 链接指向不存在的笔记，则直接创建那个声明的笔记，同时消除 ⚠ 警告。
-- **Create New Slide**（不属于任何 deck 的笔记）：开启一套全新 deck。新建一个笔记（`untitled-slides`，重名自动追加序号）作为第一页，frontmatter 为 `deck: []`，执行命令时所在的笔记保持原样。空白标签页也能用。之后用 Create Next Slide 继续加页。
-- **Initialize Slides with This Note**（不属于任何 deck 的笔记）：把当前笔记提升为一套新 deck 的第一页。内容、标题与位置原样保留，仅在 frontmatter 写入 `deck: []`，随后自动进入 Slides 模式。适合先写长文、再想演示的场景。
+- **Create next slide**（仅 deck 笔记，`Mod+Shift+N`）：在当前笔记之后创建新幻灯片，命名为 `<当前名>-next`（重名自动追加 `-2`、`-3`），自动改写 `deck` 链接并打开新笔记。若当前笔记的 `deck` 链接指向不存在的笔记，则直接创建那个声明的笔记，同时消除 ⚠ 警告。
+- **Create new slide**（不属于任何 deck 的笔记）：开启一套全新 deck。新建一个笔记（`untitled-slides`，重名自动追加序号）作为第一页，frontmatter 为 `deck: []`，执行命令时所在的笔记保持原样。空白标签页也能用。之后用 Create next slide 继续加页。
+- **Initialize slides with this note**（不属于任何 deck 的笔记）：把当前笔记提升为一套新 deck 的第一页。内容、标题与位置原样保留，仅在 frontmatter 写入 `deck: []`，随后自动进入 Slides 模式。适合先写长文、再想演示的场景。
 
 ## 演示
 
 - **没有闪烁光标**：点一下 slides 栏即可让编辑器失焦，点回任意幻灯片内容即可继续编辑。
-- **Toggle Mouse Pointer**（`Mod+Shift+M`）在整个窗口隐藏鼠标指针并顺带失焦。再执行一次恢复，退出 Slides 模式也会自动恢复。
-- **Copy AI agent prompt**（仅在 Slides 模式下）把一份给 AI 助手用的说明复制到剪贴板：先介绍 deck 的机制（一屏一卡、`deck` 链、Create new/next slide），再给出实时布局的实测。内容包括真实文字区、一屏能放多少行正文以及每行多少拉丁字符或汉字、各元素类型的行高，以及"20 行正文"、"H1 + 19 个列表项"这类容量示例。文案跟随 Obsidian 界面语言。把它粘贴在你的需求之后，例如"基于某材料制作 slides 笔记"。
+- **Toggle mouse pointer**（`Mod+Shift+M`）在整个窗口隐藏鼠标指针并顺带失焦。再执行一次恢复，退出 Slides 模式也会自动恢复。
+- **Copy AI agent prompt**（在 Slides 模式下使用；在模式外运行会提示先进入 Slides 模式）把一份给 AI 助手用的说明复制到剪贴板：先介绍 deck 的机制（一屏一卡、`deck` 链、Create new/next slide），再给出实时布局的实测。内容包括真实文字区、一屏能放多少行正文以及每行多少拉丁字符或汉字、各元素类型（H1/H2/H3、正文、列表项、代码行、第一张图）的行高——优先实测当前笔记，笔记缺少该类元素时按 Slides 固定排版变量推算——以及"20 行正文"、"H1 + 19 个列表项"这类容量示例。文案跟随 Obsidian 界面语言。把它粘贴在你的需求之后，例如"基于某材料制作 slides 笔记"。
 
 ## 设置
 
-设置 → Native Slides：样式模板、bar properties、Slides title、◀ ▶ 按钮、页号显示，以及：
+设置 → Native Slides：
 
-- **自动进入 Slides 模式**（默认关）：打开 deck 笔记直接进入 Slides。
-- **图片居中**（默认开）：图片居中渲染为卡片块，行高恰好等于图片本身。关闭则恢复 Obsidian 的行内行为，小图及其说明文字排在同一行。
-- **Confirm slide deletion**（默认开）：见下文 Slides 面板。
+- **Style template**（默认 _Lecture (jyy)_）：幻灯片卡片与 slides 栏的外观。
+- **Center images**（默认开）：图片居中渲染为卡片块，行高恰好等于图片本身。关闭则恢复 Obsidian 的行内行为，小图及其说明文字排在同一行。
+- **Show slides bar**（默认开）：slides 栏的总开关。
+- **Show previous/next buttons**（默认开）：deck 笔记上的 ◀ ▶ 按钮。
+- **Page number style**（默认 **None**）：`N / Total`、`N` 或 `None`——新安装默认不显示页号。
+- **Show progress bar**（默认开）：slides 栏顶部可点击的分段进度条，每页一段，点击即跳转到该页。
+- **Auto-enter slides mode**（默认关）：打开 deck 笔记直接进入 Slides。
+- **Escape exits slides mode**（默认开）：按 Escape 退出 Slides 模式，回到进入前的视图。
+- **Slides title**（默认空）：作为卡片标题显示的 frontmatter 属性，或 `filename`；留空则不显示标题。
+- **Bar properties**（默认空）：slides 栏显示的逗号分隔属性列表，见上文。
+- **Confirm slide deletion**（默认开）：从 Slides 面板删除幻灯片前先确认；见下文 Slides 面板。
+- **Navigation hotkeys**（说明项）：上一页/下一页的默认快捷键，可在 设置 → 快捷键 中重新绑定。
 
 Obsidian 1.13.0 及以上，各项设置都可被设置搜索索引。
 
@@ -64,21 +73,21 @@ Obsidian 1.13.0 及以上，各项设置都可被设置搜索索引。
 
 | 命令                             | 默认快捷键                    | 出现位置                           |
 | -------------------------------- | ----------------------------- | ---------------------------------- |
-| Toggle Slides Mode               | `Mod+Shift+E`                 | deck 笔记                          |
-| Previous Page / Next Page        | `Mod+Shift+←` / `Mod+Shift+→` | deck 笔记                          |
-| Create Next Slide                | `Mod+Shift+N`                 | deck 笔记                          |
-| Create New Slide                 | 无                            | 不属于 deck 的笔记                 |
-| Initialize Slides with This Note | 无                            | 不属于 deck 的笔记                 |
-| Toggle Slides Bar                | 无                            | Slides 模式内                      |
-| Toggle Mouse Pointer             | `Mod+Shift+M`                 | Slides 模式内                      |
-| Show Slides Panel                | 无                            | 始终                               |
-| Copy AI Agent Prompt             | 无                            | 始终（在 Slides 模式外会给出提示） |
+| Toggle slides mode               | `Mod+Shift+E`                 | deck 笔记                          |
+| Previous page / Next page        | `Mod+Shift+←` / `Mod+Shift+→` | deck 笔记                          |
+| Create next slide                | `Mod+Shift+N`                 | deck 笔记                          |
+| Create new slide                 | 无                            | 不属于 deck 的笔记                 |
+| Initialize slides with this note | 无                            | 不属于 deck 的笔记                 |
+| Toggle slides bar                | 无                            | Slides 模式内                      |
+| Toggle mouse pointer             | `Mod+Shift+M`                 | Slides 模式内                      |
+| Show slides panel                | 无                            | 始终                               |
+| Copy AI agent prompt             | 无                            | 始终（在 Slides 模式外会给出提示） |
 
-所有快捷键都可在 设置 → 快捷键 中重新绑定。命令只在适用的地方出现在命令面板里，因此上一页/下一页的默认快捷键不会在普通笔记上占用编辑器的"选择到行首/行尾"按键。
+所有快捷键都可在 设置 → 快捷键 中重新绑定。多数命令只在适用的地方出现在命令面板里，因此上一页/下一页的默认快捷键不会在普通笔记上占用编辑器的"选择到行首/行尾"按键；**Show slides panel** 与 **Copy AI agent prompt** 则始终可用。
 
 ## Slides 面板
 
-面板是一个侧边栏视图，按链序列出当前笔记所属 deck 的全部幻灯片并带编号。运行 **Show Slides Panel** 命令，或点丝带的演示图标。点击任一条目即打开对应幻灯片。列表跟随当前活动笔记，并随 deck 编辑实时刷新。
+面板是一个侧边栏视图，按链序列出当前笔记所属 deck 的全部幻灯片并带编号。运行 **Show slides panel** 命令，或点丝带的演示图标。点击任一条目即打开对应幻灯片。列表跟随当前活动笔记，并随 deck 编辑实时刷新。
 
 **创建与删除**：右键条目弹出菜单，有 **Create next slide**（与命令一致，但相对被右键的那页，新笔记创建后不打开）和 **Delete slide**。删除会把笔记移入你配置的回收站（库内回收站或系统回收站，按 设置 → 文件与链接），并拼接链，前一页的 `deck` 链接直接跨过被删页。若删除的是当前打开的页，编辑区跳到最近的幸存页（优先下一张，其次前一张）。确认弹窗会列出将被删除的页名；勾选 **Don't ask again** 或关闭 **设置 → Confirm slide deletion** 可跳过确认。
 
@@ -103,7 +112,7 @@ Obsidian 1.13.0 及以上，各项设置都可被设置搜索索引。
 
 文件名与卡片上展示的标题一致。`demo-image.png` 供测试笔记使用。`example-vault/tests/` 下有 `typography-demo.md`（Markdown 全家桶）和五个 `typography-sample-*.md`，它们是仅开发版的 `Debug: Dump Typography Styles` 命令读取的固定采样笔记，请勿改名或删除。
 
-库里的插件目录中，`main.js`、`manifest.json` 与 `styles.css` 是指向仓库根目录的符号链接，因此示例库始终运行当前构建。符号链接需要文件系统支持：macOS 与 Linux 开箱即用，Windows 需开启开发者模式。无法使用时，把这三个文件复制到 `example-vault/.obsidian/plugins/native-slides/` 即可。
+库里的插件目录中，`main.js`、`manifest.json` 与 `styles.css` 是指向仓库根目录的符号链接，因此示例库始终运行当前构建。符号链接需要文件系统支持：macOS 与 Linux 开箱即用，Windows 需开启开发者模式。无法使用时，把这三个文件复制到 `example-vault/.obsidian/plugins/native-slides/` 即可。插件的演示设置（_Lecture (jyy)_ 模板与 `series, level, date` bar properties）保存在该目录下被追踪的 `data.json` 中。
 
 ## 已知限制
 
@@ -112,4 +121,4 @@ Obsidian 1.13.0 及以上，各项设置都可被设置搜索索引。
 - 属性来源是 **frontmatter**，正文中的 `key:: value` 内联属性不读取。
 - `deck` 是保留属性名；`position` 键同样保留，且不在 slides 栏显示。
 - 上一页/下一页的默认快捷键会在 deck 笔记打开时占用编辑模式下"选择到行首/行尾"的按键。不需要翻页的话，可在 设置 → 快捷键 中移除。
-- 移动幻灯片时，被改写的 `deck` 链接一律写成裸的 `[[文件名]]` 形式（与 Create Next Slide、Delete slide 相同），因此需要改写的带路径或带别名的链接会失去原有形式。
+- 移动幻灯片时，被改写的 `deck` 链接一律写成裸的 `[[文件名]]` 形式（与 Create next slide、Delete slide 相同），因此需要改写的带路径或带别名的链接会失去原有形式。

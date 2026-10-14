@@ -16,10 +16,10 @@
 
 ## 快速开始
 
-1. 在一篇笔记的 frontmatter 里加上保留属性 `deck: []`，或运行 **Initialize Slides with This Note** 命令。这篇笔记就成了单页 deck。
-2. 按 `Cmd/Ctrl+Shift+E`（**Toggle Slides Mode**）进入 Slides 模式，再按一次退出。
-3. 按 `Cmd/Ctrl+Shift+N`（**Create Next Slide**）在当前页之后加一页，`deck` 链接会自动接好。
-4. 用 `Cmd/Ctrl+Shift+←/→` 翻页，运行 **Show Slides Panel** 可纵览并重排整套 deck。
+1. 在一篇笔记的 frontmatter 里加上保留属性 `deck: []`，或运行 **Initialize slides with this note** 命令。这篇笔记就成了单页 deck。
+2. 按 `Cmd/Ctrl+Shift+E`（**Toggle slides mode**）进入 Slides 模式，再按一次退出。
+3. 按 `Cmd/Ctrl+Shift+N`（**Create next slide**）在当前页之后加一页，`deck` 链接会自动接好。
+4. 用 `Cmd/Ctrl+Shift+←/→` 翻页，运行 **Show slides panel** 可纵览并重排整套 deck。
 
 想先看一套成品，打开本仓库的 [`example-vault/`](example-vault/)，读 `Welcome.md`。
 
