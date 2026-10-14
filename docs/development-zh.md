@@ -81,7 +81,7 @@ npm run dev        # 监听 main.ts，变更时自动重建 main.js
   `Probe*.md` / `test.md` / `untitled-slides.md` 是维护者的草稿幻灯片，不要去动。
 - **夹具**：`example-vault/tests/typography-*.md` 是仅开发版命令 `Debug: Dump Typography Styles`
   的采样夹具（`src/debug.ts` 硬编码了其中五个名字）—— 请勿改名或删除。演示套件是
-  `Welcome.md` → `Make it yours.md` → `Grow the Deck.md`，README 的引导依赖这三个名字与
+  `Welcome.md` → `Make it yours.md` → `Grow the Deck.md`，README 的快速开始与[使用指南](usage-zh.md#示例库)依赖这三个名字与
   `demo-image.png`。
 - **配置扰动**：Obsidian 运行时会改写库里**被追踪**的配置（`appearance.json`、
   `community-plugins.json`、`core-plugins.json`）。切分支或开 PR 前用

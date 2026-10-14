@@ -6,29 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 Categories: Added, Changed, Deprecated, Removed, Fixed, Security. Omit any category with no entries. On release, rename [Unreleased] to the version with its date and start a fresh empty [Unreleased] above it.
 
+What belongs here, for new entries:
+
+- **Only what a user of the plugin can notice**: a feature, a behaviour change, a fix to something they could see or do. Lint and scanner counts, test and CI changes, agent tooling and docs-only changes go in the pull request, not here.
+- **One to three sentences per entry**, plus the issue or PR number. Say what changed for the user and, for a fix, what was wrong. Mechanism and measurements belong in the PR or in `docs/`.
+- **Do not repeat an entry across versions.** If a fix did not work, say so in the entry that finally fixes it.
+
+The 1.1.1 and 1.1.2 sections were condensed when these rules were adopted; the GitHub release notes for those tags keep the original text. Entries for 1.1.0 and earlier are kept as released.
+
 ## [Unreleased]
 
 ## [1.1.2] - 2026-09-28
 
 ### Fixed
 
-- **The core Backlinks plugin's in-document panel is hidden in Slides mode**: with that plugin enabled and **Backlinks in document** on, the panel used to render at the bottom of the card during presentation. `body.native-slides-mode .embedded-backlinks { display: none; }` now hides it, and it is untouched everywhere else (#141). The rule 1.1.1 added for this named `.backlink-container`, which Obsidian 1.9.10 does not have anywhere in its DOM, so it was dead CSS and the panel stayed on screen; `test/styles.test.ts` now cross-checks the hidden set against the `chrome` list `scripts/slide-geometry-snapshot.mjs` watches, so the two hand-maintained lists cannot drift apart; whether a selector names an element that exists at all is what the snapshot's `"(missing)"` entry reports.
+- **The core Backlinks plugin's in-document panel is hidden in Slides mode**: with that plugin enabled and **Backlinks in document** on, the panel used to render at the bottom of the card during presentation. It is now hidden there and untouched everywhere else. The change in 1.1.1 aimed at the same thing named an element Obsidian does not have, so it had no effect (#141).
 
 ## [1.1.1] - 2026-09-28
 
 ### Fixed
 
-- **20 of the 34 `!important` declarations are gone**, dropping the scanner's `declaration-no-important` count 34 → 14 and moving the CSS pass's `--max-warnings` baseline 44 → 24 in the same change, per the rule in `docs/development.md`. The rendering is unchanged: `npm run check:style-snapshot` reports no computed-style difference in any of the seven notes under Minimal or Blue Topaz, and `npm run check:visual` shows no visible difference as the pixel backstop. The 14 that remain are not one story — the mechanism each fights is in the `docs/development.md` baseline bullet, which is where the count is explained once (#133).
-- **The marketplace scorecard's CSS warnings are cleared without moving a pixel**: `all: unset` on the slides bar's nav buttons became the equivalent list of explicit resets, and 8 of the 13 `:has` rules became plain selectors — the image-centering rules, the two list-item pitch rules and the four list-bullet rules — each verified against 1.1.0 by the new `slide-visual-check` pixel capture. The `!important` declarations are deliberately left alone (dropping them is a one-at-a-time job whose gate is that same pixel check), and the 5 remaining `:has` rules (next-sibling and blank-line-before-heading) and the 4 `text-indent` rules need a CodeMirror ViewPlugin — all three are filed separately (#133, #134, #135, from #84).
-- **Three findings from the scorecard's TypeScript pass**: the two `this.nav.push(...)` calls are now awaited (the floating-promise rule), `document.createElement("canvas")` became `createEl("canvas")`, and the capacity notice reads "the slides layout" (sentence case) (#84).
-- **A duplicate `color` declaration on the slides bar's nav buttons** — the `all: unset` replacement above kept it alongside the rule's own `color`, which the scanner reports as a duplicate property.
-- **Backlink panel now hidden in Slides mode**: the Obsidian core plugin's `.backlink-container` is hidden via `body.native-slides-mode .backlink-container { display: none; }` so it does not appear at the bottom of the tab bar during presentation (#141). **This did not work** — Obsidian has no `.backlink-container` element, so the rule matched nothing and the panel stayed visible; the fix that works is in the 1.1.2 section above.
+- **Internal CSS and TypeScript cleanup for the marketplace scorecard**: no visible change except the capacity notice, which now reads "the slides layout" (#133, #84).
 
 ## [1.1.0] - 2026-09-12
 
 ### Added
 
-- **Move slides in the slides panel**: drag an entry to a gap in the list — or use the context menu's **Move slide up** / **Move slide down**, shown as **Move N slides up** / **Move N slides down** when a selection is being moved — and the deck is reordered. A 2px accent line marks the gap the slide would land in (above the first entry and below the last one included), the entries being moved dim while a copy follows the pointer, `Escape` cancels the drag, and a drop that changes nothing writes nothing. Dragging an entry that belongs to the selection moves the whole selection as one block, keeping the relative order of the slides you did not pick; dragging one outside the selection moves just that slide and clears the selection. A move rewrites the `deck` links of the slides whose next link actually changed and touches nothing else, so the panel, the slides bar's page number and ◀ ▶ navigation follow the new order immediately (#124). Two consequences are documented in the README: a move writes frontmatter, which Obsidian's undo (`Cmd/Ctrl+Z`) does not cover, and the panel has to be visible — Slides mode hides both sidebars.
+- **Move slides in the slides panel**: drag an entry to a gap in the list — or use the context menu's **Move slide up** / **Move slide down**, shown as **Move N slides up** / **Move N slides down** when a selection is being moved — and the deck is reordered. A 2px accent line marks the gap the slide would land in (above the first entry and below the last one included), the entries being moved dim while a copy follows the pointer, `Escape` cancels the drag, and a drop that changes nothing writes nothing. Dragging an entry that belongs to the selection moves the whole selection as one block, keeping the relative order of the slides you did not pick; dragging one outside the selection moves just that slide and clears the selection. A move rewrites the `deck` links of the slides whose next link actually changed and touches nothing else, so the panel, the slides bar's page number and ◀ ▶ navigation follow the new order immediately (#124). Two consequences are documented in the [usage guide](docs/usage.md#slides-panel): a move writes frontmatter, which Obsidian's undo (`Cmd/Ctrl+Z`) does not cover, and the panel has to be visible — Slides mode hides both sidebars.
 
 ### Fixed
 
