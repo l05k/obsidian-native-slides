@@ -16,7 +16,7 @@ This skill is the full specification of **Rule 1**, of the review loop in **Rule
 
 ## Preview loop (no restart, no hot-reload plugin)
 
-`example-vault/` is the **only** vault anything here may be tested against — never another vault, and never the maintainer's notes vault ([AGENTS.md](../../AGENTS.md) Rule 3, and [docs/development.md](../../docs/development.md#testing-in-the-example-vault) for the full loop).
+`example-vault/` is the **only** vault anything here may be tested against — never another vault, and never the maintainer's notes vault ([AGENTS.md](../../../AGENTS.md) Rule 3, and [docs/development.md](../../../docs/development.md#testing-in-the-example-vault) for the full loop).
 
 The human opens **`example-vault/`** in Obsidian **once** and never needs to reopen it:
 
@@ -55,6 +55,7 @@ git merge origin/main
   npm run lint         # ESLint
   npm run format:check # Prettier
   npm run build        # the release build → the committed main.js
+  npm run check:scanner # the community scanner's two passes
   ```
 
 - Never open a PR that is behind or in conflict with `origin/main`.
@@ -64,7 +65,7 @@ git merge origin/main
 **Docs check (before committing):** if the change is user-visible, update the affected documentation **in the same commit** — `README.md` / `README-zh.md` (both languages), `docs/*.md`, and `CHANGELOG.md` ([Unreleased] section). Never commit code without its docs.
 
 ```sh
-git add -A
+git add <files>                       # stage the files you changed, by name
 git commit -m "type: short summary"   # conventional commits
 git push -u origin feat/my-change
 gh pr create --base main --head feat/my-change --title "..." --body "..."
@@ -76,7 +77,7 @@ Then run the review loop (step 4) straight away — by default no PR waits for a
 
 The authoring agent never reviews its own work. A **round** is one review plus the fixes it produces, and there is exactly **one** of them; after it, the authoring agent merges the PR itself with **squash**. Mechanics: [../herdr-subagent/SKILL.md](../herdr-subagent/SKILL.md) (spawning the pane and driving the agent), [../code-review-herdr/SKILL.md](../code-review-herdr/SKILL.md) (the review itself and its per-axis panes). Three vendored skills still route a `/code-review` step (`ask-matt`, `implement`, `tdd`); in this repository those pointers resolve to `code-review-herdr`, because the vendored skill's parallel sub-agents assume a tool Pi does not have.
 
-**Precondition — `docs/agents/issue-tracker.md`.** The `code-review-herdr` skill resolves its spec source through that file. While it is missing, the reviewer runs the Spec axis against the PR description and the commit messages instead, says so in its findings, and reports that the human must run `/setup-matt-pocock-skills` once. **Axis panes:** `code-review-herdr` spawns the Standards and Spec axes as two Herdr panes of its own (through `herdr-subagent`) and closes them once their reports are collected. Only outside Herdr, or when pane creation fails, does it run the two axes sequentially and say so — either way the findings stay separate per axis, never merged or re-ranked.
+**Spec source.** `code-review-herdr` resolves it through `docs/agents/issue-tracker.md`; if that file is ever missing, the reviewer falls back to the PR description and the commit messages and says so in its findings. **Axis panes:** `code-review-herdr` spawns the Standards and Spec axes as two Herdr panes of its own (through `herdr-subagent`) and closes them once their reports are collected. Only outside Herdr, or when pane creation fails, does it run the two axes sequentially and say so — either way the findings stay separate per axis, never merged or re-ranked.
 
 1. **Spawn the reviewer** — sibling pane in the current tab, repository root, no focus change, kind `pi`, synchronous:
 
@@ -101,20 +102,20 @@ The authoring agent never reviews its own work. A **round** is one review plus t
 
    ```sh
    herdr agent prompt review-pr-<n> "Fix the blockers you reported: <list>. Touch nothing else." --wait --timeout 600000
-   git add -A && git commit -m "fix: address review round 1" && git push
+   git add <files> && git commit -m "fix: address review round 1" && git push
    ```
 
 5. **Re-verify** — the same checks as step 2 (before opening a PR), plus CI, then comment the round's outcome on the PR:
 
    ```sh
-   npm run check && npm run test && npm run lint && npm run format:check && npm run build
+   npm run check && npm run test && npm run lint && npm run format:check && npm run build && npm run check:scanner
    git diff --exit-code -- main.js
    gh pr checks <pr> --watch
    ```
 
-   **The five checks are not the whole re-verification when the PR touched behaviour.** A review fix is a change like any other, and the checks above are blind to it: they would pass on a fix that breaks the feature. So when the diff has behaviour that a unit test cannot reach — a drag, a click, a menu action, anything in a running Obsidian — re-run the PR's behavioural checks too, in `example-vault/` over CDP, following [../vault-cdp-testing/SKILL.md](../vault-cdp-testing/SKILL.md). That is not a formality: a review fix in this repository's own history moved a flag-clearing statement below a new early return, and the CDP suite caught the regression (a Mod+click selecting one slide instead of two) while all five checks stayed green. Report the behavioural result in the round's PR comment alongside the checks, or say plainly that the change had no behaviour to re-check.
+   **The six checks are not the whole re-verification when the PR touched behaviour.** A review fix is a change like any other, and the checks above are blind to it: they would pass on a fix that breaks the feature. So when the diff has behaviour that a unit test cannot reach — a drag, a click, a menu action, anything in a running Obsidian — re-run the PR's behavioural checks too, in `example-vault/` over CDP, following [../vault-cdp-testing/SKILL.md](../vault-cdp-testing/SKILL.md). That is not a formality: a review fix in this repository's own history moved a flag-clearing statement below a new early return, and the CDP suite caught the regression (a Mod+click selecting one slide instead of two) while the checks stayed green. Report the behavioural result in the round's PR comment alongside the checks, or say plainly that the change had no behaviour to re-check.
 
-6. **Merge or stop** — merge only once no blocker is open. The `protect-main` ruleset requires a PR, allows **squash only** (linear history), and requires **no approving review** — for agent-authored PRs the loop plus green CI is the whole gate — but CI is not a required status check, so waiting for it is your job. Plain `--squash` only; then clean up: sync, delete the **local** branch, and leave the remote one to the user ([§5](#5-after-the-pr-is-merged-local-delete-then-sync)).
+6. **Merge or stop** — merge only once no blocker is open. The `protect-main` ruleset requires a PR, allows **squash only** (linear history), forbids deleting or force-pushing `main`, and requires **no approving review**: for agent-authored PRs the loop plus green CI is the whole gate. Re-check the live rules with `gh api repos/<owner>/<repo>/rulesets` for the ids and `gh api repos/<owner>/<repo>/rulesets/<id>` for the rules, rather than trusting this text. Unless `build` and `scanner` are listed there as required status checks, nothing stops a merge while CI is still running, so waiting for `gh pr checks <pr> --watch` is your job. A repository role is also a bypass actor (`bypass_mode: pull_request`); that is inert while no approving review is required. Plain `--squash` only; then clean up: sync, delete the **local** branch, and leave the remote one to the user ([§5](#5-after-the-pr-is-merged-local-delete-then-sync)).
 
    ```sh
    gh pr merge <pr> --squash
@@ -126,7 +127,7 @@ The authoring agent never reviews its own work. A **round** is one review plus t
 
 ### 5. After the PR is merged: local delete, then sync
 
-The split is by ref, not by who "owns" the branch: the agent deletes the **local** branch — the one deletion form the guard allows — and syncs; the user deletes the **remote** branch whenever they choose.
+The split is by ref, not by who "owns" the branch: the agent deletes the **local** branch (the non-force `git branch -d`) and syncs; the user deletes the **remote** branch whenever they choose.
 
 ```sh
 git switch main
@@ -143,9 +144,9 @@ warning: deleting branch 'x' that has been merged to
 
 It is a **warning**, not an error (the delete succeeds, exit 0), and it names the ref that allowed it. Deleting the branch on GitHub does **not** remove the local remote-tracking ref; only a prune does. So **never prune before the local delete** — prune first and `-d` refuses with "not fully merged", leaving only `-D`, which is refused for the agent. A bare `git fetch origin` prunes when `fetch.prune` (or `remote.<name>.prune`) is set — it is unset in this checkout today, so the hazard is conditional rather than live — and a bare fetch is part of this workflow's own step 2; a refspec-scoped fetch (`git fetch origin main`, `git pull origin main`) prunes only what its refspec covers. If `-d` reports "not fully merged", check **why** before asking anyone: `git log origin/<branch>..<branch>` shows unpushed commits, and in that case the `-D` a human would reach for discards work — report the commits instead of just the error.
 
-The guard allows the non-force local form — `git branch -d <name>` / `git branch --delete <name>` — and denies the ones that would lose or move a ref: `git branch -D`, clustered `-fd`/`-rd`, `git tag -d`, `git tag --delete`, `git push -d`, `git push --delete`, `git push origin :<branch>`, `gh pr merge --delete-branch`. There is no authorization path in the hook, whose deny text invites 先取得用户明确授权 ("first obtain the user's explicit authorization", a translation of the guard's Chinese) even though no retry can pass. It is not airtight, which is why this is a **policy** and not a deduction from what happens to be blocked: `git branch -f`, `git branch -d -r origin/<branch>`, `git push --prune`, `git update-ref -d` and a command hidden inside `$(…)` all pass it. Never attempt a refused form and never route around the refusal — and do not ask for permission for the whitelisted non-force `-d`, it is a normal step.
+The non-force local form — `git branch -d <name>` / `git branch --delete <name>` — is the agent's. The forms that lose or move a ref are not: `git branch -D`, clustered `-fd`/`-rd`, `git tag -d`, `git tag --delete`, `git push -d`, `git push --delete`, `git push origin :<branch>`, `gh pr merge --delete-branch`. A local guard may refuse some of these and let others through, which is why this is a **policy** and not a deduction from what happens to be blocked. Never attempt a refused form, never route around a refusal, and do not ask for permission for the non-force `-d`: it is a normal step.
 
-**Remote branches are the user's.** `gh api -X DELETE repos/<owner>/<repo>/git/refs/heads/<branch>` is the one form the hook does not classify as a ref deletion and would therefore run; it stays off-limits by standing instruction — do not run it and do not hand it over as a step. Say which remote branches are still there and let them delete those.
+**Remote branches are the user's.** Deleting a remote ref through the API (`gh api -X DELETE repos/<owner>/<repo>/git/refs/heads/<branch>`) is equally off-limits: do not run it and do not hand it over as a step. Say which remote branches are still there and let them delete those.
 
 ### 6. Releasing (the maintainer merges, the agent tags)
 

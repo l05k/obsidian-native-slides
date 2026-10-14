@@ -1,27 +1,24 @@
 ## Summary
 
-Brief description of the changes (2-3 sentences).
+Brief description of the change (2-3 sentences).
 
 Fixes #(issue number)
 
 ## Changes
 
 - [ ] List the main changes here
-- [ ] Include docs updates if applicable
 - [ ] Include test updates if applicable
 
 ## Test plan
 
-- [ ] Step 1: How to verify the change works
-- [ ] Step 2: Edge cases to check
-- [ ] Step 3: Regression checks (native modes unaffected, etc.)
+- [ ] How to verify the change works
+- [ ] Edge cases checked
+- [ ] Native modes (Source, Live Preview, Reading) unaffected, if the change touches rendering
 
 ## Checklist
 
-- [ ] `npm run build` passes (the committed release `main.js` is up to date)
-- [ ] `npm run check` passes (TypeScript)
-- [ ] `npm test` passes (unit tests)
-- [ ] `npm run lint` passes (ESLint)
-- [ ] `npm run format` passes (Prettier)
-- [ ] Documentation updated (README / README-zh / CHANGELOG) if applicable
-- [ ] Tested in Obsidian with the example vault
+- [ ] `npm run build` passes and the committed `main.js` is up to date
+- [ ] `npm run check`, `npm test`, `npm run lint` and `npm run format:check` pass
+- [ ] `npm run check:scanner` passes
+- [ ] Tested in `example-vault/` (not a vault with real notes), if the change has behaviour
+- [ ] Docs updated in this PR: `README.md` and `README-zh.md` together, `docs/`, and `CHANGELOG.md` `[Unreleased]` for user-visible changes
