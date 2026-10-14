@@ -22,22 +22,13 @@
  * running with `--remote-debugging-port=9222` and that vault open, or another port
  * via `OBSIDIAN_CDP_PORT` — the dedicated capture instance uses 9333. It opens the
  * notes it measures, and leaves Slides mode, the theme, the font size, the
- * right split and the open note as it found them. Two of those writes land in
- * one **tracked** file — `example-vault/.obsidian/appearance.json` (theme, font
- * size) — so the restore puts the values back while the file stays rewritten:
- * `git restore -- example-vault/.obsidian` afterwards, as the reminder printed
- * when the run ends says.
+ * right split and the open note as it found them. Those writes land in the vault's
+ * untracked `example-vault/.obsidian/appearance.json` (theme, font size), so the
+ * run leaves no tracked file rewritten.
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
-import {
-  captureVaultState,
-  connect,
-  parseArgs,
-  printVaultReminder,
-  restoreVaultState,
-  sleep,
-} from "./vault-cdp.mjs";
+import { captureVaultState, connect, parseArgs, restoreVaultState, sleep } from "./vault-cdp.mjs";
 
 const { args } = parseArgs({
   defaults: {
@@ -226,7 +217,6 @@ try {
   }
   cdp.ws.close();
 }
-printVaultReminder(["example-vault/.obsidian/appearance.json"]);
 
 if (args.diff) {
   const before = JSON.parse(readFileSync(args.diff, "utf8"));

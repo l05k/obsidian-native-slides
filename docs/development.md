@@ -100,10 +100,11 @@ or a manual test at a vault that holds real notes.
   rename or remove them. The demo deck is `Welcome.md` → `Make it yours.md` → `Grow the Deck.md`;
   the README's quick start and the [usage guide](usage.md#example-vault) depend on those three
   names and on `demo-image.png`.
-- **Config churn**: Obsidian rewrites the vault's tracked configuration while it runs
-  (`appearance.json`, `community-plugins.json`, `core-plugins.json`). Restore it with
-  `git restore -- example-vault/.obsidian` before switching branches or opening a PR, and re-check
-  `git status` afterwards.
+- **Vault configuration**: Obsidian's own configuration in `example-vault/.obsidian/`
+  (`appearance.json`, `community-plugins.json`, `core-plugins.json`, the workspace files) is per-machine
+  and untracked, so a fresh clone opens with Obsidian's defaults: turn off Restricted mode and enable
+  **Native Slides** once. The only tracked file there that a check can rewrite is the plugin's demo
+  `plugins/native-slides/data.json`; if `git status` shows it, restore that one path with `git restore`.
 - **Driving the app** over CDP is allowed and often the only way to check a behaviour that is a
   gesture — see _Driving the running app over CDP_ below, which is what keeps such a script on
   `example-vault/`.

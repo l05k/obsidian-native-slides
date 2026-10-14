@@ -59,13 +59,12 @@
  *
  * Everything it changes is restored afterwards — on success, on failure and on
  * Ctrl-C: the theme, the base font size, the title source, Slides mode, the open
- * note, the right split and the pane the narrow pass added. Two of those writes
- * land in **tracked** files — `example-vault/.obsidian/appearance.json` (theme,
- * font size) and `example-vault/.obsidian/plugins/native-slides/data.json` (the
- * title source) — so the restore puts the *values* back but the files stay
- * rewritten: `git restore -- example-vault/.obsidian` afterwards, the duty
- * Obsidian's own config churn already carries (the reminder is printed when the
- * run ends). A restore that fails fails the run.
+ * note, the right split and the pane the narrow pass added. One of those writes
+ * lands in a **tracked** file — `example-vault/.obsidian/plugins/native-slides/data.json`
+ * (the title source) — so the restore puts the *value* back but the file stays
+ * rewritten: restore it with `git restore` if `git status` shows it (the
+ * reminder is printed when the run ends). The theme and font size land in the
+ * vault's untracked `appearance.json`. A restore that fails fails the run.
  *
  * See docs/development.md#driving-the-running-app-over-cdp.
  */
@@ -378,11 +377,8 @@ function restore() {
   return restoring;
 }
 
-/** The tracked files this run rewrites, and the one command that puts them back */
-const VAULT_FILES = [
-  "example-vault/.obsidian/appearance.json",
-  "example-vault/.obsidian/plugins/native-slides/data.json",
-];
+/** The tracked file this run rewrites, and the one command that puts it back */
+const VAULT_FILES = ["example-vault/.obsidian/plugins/native-slides/data.json"];
 
 // Ctrl-C mid-run must not leave the vault mutated: the same restore the `finally`
 // runs, then a non-zero exit either way.
@@ -546,7 +542,7 @@ try {
   // worst outcome there is.
   if (!(await restore())) {
     console.error(
-      "\nthe vault state could not be restored — do not commit example-vault/.obsidian",
+      "\nthe vault state could not be restored — inspect example-vault/.obsidian before committing",
     );
     exitCode = 1;
   }
