@@ -210,7 +210,7 @@ Slides 模式里隐藏的界面元素，必须真的渲染为隐藏 —— 这�
 - **仓库自有的 skill**——`dev-workflow`（[Rule 1](../AGENTS.md) / [Rule 2](../AGENTS.md) / [Rule 4](../AGENTS.md) 的强制
   工作流）、`herdr-subagent`（Rule 2 所用的 Herdr 窗格/子代理操作手册）、`code-review-herdr`
   （本仓库对 vendored `code-review` 的 fork：两轴方法相同，但每条轴都在自己的 Herdr 窗格里
-  运行——Pi 没有原生 subagent 工具，这正是它需要的——报告收齐后这些窗格会被关闭）与
+  运行——Pi 没有原生 subagent 工具，这正是它需要的——报告收齐后两条轴各自的窗格会被关闭，顶层评审窗格则在其 PR 合并后关闭）与
   `vault-cdp-testing`（行为检查在运行中的 App 里遵循的流程，[Rule 3](../AGENTS.md)）。
   这四个是我们的：随意修改，且仍受 Prettier 约束（ESLint 会跳过整个 `.agents/skills/`）。
 - **随仓库带入的 25 个**——来自 [mattpocock/skills](https://github.com/mattpocock/skills) 的

@@ -250,8 +250,9 @@ session off. They are plain Markdown you own and may edit.
   `herdr-subagent` (the Herdr pane/subagent mechanics Rule 2 uses),
   `code-review-herdr` (this repository's fork of the vendored `code-review`: same
   two-axis method, but each axis runs in its own Herdr pane, which is what Pi
-  needs — it has no native sub-agent tool — and those panes are closed once their
-  reports are collected) and `vault-cdp-testing` (the procedure a behavioural
+  needs — it has no native sub-agent tool — and its axis panes are closed once their
+  reports are collected, while the top-level reviewer pane is closed once its PR has
+  merged) and `vault-cdp-testing` (the procedure a behavioural
   check follows in the running app, [Rule 3](../AGENTS.md)). Ours: edit freely;
   they stay Prettier-formatted (ESLint skips the whole `.agents/skills/` tree).
 - **The vendored 25** — the `engineering` + `productivity` skills from
