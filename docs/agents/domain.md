@@ -17,8 +17,7 @@ Single-context repo:
 /
 ├── CONTEXT.md
 ├── docs/adr/
-│   ├── 0001-zero-intrusion-into-note-content.md
-│   └── 0002-deck-property-drives-slide-chains.md
+│   └── 0001-slide-order-is-the-next-link-chain.md
 └── src/
 ```
 
@@ -32,4 +31,4 @@ If the concept you need isn't in the glossary yet, that's a signal: either you'r
 
 If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
 
-> _Contradicts ADR-0007 (event-sourced orders), but worth reopening because…_
+> _Contradicts ADR-0001 (slide order is the next-link chain), but worth reopening because…_

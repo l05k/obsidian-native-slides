@@ -216,6 +216,14 @@ Slides 模式里隐藏的界面元素，必须真的渲染为隐藏 —— 这�
   实验性的 `in-progress` / `misc` skill 有意不装。vendored 的 `code-review` 保持上游原文
   （这样 `npx skills update` 仍可刷新它），而 **Rule 2 用的不是它**：真正跑的是
   `code-review-herdr`。上游有改动时请手工把修复搬进 fork。
+- **本仓库点名的 vendored skill**——仓库自有文件（`AGENTS.md`、`dev-workflow`、`docs/agents/`）
+  指向 `ask-matt`、`code-review`、`domain-modeling`、`grill-with-docs`、`grilling`、`implement`、
+  `improve-codebase-architecture`、`prototype`、`research`、`setup-matt-pocock-skills`、`tdd`、
+  `triage` 与 `wayfinder`。其余十二个（`codebase-design`、`diagnosing-bugs`、`grill-me`、
+  `handoff`、`resolving-merge-conflicts`、`teach`、`to-questionnaire`、`to-spec`、`to-tickets`、
+  `wait-what`、`wizard`、`writing-for-agents`）已安装，但这里没有任何文件点名；agent 通过它们的
+  描述发现它们。它们被有意保留：vendored 文件互相交叉引用（`ask-matt` 路由到其中大多数），
+  删掉一个就会让必须保持原样（以便与上游 diff）的文件出现悬空指针。
 - **规范位置**：`.agents/skills/<name>/SKILL.md`。共享规范目录的 agent（Pi、Amp、Codex、
   Copilot……）直接发现它；某个 agent 专属的目录（`.claude/skills`、`.cursor/skills`……）
   是指向它的**软链接**，绝不复制。这些目录是本地生成的 CLI 产物、已被 gitignore——
