@@ -50,7 +50,7 @@ CI runs the same set and also fails if the committed `main.js` differs from a fr
 **Who reviews and merges:**
 
 - **Human contributions**: a maintainer reviews and merges. Please do not merge your own PR.
-- **Agent-authored PRs**: reviewed once by an independent Herdr subagent, then squash-merged by the authoring agent once CI is green. The rules are in [AGENTS.md](AGENTS.md) (Rule 2).
+- **Agent-authored PRs**: code and agent-instruction changes are reviewed once by an independent Herdr subagent, then squash-merged by the authoring agent once CI is green. A PR touching only prose documentation as defined in [dev-workflow §3a](.agents/skills/dev-workflow/SKILL.md#3a-docs-only-prs-skip-the-review) (README, changelog, `docs/` pages) is self-checked and merged without a review round; anything else — `docs/agents/`, the agent instructions, code — is reviewed. The rules are in [AGENTS.md](AGENTS.md) (Rule 2).
 - **Release PRs**: always merged by the maintainer ([Rule 4](AGENTS.md)).
 
 Squash is the only merge method the repository allows.
