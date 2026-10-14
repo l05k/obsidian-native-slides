@@ -1,6 +1,6 @@
 ---
 name: dev-workflow
-description: Mandatory development workflow for this repository — single checkout, one branch at a time, merge latest main before PR, CLI-first, one independent Herdr-subagent code review round before squash-merging, reload-based preview loop, and a post-merge cleanup that deletes the merged PR's local branch and closes the review panes it spawned.
+description: Mandatory development workflow for this repository — single checkout, one branch at a time, merge latest main before PR, CLI-first, one independent Herdr-subagent code review round before squash-merging code and agent-instruction changes (docs-only PRs are self-checked), reload-based preview loop, and a post-merge cleanup that deletes the merged PR's local branch and closes the review panes it spawned.
 ---
 
 # Development Workflow (Rules 1, 2 and 4)
@@ -12,7 +12,7 @@ This skill is the full specification of **Rule 1**, of the review loop in **Rule
 - **CLI tools first.** Every step is driven by CLI tools (`git`, `gh`, `npm`).
 - **Single checkout, one branch at a time.** All work happens in the one repository checkout; branches are created/switched with `git switch`. Features are developed **serially** — never parallel. No git worktrees.
 - **No rebase.** Always `merge` the latest `main` into the branch and resolve conflicts explicitly. Never rewrite history with `rebase`.
-- **Independent review, then squash-merge.** A PR is never reviewed by the agent that wrote it: a **separate agent in a Herdr pane** runs [`code-review-herdr`](../code-review-herdr/SKILL.md) over it, for exactly **one round**, after which the authoring agent may squash-merge its own PR once CI is green (step 4). This is the only path to a merge; skipping the loop, or merging before CI is green, is not allowed. The fixes are not re-reviewed — step 5's checks and the round's PR comment are what cover them — so keep them tight and scoped. A human may always take over the review instead — if the user asks to hold a PR for human review, hold it.
+- **Independent review, then squash-merge.** A PR is never reviewed by the agent that wrote it: a **separate agent in a Herdr pane** runs [`code-review-herdr`](../code-review-herdr/SKILL.md) over it, for exactly **one round**, after which the authoring agent may squash-merge its own PR once CI is green (step 4). This is the only path to a merge for anything that is not docs-only (step 3a); skipping the loop there, or merging before CI is green, is not allowed. The fixes are not re-reviewed — step 5's checks and the round's PR comment are what cover them — so keep them tight and scoped. A human may always take over the review instead — if the user asks to hold a PR for human review, hold it.
 
 ## Preview loop (no restart, no hot-reload plugin)
 
@@ -71,7 +71,30 @@ git push -u origin feat/my-change
 gh pr create --base main --head feat/my-change --title "..." --body "..."
 ```
 
-Then run the review loop (step 4) straight away — by default no PR waits for a human to pick it up.
+Then run the review loop (step 4) straight away — by default no PR waits for a human to pick it up — unless the PR is docs-only (step 3a), which skips it.
+
+### 3a. Docs-only PRs skip the review
+
+Code and the files that steer agents get a review round; pure documentation does not. A PR is **docs-only** when every file in its diff is one of:
+
+- `README.md`, `README-zh.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `CONTEXT.md`
+- the top-level `docs/*.md` (and the Chinese twins) and `docs/adr/*.md`, not the subdirectory `docs/agents/`
+
+Everything else is **not** docs: `AGENTS.md`, `.agents/skills/`, `docs/agents/` (skills read it as configuration), `.github/` (workflows and the PR and issue templates), `example-vault/` (its notes are fixtures that `src/debug.ts` and the CDP checks depend on), `scripts/`, `src/`, `test/`, `styles.css`, `main.ts`, `main.js`, the manifest, version and package files, and every config file. One such file in the diff and the **whole PR** takes the review loop (step 4). A release PR bumps version files, so it is never docs-only.
+
+```sh
+git diff --name-only "$(git merge-base HEAD origin/main)" HEAD   # every line must be in the docs list above
+```
+
+Without a review, the author checks its own work and says so:
+
+1. `npm run format:check`, and the link and anchor check over the changed Markdown: every relative link resolves and every `#anchor` matches a heading.
+2. If `CHANGELOG.md` changed: simulate the release workflow's notes extraction (the `awk` program in [§6](#6-releasing-the-maintainer-merges-the-agent-tags), step 2) for every version heading you touched, because a malformed heading fails the release job. English and Chinese twins (`README`, `docs/*-zh.md`) change together, or the PR says why not.
+3. `gh pr checks <pr> --watch` until CI is green.
+4. Comment on the PR, labelled `docs-only: no review round`: the file list and what was checked.
+5. `gh pr merge <pr> --squash`, then the cleanup in [§5](#5-after-the-pr-is-merged-delete-the-local-branch-sync-close-the-panes). There is no reviewer pane to close.
+
+The exception removes the review, not the human's say: if the user asks to hold a docs PR, hold it. If the self-check turns up something a review would normally catch (a claim you cannot verify, a doc that contradicts the code), fix it or ask; do not merge it on the strength of "docs-only".
 
 ### 4. Review loop: a Herdr subagent runs `code-review-herdr` (one round)
 
