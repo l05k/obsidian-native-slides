@@ -99,7 +99,7 @@ herdr agent read <name> --source recent-unwrapped --lines 120
 
 If the complete response is unavailable because the agent uses the terminal's alternate screen, ask it to write the complete response to a temporary Markdown file and reply only with that path. Read the file directly and verify any requested artifact exists.
 
-Report the result, agent name, and pane ID. Leave the pane and agent running unless the user explicitly asks to close them.
+Report the result, agent name, and pane ID. Leave the pane and agent running unless the user, or a standing instruction of the repository, says to close them.
 
 ## Troubleshooting only
 
@@ -122,6 +122,6 @@ Enter this path only when a happy-path command fails, a response field is missin
 
 ## Safety and completion
 
-Target the caller with `--current`, then use only the returned pane ID or the chosen unique agent name. Preserve user focus with `--no-focus`. Close, move, or stop only resources created by this workflow, and only when the user requests it; a pane that merely exists in the workspace was not created by this workflow, so only an ID your own `pane split` returned is yours to touch. Never stop the Herdr server as cleanup.
+Target the caller with `--current`, then use only the returned pane ID or the chosen unique agent name. Preserve user focus with `--no-focus`. Close, move, or stop only resources created by this workflow, and only when the user or a standing repository instruction requests it; a pane that merely exists in the workspace was not created by this workflow, so only an ID your own `pane split` returned is yours to touch. Never stop the Herdr server as cleanup.
 
 Synchronous delegation is complete only when the agent settles at `idle` or `done`, its result has been collected, and requested artifacts have been verified. Asynchronous delegation is complete when startup and prompt submission succeed and the agent name and pane ID have been reported.

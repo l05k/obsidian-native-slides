@@ -19,11 +19,12 @@ An agent never reviews its own work. A **round** is one review plus the fixes it
 
 Mechanics: [dev-workflow §4](.agents/skills/dev-workflow/SKILL.md#4-review-loop-a-herdr-subagent-runs-code-review-herdr-one-round) and [herdr-subagent](.agents/skills/herdr-subagent/SKILL.md). The merge gate (what the `protect-main` ruleset enforces and what it leaves to you) is in [dev-workflow §4, step 6](.agents/skills/dev-workflow/SKILL.md#4-review-loop-a-herdr-subagent-runs-code-review-herdr-one-round).
 
-### Branch and tag deletion: local is the agent's, remote is the user's
+### Cleanup after a merge: what the agent may delete
 
-- **Agent**: after a merge, sync and delete the **local** branch with the non-force `git branch -d <branch>`. That is a normal step and needs no permission.
-- **User**: remote branches and tags are deleted only by the user. Never delete a remote ref, never hand over a command that would, and never use a refused form: `git branch -D`, `git tag -d`, `git push --delete` / `-d`, `git push origin :<ref>`, `gh pr merge --delete-branch`.
-- **Order matters**: delete the local branch before anything prunes `origin/<branch>`. See [dev-workflow §5](.agents/skills/dev-workflow/SKILL.md#5-after-the-pr-is-merged-local-delete-then-sync).
+- **Agent**: after a merge, in this order: delete the **local** branch with the non-force `git branch -d <branch>`, delete the merged PR's own **remote** head branch with `git push origin --delete <branch>`, sync `main`, and close the Herdr panes it spawned for that PR. These are normal steps and need no permission.
+- **User**: tags, every other remote ref and anything forced. Never use `git branch -D`, `git tag -d`, a delete of any remote ref other than a merged PR's head branch, `gh pr merge --delete-branch` or `gh api -X DELETE`.
+- **Order matters**: delete the local branch before the remote one and before anything prunes `origin/<branch>`. See [dev-workflow §5](.agents/skills/dev-workflow/SKILL.md#5-after-the-pr-is-merged-delete-the-branches-sync-close-the-panes).
+- **If a guard refuses one of the agent's steps**, report which branch or pane remains and stop.
 
 This is policy, not a deduction from what a local guard happens to block. Do not route around a refusal.
 
