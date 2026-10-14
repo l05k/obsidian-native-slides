@@ -4,20 +4,20 @@ Rules that agents (AI or human) MUST follow when working in this repository. Thi
 
 ## Rule 1 — Development workflow (CLI-first)
 
-Every change follows **branch → PR → CI → review → merge → cleanup**, driven by CLI tools. Never commit directly to `main`. Update every affected document (`README.md` / `README-zh.md`, `docs/`, `CHANGELOG.md`) in the same commit as the code.
+Every change follows **branch → PR → CI → review → merge → cleanup**, driven by CLI tools (the review is skipped for docs-only PRs, Rule 2). Never commit directly to `main`. Update every affected document (`README.md` / `README-zh.md`, `docs/`, `CHANGELOG.md`) in the same commit as the code.
 
 Procedure: [dev-workflow](.agents/skills/dev-workflow/SKILL.md)
 
 ## Rule 2 — Code and agent-instruction PRs are reviewed by a Herdr subagent, then merged (one round)
 
-An agent never reviews its own work. A **round** is one review plus the fixes it produces; there is exactly one. After it, with CI green and the local checks passing, the authoring agent squash-merges its own PR. A human may take over the review at any time: if the user asks to hold a PR, hold it.
-
-**Docs-only PRs skip the review.** A PR whose diff touches only `README.md`, `README-zh.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `CONTEXT.md`, the top-level `docs/*.md` and `docs/adr/` is self-checked, not reviewed: no Herdr pane, no review round. Anything else in the diff, in particular `AGENTS.md`, `.agents/skills/`, `docs/agents/`, `.github/`, `example-vault/` or any code, brings the whole PR back under this rule. The self-check is in [dev-workflow §3a](.agents/skills/dev-workflow/SKILL.md#3a-docs-only-prs-skip-the-review).
+An agent never reviews its own work. For a code or agent-instruction PR, a **round** is one review plus the fixes it produces; there is exactly one. After it, with CI green and the local checks passing, the authoring agent squash-merges its own PR. A human may take over the review at any time: if the user asks to hold a PR, hold it.
 
 - **Review**: spawn a Herdr pane (agent kind `pi`) that runs [`code-review-herdr`](.agents/skills/code-review-herdr/SKILL.md) over the PR, fixed at the `origin/main` merge-base. Not the vendored `code-review`: Pi has no native sub-agent tool. Findings carry file:line and severity, with blockers apart from nits.
 - **Publish and fix**: post the findings as a PR comment labelled `review round 1`. Blockers are fixed in the same subagent, never in the main session, and never by two agents writing the tree at once. The orchestrating agent is the only git writer.
 - **Verify, then merge**: re-run `npm run check` / `test` / `lint` / `format:check` / `build` / `check:scanner`, `git diff --exit-code -- main.js`, and `gh pr checks <pr> --watch`. Comment the outcome, then `gh pr merge <pr> --squash`.
 - **Open blocker after the fixes**: stop, leave the PR open, hand it to the human. Never merge over a blocker and never start a second round.
+
+**Docs-only PRs skip the review.** A PR whose diff is only prose documentation (the list is in [dev-workflow §3a](.agents/skills/dev-workflow/SKILL.md#3a-docs-only-prs-skip-the-review)) has no review round: the author self-checks it and says so in a PR comment. One file outside that list — `AGENTS.md`, `.agents/skills/` and `docs/agents/` included — puts the whole PR under this rule.
 
 Mechanics: [dev-workflow §4](.agents/skills/dev-workflow/SKILL.md#4-review-loop-a-herdr-subagent-runs-code-review-herdr-one-round) and [herdr-subagent](.agents/skills/herdr-subagent/SKILL.md). The merge gate (what the `protect-main` ruleset enforces and what it leaves to you) is in [dev-workflow §4, step 6](.agents/skills/dev-workflow/SKILL.md#4-review-loop-a-herdr-subagent-runs-code-review-herdr-one-round).
 
